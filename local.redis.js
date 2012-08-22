@@ -10,27 +10,23 @@
   if (! window.localStorage) return;
 
   var storage = window.localStorage;
-  var proto   = Object.getPrototypeOf(window.localStorage);
+  var proto   = window.localStorage.constructor.prototype;
 
   // get
   // Returns: [num | string | object | null] The value associated with the passed key, if it exists.
-  // Params:  parse = Whether or not to return the data in its intended datatype/form. Default is true.
-  proto.get = function(key, parse) {
-    parse = (parse === true) ? true : false;
-
-    var val = storage.getItem(key);
-
-    // Return the value's parsed or string representation
-    return (parse === true) ? JSON.parse(val) : val;
+  // Note:    Auto JSON parses
+  proto.get = function(key) {
+    return JSON.parse(storage.getItem(key));
   };
 
   // set
   // Stores the passed value indexed by the passed key
   // Note: Auto stringifies
   proto.set = function(key, value) {
+
     // Stringify the key and value, if necessary
-    value = (typeof value !== 'string') ? JSON.stringify(value) : value;
-    key   = (typeof key   !== 'string') ? JSON.stringify(key)   : key;
+    value = (typeof value === "string") ? value : JSON.stringify(value);
+    key   = (typeof key   === "string") ? key   : JSON.stringify(key);
 
     // Use the default setItem
     storage.setItem(key, value);
@@ -39,17 +35,21 @@
   // mget
   // Returns: A list of values for the passed key(s).
   // Note:    Values match keys by index.
+  // Usage:   mget('key1', 'key2', 'key3') or mget(['key1', 'key2', 'key3'])
   proto.mget = function(key) {
     var results = [];
 
-    results[0] = proto.get(key);
-
-    // If there are additional arguments, get each
-    if (arguments.length) {
-      for (var i in arguments) {
-        results[results.length] = proto.get(arguments[i]);
+    if (key instanceof Array) {
+      for (var i in key) {
+        results[results.length] = proto.get(key[i]);
+      }
+    } else {
+      for (var j in arguments) {
+        results[results.length] = proto.get(arguments[j]);
       }
     }
+
+    return results;
   };
 
 })(window);
