@@ -13,10 +13,17 @@
   var proto   = window.localStorage.constructor.prototype;
 
   // get
-  // Returns: [num | string | object | null] The value associated with the passed key, if it exists.
+  // Returns: [number | string | object | null] The value associated with the passed key, if it exists.
   // Note:    Auto JSON parses
   proto.get = function(key) {
-    return JSON.parse(storage.getItem(key));
+    var res = storage.getItem(key);
+
+    try {
+      // If it's a literal string, parsing will fail
+      res = JSON.parse(res);
+    } finally {
+      return res;
+    }
   };
 
   // set
@@ -38,14 +45,12 @@
   proto.mget = function(keys) {
     var results = [];
 
-    if (keys instanceof Array) {
-      for (var i in keys) {
-        results[results.length] = proto.get(keys[i]);
-      }
-    } else {
-      for (var j in arguments) {
-        results[results.length] = proto.get(arguments[j]);
-      }
+    // Determine the form of the parameters
+    keys = (keys instanceof Array) ? keys : arguments;
+
+    // Retrieve the value for each key
+    for (var i in keys) {
+      results[results.length] = proto.get(keys[i]);
     }
 
     return results;
@@ -54,19 +59,14 @@
   // mset
   // Allows the setting of multiple key value pairs
   // Usage:   mset('key1', 'val1', 'key2', 'val2') or mset(['key1', 'val1', 'key2', 'val2'])
-  proto.mset = function (keyVals) {
+  proto.mset = function (keysVals) {
 
-  // TODO: Allow passing in an object of keys values. Could this be something cool? {key1: val1, key2: val2}
+    // TODO: Allow passing in an object of keys values. Could this be something cool? {key1: val1, key2: val2}
+    keysVals = (keysVals instanceof Array) ? keysVals : arguments;
 
-    if (keyVals instanceof Array) {
-      // If there's an odd number of elements, unset values default to undefined
-      for (var i = 0; i < keyVals.length; i += 2) {
-        proto.set(keyVals[i], keyVals[i + 1]);
-      }
-    } else {
-      for (var j = 0; j < arguments.length; j += 2) {
-        proto.set(arguments[j], arguments[j + 1]);
-      }
+    // If there's an odd number of elements, unset values default to undefined
+    for (var i = 0, l = keysVals.length; i < l; i += 2) {
+      proto.set(keysVals[i], keysVals[i + 1]);
     }
   };
 
