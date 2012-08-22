@@ -12,7 +12,7 @@
   var storage = window.localStorage;
   var proto   = Object.getPrototypeOf(window.localStorage);
 
-  // GET
+  // get
   // Returns: [num | string | object | null] The value associated with the passed key, if it exists.
   // Params:  parse = Whether or not to return the data in its intended datatype/form. Default is true.
   proto.get = function(key, parse) {
@@ -24,8 +24,9 @@
     return (parse === true) ? JSON.parse(val) : val;
   };
 
-  // SET
-  // Returns:
+  // set
+  // Stores the passed value indexed by the passed key
+  // Note: Auto stringifies
   proto.set = function(key, value) {
     // Stringify the key and value, if necessary
     value = (typeof value !== 'string') ? JSON.stringify(value) : value;
@@ -33,6 +34,22 @@
 
     // Use the default setItem
     storage.setItem(key, value);
+  };
+
+  // mget
+  // Returns: A list of values for the passed key(s).
+  // Note:    Values match keys by index.
+  proto.mget = function(key) {
+    var results = [];
+
+    results[0] = proto.get(key);
+
+    // If there are additional arguments, get each
+    if (arguments.length) {
+      for (var i in arguments) {
+        results[results.length] = proto.get(arguments[i]);
+      }
+    }
   };
 
 })(window);
