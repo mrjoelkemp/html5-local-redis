@@ -9,6 +9,7 @@ Redis-like API for HTML5 Local Storage
 
 ### TODO
 
+* AMD Module support for grouping parts of the API?
 * Create tests
 * Other data structures
 * Atomicity
