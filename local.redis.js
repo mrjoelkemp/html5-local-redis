@@ -93,4 +93,24 @@
 
   // mdecrby
 
+  // del
+
+  // expire
+
+  // rpush
+
+  // lpush
+
+  // lrange
+
+  // llen
+
+  // lpop
+
+  // rpop
+
+  // sadd
+
+  // srem
+  
 })(window);
