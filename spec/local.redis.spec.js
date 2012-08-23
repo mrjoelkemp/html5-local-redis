@@ -44,7 +44,7 @@ describe('suite', function () {
         expect(val).toBe(v.toString());
       });
 
-    });
+    }); // end set
 
     describe('get', function () {
       it('should retrieve a value for a key that exists', function () {
@@ -72,7 +72,17 @@ describe('suite', function () {
         expect(storage.get(k)).toEqual(v);
       });
 
-      // it should return a number for a string value that contains a number
+      it('should return a number for a string value that contains a number', function () {
+        var k = 'foo'
+          , v = 2
+          , val;
+
+        storage.setItem(k, v);
+
+        val = storage.get(k);
+
+        expect(val).toBe(v);
+      });
 
       it('should accept an object as a key', function () {
         var k = {"name": "Yogi Bear"}
@@ -86,8 +96,15 @@ describe('suite', function () {
         // Get auto parses, so we don't need v.toString()
         expect(val).toBe(v);
       });
-    });
+    }); // end get
 
-  });
+    describe('mget', function () {
+
+    }); // end mget
+
+    describe('mset', function () {
+
+    }); // end mset
+  }); // end commands
 
 });
