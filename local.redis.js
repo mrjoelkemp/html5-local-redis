@@ -15,6 +15,8 @@
   // Returns: [number | string | object | null] The value associated with the passed key, if it exists.
   // Note:    Auto JSON parses
   proto.get = function(key) {
+    key = (typeof key === 'string') ? key : JSON.stringify(key);
+
     var res = this.getItem(key);
 
     try {
