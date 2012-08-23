@@ -142,7 +142,7 @@ describe('suite', function () {
 
       it('should store multiple key-value pairs passed as a list', function () {
         // Test the mset(['k1', 'v1', 'k2', 'v2']) syntax
-        storage.mset([keysVals[0], keysVals[1], keysVals[2], keysVals[3]]);
+        storage.mset(keysVals);
 
         expect(storage.getItem(keysVals[0])).toBe(keysVals[1]);
         expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
@@ -161,7 +161,8 @@ describe('suite', function () {
         expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
       });
 
-      // it should be chainable (return a)
+      it('should be chainable', function () {
+      });
 
       // it should be an atomic operation
 
