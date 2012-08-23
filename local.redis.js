@@ -39,7 +39,8 @@
     // Use the default setItem
     this.setItem(key, value);
 
-    return proto;
+    // Makes chainable
+    //return proto;
   };
 
   // mget
@@ -82,7 +83,7 @@
       }
     }
 
-    return proto;
+    //return proto;
   };
 
   // incr

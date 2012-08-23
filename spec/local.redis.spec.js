@@ -51,10 +51,10 @@ describe('suite', function () {
         expect(val).toBe(v.toString());
       });
 
-      it('should be chainable', function () {
-        var proto = storage.set('foo', 'bar');
-        expect(proto).toEqual(storage.constructor.prototype);
-      });
+      // it('should be chainable', function () {
+      //   var proto = storage.set('foo', 'bar');
+      //   expect(proto).toEqual(storage.constructor.prototype);
+      // });
 
     }); // end set
 
@@ -173,13 +173,13 @@ describe('suite', function () {
         expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
       });
 
-      it('should be chainable', function () {
-        // Get the returned object of store
-        var proto = storage.mset(keysVals);
+      // it('should be chainable', function () {
+      //   // Get the returned object of store
+      //   var proto = storage.mset(keysVals);
 
-        // It should be equal to the storage prototype
-        expect(proto).toEqual(storage.constructor.prototype);
-      });
+      //   // It should be equal to the storage prototype
+      //   expect(proto).toEqual(storage.constructor.prototype);
+      // });
 
       // it should be an atomic operation
 
