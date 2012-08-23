@@ -60,14 +60,23 @@
   // mset
   // Allows the setting of multiple key value pairs
   // Usage:   mset('key1', 'val1', 'key2', 'val2') or mset(['key1', 'val1', 'key2', 'val2'])
+  // Notes:   If there's an odd number of elements, unset values default to undefined
   proto.mset = function (keysVals) {
+    var isArray   = keysVals instanceof Array
+      , isObject  = keysVals instanceof Object;
 
-    // TODO: Allow passing in an object of keys values. Could this be something cool? {key1: val1, key2: val2}
-    keysVals = (keysVals instanceof Array) ? keysVals : arguments;
-
-    // If there's an odd number of elements, unset values default to undefined
-    for (var i = 0, l = keysVals.length; i < l; i += 2) {
-      this.set(keysVals[i], keysVals[i + 1]);
+    if (isArray) {
+      for (var i = 0, l = keysVals.length; i < l; i += 2) {
+        this.set(keysVals[i], keysVals[i + 1]);
+      }
+    } else if (isObject) {
+      for (var prop in keysVals) {
+        this.set(prop, keysVals[prop]);
+      }
+    } else {
+      for (var i = 0, l = arguments.length; i < l; i += 2) {
+        this.set(arguments[i], arguments[i + 1]);
+      }
     }
   };
 

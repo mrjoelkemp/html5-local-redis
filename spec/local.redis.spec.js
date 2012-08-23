@@ -122,18 +122,48 @@ describe('suite', function () {
     }); // end mget
 
     describe('mset', function () {
-      it('should store multiple key-value pairs', function () {
-        var keysVals  = ['first', 'Joel', 'last', 'Kemp']
-          , results   = []
-          , expectVals= [keysVals[1], keysVals[3]];
+      var keysVals  = ['first', 'Joel', 'last', 'Kemp'];
 
-        // Test the mset('k1', 'v1', 'k2', 'v2') syntax
-        //storage.mset(keysVals[0], keysVals[1], keysVals[2], keysVals[3]);
-        //expect.
-        // Test the mset(['k1', v1, 'k2', 'v2']) list syntax
-
-        // Test the mset({'k1': 'v1', 'k2': 'v2'}) object syntax
+      afterEach(function () {
+        // Remove the dummy data to test other insertion syntaxes
+        for (var i = 0, l = keysVals.length; i < l; i += 2) {
+          storage.removeItem(keysVals[i]);
+        }
       });
+
+      it('should store multiple key-value pairs passed as separate parameters', function () {
+        // Test the mset('k1', 'v1', 'k2', 'v2') syntax
+        storage.mset(keysVals[0], keysVals[1], keysVals[2], keysVals[3]);
+
+        // The values should be correct if the mset worked
+        expect(storage.getItem(keysVals[0])).toBe(keysVals[1]);
+        expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
+      });
+
+      it('should store multiple key-value pairs passed as a list', function () {
+        // Test the mset(['k1', 'v1', 'k2', 'v2']) syntax
+        storage.mset([keysVals[0], keysVals[1], keysVals[2], keysVals[3]]);
+
+        expect(storage.getItem(keysVals[0])).toBe(keysVals[1]);
+        expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
+      });
+
+      it('should store multiple key-value pairs passed as an object', function () {
+        var obj_form = {};
+        obj_form[keysVals[0]] = keysVals[1];
+        obj_form[keysVals[2]] = keysVals[3];
+
+        // Test the mset(['k1', 'v1', 'k2', 'v2']) syntax
+        storage.mset(obj_form);
+
+        expect(storage.getItem(keysVals[0])).toBe(keysVals[1]);
+        expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
+      });
+
+      // it should not store any of the data if a single set fails (atomic)
+
+      // it should be chainable (return a)
+
     }); // end mset
   }); // end commands
 
