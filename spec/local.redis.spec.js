@@ -16,7 +16,7 @@ describe('suite', function () {
     });
 
     describe('set', function () {
-      it('should store the value indexed by the key', function () {
+      it('should store a value indexed by its key', function () {
         // Attempt to store
         storage.set(keysVals[0], keysVals[1]);
 
@@ -36,6 +36,8 @@ describe('suite', function () {
 
         expect(storage.get(keysVals[0])).toBe(keysVals[1]);
       });
+
+      // it should return a string if the value is a string literal (alphabetical)
 
       // it should return an object for a string value that contains an object
 
