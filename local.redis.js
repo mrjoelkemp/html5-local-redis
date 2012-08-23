@@ -6,11 +6,10 @@
 (function (window) {
   "use strict";
 
-  // TODO: Fallback to some other means of storage
+  // TODO: Fallback to some other means of storage - polyfills exist
   if (! window.localStorage) return;
 
-  var storage = window.localStorage;
-  var proto   = window.localStorage.constructor.prototype;
+  var proto = window.localStorage.constructor.prototype;
 
   // get
   // Returns: [number | string | object | null] The value associated with the passed key, if it exists.
