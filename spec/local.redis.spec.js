@@ -99,8 +99,7 @@ describe('suite', function () {
     }); // end get
 
     describe('mget', function () {
-      it('should store multiple key value pairs (strings)', function () {
-
+      it('should retrieve the values for multiple keys', function () {
         var keysVals  = ['first', 'Joel', 'last', 'Kemp']
           , results   = []
           , expectVals= [keysVals[1], keysVals[3]];
@@ -120,11 +119,21 @@ describe('suite', function () {
         expect(results[0]).toEqual(expectVals);
         expect(results[1]).toEqual(expectVals);
       });
-
     }); // end mget
 
     describe('mset', function () {
+      it('should store multiple key-value pairs', function () {
+        var keysVals  = ['first', 'Joel', 'last', 'Kemp']
+          , results   = []
+          , expectVals= [keysVals[1], keysVals[3]];
 
+        // Test the mset('k1', 'v1', 'k2', 'v2') syntax
+        //storage.mset(keysVals[0], keysVals[1], keysVals[2], keysVals[3]);
+        //expect.
+        // Test the mset(['k1', v1, 'k2', 'v2']) list syntax
+
+        // Test the mset({'k1': 'v1', 'k2': 'v2'}) object syntax
+      });
     }); // end mset
   }); // end commands
 
