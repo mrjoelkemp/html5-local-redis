@@ -9,6 +9,7 @@
   // TODO: Fallback to some other means of storage - polyfills exist
   if (! window.localStorage) return;
 
+  // Using the prototype grants both localStorage and sessionStorage the redis methods
   var proto = window.localStorage.constructor.prototype;
 
   // get
@@ -37,6 +38,8 @@
 
     // Use the default setItem
     this.setItem(key, value);
+
+    return proto;
   };
 
   // mget
@@ -78,6 +81,8 @@
         this.set(arguments[i], arguments[i + 1]);
       }
     }
+
+    return proto;
   };
 
   // incr
