@@ -99,6 +99,27 @@ describe('suite', function () {
     }); // end get
 
     describe('mget', function () {
+      it('should store multiple key value pairs (strings)', function () {
+
+        var keysVals  = ['first', 'Joel', 'last', 'Kemp']
+          , results   = []
+          , expectVals= [keysVals[1], keysVals[3]];
+
+        // Store all of the data
+        for (var i = 0, l = keysVals.length; i < l; i += 2) {
+          storage.setItem(keysVals[i], keysVals[i + 1]);
+        }
+
+        // Check the mget('key1', 'key2') syntax
+        results[0] = storage.mget(keysVals[0], keysVals[2]);
+
+        // Check the mget(['key1', 'key2']) syntax
+        results[1] = storage.mget([keysVals[0], keysVals[2]]);
+
+        // Check that the results sets have the proper values
+        expect(results[0]).toEqual(expectVals);
+        expect(results[1]).toEqual(expectVals);
+      });
 
     }); // end mget
 
