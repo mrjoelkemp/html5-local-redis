@@ -1,10 +1,17 @@
 describe('suite', function () {
-  // Use sessionStorage for temporarily storing dummy data and not tainting existing localStorage data
-  // Also allows us to avoid worrying about cleanup
+  // Use sessionStorage for temporarily storing dummy data
+  // and not tainting existing localStorage data
+  // Also allows us to avoid worrying about destroying localhost data
   var storage   = window.sessionStorage
     , stringify = JSON.stringify;
 
   describe('commands', function () {
+
+    afterEach(function () {
+      // It's not enough to rely on sessionStorage to
+      // flush since it only flushes on a crash
+      storage.clear();
+    });
 
     describe('set', function () {
       it('should store a value indexed by its key', function () {
