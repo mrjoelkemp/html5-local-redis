@@ -1,31 +1,29 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <title>HTML-5 Local Redis</title>
+  <title>HTML5 Local Redis</title>
   <link rel="stylesheet" type="text/css" href="lib/jasmine-1.2.0/jasmine.css">
   <script type="text/javascript" src="lib/jasmine-1.2.0/jasmine.js"></script>
   <script type="text/javascript" src="lib/jasmine-1.2.0/jasmine-html.js"></script>
 
-  <!-- include source files here... -->
-  <script type="text/javascript" src="spec/local.redis.spec.js"></script>
-
-  <!-- include spec files here... -->
+  <!-- Source -->
   <script type="text/javascript" src="local.redis.js"></script>
+
+  <!-- Spec -->
+  <script type="text/javascript" src="spec/local.redis.spec.js"></script>
 
   <script type="text/javascript">
     (function() {
-      var jasmineEnv = jasmine.getEnv();
+      var jasmineEnv          = jasmine.getEnv()
+        , htmlReporter        = new jasmine.HtmlReporter()
+        , currentWindowOnload = window.onload;
+
       jasmineEnv.updateInterval = 1000;
-
-      var htmlReporter = new jasmine.HtmlReporter();
-
       jasmineEnv.addReporter(htmlReporter);
 
       jasmineEnv.specFilter = function(spec) {
         return htmlReporter.specFilter(spec);
       };
-
-      var currentWindowOnload = window.onload;
 
       window.onload = function() {
         if (currentWindowOnload) {
@@ -37,9 +35,7 @@
       function execJasmine() {
         jasmineEnv.execute();
       }
-
     })();
   </script>
-
 </head>
 </html>
