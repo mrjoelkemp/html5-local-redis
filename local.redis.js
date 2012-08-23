@@ -16,7 +16,7 @@
   // Returns: [number | string | object | null] The value associated with the passed key, if it exists.
   // Note:    Auto JSON parses
   proto.get = function(key) {
-    var res = storage.getItem(key);
+    var res = this.getItem(key);
 
     try {
       // If it's a literal string, parsing will fail
@@ -35,7 +35,7 @@
     key   = (typeof key   === "string") ? key   : JSON.stringify(key);
 
     // Use the default setItem
-    storage.setItem(key, value);
+    this.setItem(key, value);
   };
 
   // mget
@@ -50,7 +50,7 @@
 
     // Retrieve the value for each key
     for (var i in keys) {
-      results[results.length] = proto.get(keys[i]);
+      results[results.length] = this.get(keys[i]);
     }
 
     return results;
@@ -66,7 +66,7 @@
 
     // If there's an odd number of elements, unset values default to undefined
     for (var i = 0, l = keysVals.length; i < l; i += 2) {
-      proto.set(keysVals[i], keysVals[i + 1]);
+      this.set(keysVals[i], keysVals[i + 1]);
     }
   };
 

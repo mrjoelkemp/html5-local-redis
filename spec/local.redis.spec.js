@@ -1,29 +1,22 @@
 describe('suite', function () {
-  var storage = window.localStorage;
+  // Use sessionStorage for temporarily storing dummy data and not tainting existing localStorage data
+  // Also allows us to avoid worrying about cleanup
+  var storage = window.sessionStorage;
 
-  describe('commands', function() {
-
-    // Dummy data
-    // Need to use this or we have to manually remove the items and can't leverage afterEach()
-    var keysVals = ['first', 'Bob', 'last', 'Saget', 'age', 94, 'person', {"name": "Yogi Bear"}, 'pi', 3.14];
-
-    // Remove dummy data from the local store.
-    afterEach(function() {
-      // Iterate over the keys
-      for (var i = 0, l = keysVals.length; i < l; i += 2) {
-        storage.removeItem(keysVals[i]);
-      }
-    });
+  describe('commands', function () {
 
     describe('set', function () {
       it('should store a value indexed by its key', function () {
+        var k = 'foo'
+          , v = 'bar';
+
         // Attempt to store
-        storage.set(keysVals[0], keysVals[1]);
+        storage.set(k, v);
 
         // Retrieve the value and make sure it's equal to the stored value
         // Uses getItem to avoid the dependency on the untested get()
-        var val = storage.getItem(keysVals[0]);
-        expect(val).toBe(keysVals[1]);
+        var val = storage.getItem(k);
+        expect(val).toBe(v);
       });
 
       // it should return an exception if the storage exceeds capacity (hard to replicate)
@@ -31,10 +24,12 @@ describe('suite', function () {
 
     describe('get', function () {
       it('should retrieve a value for a key that exists', function () {
+        var k = 'foo'
+          , v = 'bar';
         // Set the data – uses the safer setItem to avoid dependency on untested set().
-        storage.setItem(keysVals[0], keysVals[1]);
+        storage.setItem(k, v);
 
-        expect(storage.get(keysVals[0])).toBe(keysVals[1]);
+        expect(storage.get(k)).toBe(v);
       });
 
       // it should return a string if the value is a string literal (alphabetical)
