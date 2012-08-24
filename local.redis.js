@@ -40,7 +40,7 @@
     this.setItem(key, value);
 
     // Makes chainable
-    //return proto;
+    return this;
   };
 
   // mget
@@ -83,7 +83,7 @@
       }
     }
 
-    //return proto;
+    return this;
   };
 
   // incr
