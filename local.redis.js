@@ -66,8 +66,8 @@
   // Usage:   mset('key1', 'val1', 'key2', 'val2') or mset(['key1', 'val1', 'key2', 'val2'])
   // Notes:   If there's an odd number of elements, unset values default to undefined
   proto.mset = function (keysVals) {
-    var isArray   = keysVals instanceof Array
-      , isObject  = keysVals instanceof Object;
+    var isArray   = keysVals instanceof Array,
+        isObject  = keysVals instanceof Object;
 
     if (isArray) {
       for (var i = 0, l = keysVals.length; i < l; i += 2) {

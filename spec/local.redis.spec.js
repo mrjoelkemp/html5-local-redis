@@ -2,10 +2,15 @@ describe('suite', function () {
   // Use sessionStorage for temporarily storing dummy data
   // and not tainting existing localStorage data
   // Also allows us to avoid worrying about destroying localhost data
-  var storage   = window.sessionStorage
-    , stringify = JSON.stringify;
+  var storage   = window.sessionStorage,
+      stringify = JSON.stringify;
 
   describe('commands', function () {
+
+    // Asserts that a passed function
+    function shouldBeChainable(func) {
+
+    }
 
     afterEach(function () {
       // It's not enough to rely on sessionStorage to
@@ -15,8 +20,8 @@ describe('suite', function () {
 
     describe('set', function () {
       it('should store a value indexed by its key', function () {
-        var k = 'foo'
-          , v = 'bar';
+        var k = 'foo',
+            v = 'bar';
 
         // Attempt to store
         storage.set(k, v);
@@ -28,9 +33,9 @@ describe('suite', function () {
       });
 
       it('should auto stringify an object being stored as a value', function () {
-        var k = 'foo'
-          , v = {"name": "Yogi Bear"}
-          , type;
+        var k = 'foo',
+            v = {"name": "Yogi Bear"},
+            type;
 
         storage.set(k, v);
 
@@ -40,9 +45,9 @@ describe('suite', function () {
       });
 
       it('should accept objects as keys', function () {
-        var k = {"name": "Yogi Bear"}
-          , v = 2
-          , val;
+        var k = {"name": "Yogi Bear"},
+            v = 2,
+            val;
 
         storage.set(k, v);
 
@@ -51,10 +56,10 @@ describe('suite', function () {
         expect(val).toBe(v.toString());
       });
 
-      // it('should be chainable', function () {
-      //   var proto = storage.set('foo', 'bar');
-      //   expect(proto).toEqual(storage.constructor.prototype);
-      // });
+      it('should be chainable', function () {
+        // Throws a TypeError if invocation is illegal
+        expect(function(){ storage.set('foo', 1).set('bar', 2); }).not.toThrow(TypeError);
+      });
 
     }); // end set
 
@@ -112,9 +117,9 @@ describe('suite', function () {
 
     describe('mget', function () {
       it('should retrieve the values for multiple keys', function () {
-        var keysVals  = ['first', 'Joel', 'last', 'Kemp']
-          , results   = []
-          , expectVals= [keysVals[1], keysVals[3]];
+        var keysVals  = ['first', 'Joel', 'last', 'Kemp'],
+            results   = [],
+            expectVals= [keysVals[1], keysVals[3]];
 
         // Store all of the data
         for (var i = 0, l = keysVals.length; i < l; i += 2) {
@@ -173,13 +178,10 @@ describe('suite', function () {
         expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
       });
 
-      // it('should be chainable', function () {
-      //   // Get the returned object of store
-      //   var proto = storage.mset(keysVals);
-
-      //   // It should be equal to the storage prototype
-      //   expect(proto).toEqual(storage.constructor.prototype);
-      // });
+      it('should be chainable', function () {
+        // Throws a TypeError if invocation is illegal
+        expect(function(){ storage.mset(keysVals).mset(keysVals); }).not.toThrow(TypeError);
+      });
 
       // it should be an atomic operation
 
