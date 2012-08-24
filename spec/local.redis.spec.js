@@ -166,13 +166,13 @@ describe('suite', function () {
       });
 
       it('should store multiple key-value pairs passed as an object', function () {
-        var obj_form = {};
+        var objForm = {};
         // Note: we can't use vars with literal notation
-        obj_form[keysVals[0]] = keysVals[1];
-        obj_form[keysVals[2]] = keysVals[3];
+        objForm[keysVals[0]] = keysVals[1];
+        objForm[keysVals[2]] = keysVals[3];
 
         // Test the mset({'k1': 'v1', 'k2': 'v2'}) syntax
-        storage.mset(obj_form);
+        storage.mset(objForm);
 
         expect(storage.getItem(keysVals[0])).toBe(keysVals[1]);
         expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
