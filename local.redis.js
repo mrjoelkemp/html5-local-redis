@@ -67,18 +67,19 @@
   // Notes:   If there's an odd number of elements, unset values default to undefined
   proto.mset = function (keysVals) {
     var isArray   = keysVals instanceof Array,
-        isObject  = keysVals instanceof Object;
+        isObject  = keysVals instanceof Object,
+        i, l, prop;
 
     if (isArray) {
-      for (var i = 0, l = keysVals.length; i < l; i += 2) {
+      for (i = 0, l = keysVals.length; i < l; i += 2) {
         this.set(keysVals[i], keysVals[i + 1]);
       }
     } else if (isObject) {
-      for (var prop in keysVals) {
+      for (prop in keysVals) {
         this.set(prop, keysVals[prop]);
       }
     } else {
-      for (var i = 0, l = arguments.length; i < l; i += 2) {
+      for (i = 0, l = arguments.length; i < l; i += 2) {
         this.set(arguments[i], arguments[i + 1]);
       }
     }
