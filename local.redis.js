@@ -88,20 +88,61 @@
   };
 
   // incr
+  // If the key does not exists, incr sets it first
   proto.incr = function (key) {
+    this.incrby(key, 1);
   };
 
   // incrby
+  // If the key does not exists, incrby sets it first
   proto.incrby = function (key, amount) {
+    var value = this.get(key);
+
+    // Should test that it is not NaN before addition, to avoid
+    // cases with strings.
+    if (!isNaN(parseInt(value, 10))) {
+      value += amount;
+    } else {
+      value = 0 + amount;
+    }
+    this.set(key, value);
   };
 
   // mincr
   proto.mincr = function (keys) {
+    var i, l;
+    keys = (keys instanceof Array) ? keys : arguments;
+    for(i = 0, l = keys.length; i < l; i++) {
+      this.incr(keys[i]);
+    }
   };
 
   // mincrby
-  // Usage:   mincrby('key1', 1, 'key2', 4) or mincrby(['key1', 1, 'key2', 2])
+  // Usage:   mincrby('key1', 1, 'key2', 4) or
+  //          mincrby(['key1', 1, 'key2', 2]) or
+  //          mincrby({'key1': 1, 'key2': 2})
   proto.mincrby = function (keysAmounts) {
+    var i, l, key;
+
+    if (typeof keysAmounts === "string") {
+      // String literals need to be 'boxed' in order to register as an instance.
+      keysAmounts = new String(keysAmounts);
+    }
+
+    if (keysAmounts instanceof Array || keysAmounts instanceof String) {
+      keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
+      // Need to make sure an even number of arguments is passed in
+      if ((keysAmounts.length & 0x1) !== 0) {
+        return;
+      }
+      for (i = 0, l = keysAmounts.length; i < l; i += 2) {
+        this.incrby(keysAmounts[i], keysAmounts[i + 1]);
+      }
+    } else if (keysAmounts instanceof Object) {
+      for (key in keysAmounts) {
+        this.incrby(key, keysAmounts[key]);
+      }
+    }
   };
 
   // decr
