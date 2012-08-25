@@ -188,6 +188,15 @@ describe('suite', function () {
     }); // end mset
 
     describe('incr', function () {
+      var keysVals = ['first', 'Bob', 'last', 'Saget', 'age', 94, 'person', {"name": "Yogi Bear"}, 'pi', 3.14],
+          keysValsObj = {
+            'first2': 'Bob',
+            'last2': 'Saget',
+            'age2': 94,
+            'person2': { 'name': 'Yogi Bear'},
+            'pi2': 3
+          };
+
       it('should increment a key\'s value by 1, and set it first if it does not exist', function () {
         var baseKeys = Object.keys(keysValsObj),
             keys = [],
@@ -211,6 +220,15 @@ describe('suite', function () {
     });
 
     describe('incrby', function () {
+      var keysVals = ['first', 'Bob', 'last', 'Saget', 'age', 94, 'person', {"name": "Yogi Bear"}, 'pi', 3.14],
+          keysValsObj = {
+            'first2': 'Bob',
+            'last2': 'Saget',
+            'age2': 94,
+            'person2': { 'name': 'Yogi Bear'},
+            'pi2': 3
+          };
+
       it('should increment a key\'s value by \'amount\', and set it first if it does not exist', function () {
         var baseKeys = Object.keys(keysValsObj),
             keys = [],
@@ -236,6 +254,15 @@ describe('suite', function () {
     });
 
     describe('mincr', function () {
+      var keysVals = ['first', 'Bob', 'last', 'Saget', 'age', 94, 'person', {"name": "Yogi Bear"}, 'pi', 3.14],
+          keysValsObj = {
+            'first2': 'Bob',
+            'last2': 'Saget',
+            'age2': 94,
+            'person2': { 'name': 'Yogi Bear'},
+            'pi2': 3
+          };
+
       it('should increment a set of keys by 1, and set them first if they do not exist', function () {
         var baseKeys = Object.keys(keysValsObj),
             keys = [],
@@ -258,6 +285,15 @@ describe('suite', function () {
     });
 
     describe('mincrby', function () {
+      var keysVals = ['first', 'Bob', 'last', 'Saget', 'age', 94, 'person', {"name": "Yogi Bear"}, 'pi', 3.14],
+          keysValsObj = {
+            'first2': 'Bob',
+            'last2': 'Saget',
+            'age2': 94,
+            'person2': { 'name': 'Yogi Bear'},
+            'pi2': 3
+          };
+
       it('should increment a set of keys by amount, and set them first if they do not exist', function () {
         var baseKeys = Object.keys(keysValsObj),
             keys = [],
