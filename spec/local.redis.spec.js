@@ -1,4 +1,4 @@
-describe('suite', function () {
+describe('HTML5 Local Redis Test Suite', function () {
   // Use sessionStorage for temporarily storing dummy data
   // and not tainting existing localStorage data
   // Also allows us to avoid worrying about destroying localhost data
@@ -6,11 +6,6 @@ describe('suite', function () {
       stringify = JSON.stringify;
 
   describe('commands', function () {
-
-    // Asserts that a passed function
-    function shouldBeChainable(func) {
-
-    }
 
     afterEach(function () {
       // It's not enough to rely on sessionStorage to
