@@ -167,6 +167,38 @@ describe('mset', function () {
 
 describe('del', function () {
 
+  it('deletes the given key and value', function () {
+    storage.setItem('foo', 1);
+    storage.del('foo');
+    expect(storage.getItem('foo')).toBe(null);
+  });
+
+  it('returns the number of deleted keys', function () {
+    storage.setItem('foo', 1);
+    var deleted = storage.del('foo');
+    expect(deleted).toEqual(1);
+  });
+
+  it('deletes the given splat keys and their values', function () {
+    storage.setItem('foo', 1);
+    storage.setItem('bar', 2);
+    storage.del('foo', 'bar');
+    expect(storage.getItem('foo')).toBe(null);
+    expect(storage.getItem('bar')).toBe(null);
+  });
+
+  it('deletes the given keys (as an array) and their values', function () {
+    storage.setItem('foo', 1);
+    storage.setItem('bar', 2);
+    storage.del(['foo', 'bar']);
+    expect(storage.getItem('foo')).toBe(null);
+    expect(storage.getItem('bar')).toBe(null);
+  });
+
+  it('ignores keys that don\'t exist', function () {
+    var deleted = storage.del('foo');
+    expect(deleted).toEqual(0);
+  });
 });
 
 describe('exists', function () {

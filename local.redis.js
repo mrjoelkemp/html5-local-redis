@@ -155,8 +155,21 @@
   // Removes the specified key(s)
   // Returns: the number of keys removed.
   // Note:    if the key doesn't exist, it's ignored.
+  // Usage:   del('k1') or del('k1', 'k2') or del(['k1', 'k2'])
   proto.del = function (key) {
+    var numKeysDeleted = 0,
+        i, l;
 
+    key = (key instanceof Array) ? key : arguments;
+
+    for (i = 0, l = key.length; i < l; i++) {
+      if (this.exists(key[i])) {
+        this.removeItem(key[i]);
+        ++numKeysDeleted;
+      }
+    }
+
+    return numKeysDeleted;
   }
 
   // exists
