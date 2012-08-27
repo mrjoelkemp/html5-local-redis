@@ -207,7 +207,25 @@
   // Renames key to newkey if newkey does not exist
   // Returns: 1 if key was renamed; 0 if newkey already exists
   // Usage:   renamenx(key, newkey)
+  // Throws:  TypeError if key == newkey
+  //          ReferenceError if key does not exist
+  //          Fails under the same conditions as rename
+  proto.renamenx = function (key, newkey) {
+    if (arguments.length > 2) {
+      throw new TypeError("renamenx: wrong number of arguments");
+    } else if (key === newkey) {
+      throw new TypeError("renamenx: source and destination objects are the same");
+    } else if (! this.exists(key)) {
+      throw new ReferenceError("renamenx: no such key");
+    }
 
+    if(this.exists(newkey)) {
+      return 0;
+    } else {
+      this.rename(key, newkey);
+      return 1;
+    }
+  }
 
   // expire
 

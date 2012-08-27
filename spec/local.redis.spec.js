@@ -237,3 +237,31 @@ describe('rename', function () {
   });
 
 });
+
+describe('renamenx', function () {
+  it('should throw a ReferenceError when the key does not exist', function () {
+    expect(function () { storage.renamenx('foo', 'foobar'); }).toThrow(new ReferenceError("renamenx: no such key"));
+  });
+
+  it('should throw a TypeError when the key is the same as the newkey', function () {
+    expect(function () { storage.renamenx('foo', 'foo'); }).toThrow(new TypeError("renamenx: source and destination objects are the same"));
+  });
+
+  it('should return 0 if the newkey already exists', function (){
+    storage.set('foo', 'boo');
+    storage.set('bar', 'coo');
+    // We'll try to rename foo to bar, though bar exists
+    expect(storage.renamenx('foo', 'bar')).toBe(0);
+  });
+
+  it('should return 1 when key has been renamed to newkey', function () {
+    storage.setItem('foo', 'bar');
+    expect(storage.renamenx('foo', 'foobar')).toBe(1);
+    expect(storage.getItem('foobar')).toBe('bar');
+  });
+
+  it('should should throw a TypeError for more than 2 inputs', function () {
+    expect(function () { storage.renamenx('foo', 'foobar', 'bar'); }).toThrow(new TypeError("renamenx: wrong number of arguments"));
+  });
+
+});
