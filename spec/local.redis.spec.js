@@ -212,6 +212,28 @@ describe('exists', function () {
   });
 
   it('throws a TypeError if more than one argument is given', function () {
-    expect(function() {storage.exists('foo', 'bar')}).toThrow(new TypeError("exists: Wrong number of arguments"));
+    expect(function() {storage.exists('foo', 'bar')}).toThrow(new TypeError("exists: wrong number of arguments"));
   });
+});
+
+describe('rename', function () {
+  it('should throw a ReferenceError when the key does not exist', function () {
+    expect(function () { storage.rename('foo', 'foobar'); }).toThrow(new ReferenceError("rename: no such key"));
+  });
+
+  it('should throw a TypeError when the key is the same as the newkey', function () {
+    expect(function () { storage.rename('foo', 'foo'); }).toThrow(new TypeError("rename: source and destination objects are the same"));
+  });
+
+  it('should rename a key to a given name', function () {
+    storage.setItem('foo', 'bar');
+    storage.rename('foo', 'foobar');
+    expect(storage.getItem('foo')).toBe(null);
+    expect(storage.getItem('foobar')).toBe('bar');
+  });
+
+  it('should should throw a TypeError for more than 2 inputs', function () {
+    expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow(TypeError("rename: wrong number of arguments"));
+  });
+
 });

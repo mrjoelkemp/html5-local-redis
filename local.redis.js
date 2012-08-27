@@ -177,15 +177,37 @@
   // Throws:  TypeError if more than one argument is supplied
   proto.exists = function (key) {
     if (arguments.length > 1) {
-      throw new TypeError("exists: Wrong number of arguments");
+      throw new TypeError("exists: wrong number of arguments");
     }
 
-    if (this.get(key) !== null) {
-      return 1;
-    } else {
-      return 0;
-    }
+    return (this.get(key) !== null) ? 1 : 0;
   }
+
+  // rename
+  // Renames key to newkey
+  // Returns:
+  // Throws:  TypeError if key == newkey
+  //          ReferenceError if key does not exist
+  // Usage:  rename(key, newkey)
+  proto.rename = function (key, newkey) {
+    if (arguments.length > 2) {
+      throw new TypeError("rename: wrong number of arguments");
+    } else if (key === newkey) {
+      throw new TypeError("rename: source and destination objects are the same");
+    } else if (! this.exists(key)) {
+      throw new ReferenceError("rename: no such key");
+    }
+
+    var val = this.get(key);
+    this.set(newkey, val);
+    this.del(key);
+  };
+
+  // renamenx
+  // Renames key to newkey if newkey does not exist
+  // Returns: 1 if key was renamed; 0 if newkey already exists
+  // Usage:   renamenx(key, newkey)
+
 
   // expire
 
