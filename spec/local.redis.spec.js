@@ -162,11 +162,9 @@ describe('mset', function () {
     // Throws a TypeError if invocation is illegal
     expect(function(){ storage.mset(keysVals).mset(keysVals); }).not.toThrow(new TypeError("Illegal invocation"));
   });
-
 }); // end mset
 
 describe('del', function () {
-
   it('deletes the given key and value', function () {
     storage.setItem('foo', 1);
     storage.del('foo');
@@ -235,7 +233,6 @@ describe('rename', function () {
   it('should should throw a TypeError for more than 2 inputs', function () {
     expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow(new TypeError("rename: wrong number of arguments"));
   });
-
 });
 
 describe('renamenx', function () {
@@ -248,8 +245,8 @@ describe('renamenx', function () {
   });
 
   it('should return 0 if the newkey already exists', function (){
-    storage.set('foo', 'boo');
-    storage.set('bar', 'coo');
+    storage.setItem('foo', 'boo');
+    storage.setItem('bar', 'coo');
     // We'll try to rename foo to bar, though bar exists
     expect(storage.renamenx('foo', 'bar')).toBe(0);
   });
@@ -263,5 +260,33 @@ describe('renamenx', function () {
   it('should should throw a TypeError for more than 2 inputs', function () {
     expect(function () { storage.renamenx('foo', 'foobar', 'bar'); }).toThrow(new TypeError("renamenx: wrong number of arguments"));
   });
+});
 
+describe('getKey', function () {
+  it('should return the first key associated with a given value', function () {
+    // setItem does not retain insertion ordering, so we
+    //  can't assume the returned key is 'foo'.
+    storage.setItem('foo', 'bar');
+    storage.setItem('coo', 'bar');
+    var key = storage.getKey('bar'),
+        containsOne = key === 'foo' || key === 'coo';
+
+    expect(containsOne).toBe(true);
+  });
+
+  it('should return all keys associated with a given value if second param is true', function () {
+    storage.setItem('foo', 'bar');
+    storage.setItem('coo', 'bar');
+    var keys = storage.getKey('bar', true);
+    expect(keys).toContain('foo');
+    expect(keys).toContain('coo');
+  });
+
+  it('should return an empty list if no keys contain the passed val', function () {
+
+  });
+
+  it('should throw a TypeError if too many arguments are given', function () {
+
+  });
 });

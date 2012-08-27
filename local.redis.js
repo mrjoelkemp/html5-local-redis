@@ -7,8 +7,12 @@
   "use strict";
 
   // TODO: Fallback to some other means of storage - polyfills exist
-  if (! window.localStorage) return;
-
+  if (! window.localStorage) {
+    // Set the localStorage object to {}
+    // Create getItem, setItem, and key methods
+    // Create JSON.stringify if it doesn't exist
+    return;
+  }
   // Using the prototype grants both localStorage and sessionStorage the redis methods
   var proto = window.localStorage.constructor.prototype;
 
@@ -33,8 +37,8 @@
   // Note: Auto stringifies
   proto.set = function(key, value) {
     // Stringify the key and value, if necessary
-    value = (typeof value === "string") ? value : JSON.stringify(value);
-    key   = (typeof key   === "string") ? key   : JSON.stringify(key);
+    value = (typeof value === 'string') ? value : JSON.stringify(value);
+    key   = (typeof key   === 'string') ? key   : JSON.stringify(key);
 
     // Use the default setItem
     this.setItem(key, value);
@@ -124,7 +128,7 @@
   proto.mincrby = function (keysAmounts) {
     var i, l, key;
 
-    if (typeof keysAmounts === "string") {
+    if (typeof keysAmounts === 'string') {
       // String literals need to be 'boxed' in order to register as an instance.
       keysAmounts = new String(keysAmounts);
     }
@@ -177,7 +181,7 @@
   // Throws:  TypeError if more than one argument is supplied
   proto.exists = function (key) {
     if (arguments.length > 1) {
-      throw new TypeError("exists: wrong number of arguments");
+      throw new TypeError('exists: wrong number of arguments');
     }
 
     return (this.get(key) !== null) ? 1 : 0;
@@ -191,11 +195,11 @@
   // Usage:  rename(key, newkey)
   proto.rename = function (key, newkey) {
     if (arguments.length > 2) {
-      throw new TypeError("rename: wrong number of arguments");
+      throw new TypeError('rename: wrong number of arguments');
     } else if (key === newkey) {
-      throw new TypeError("rename: source and destination objects are the same");
+      throw new TypeError('rename: source and destination objects are the same');
     } else if (! this.exists(key)) {
-      throw new ReferenceError("rename: no such key");
+      throw new ReferenceError('rename: no such key');
     }
 
     var val = this.get(key);
@@ -212,11 +216,11 @@
   //          Fails under the same conditions as rename
   proto.renamenx = function (key, newkey) {
     if (arguments.length > 2) {
-      throw new TypeError("renamenx: wrong number of arguments");
+      throw new TypeError('renamenx: wrong number of arguments');
     } else if (key === newkey) {
-      throw new TypeError("renamenx: source and destination objects are the same");
+      throw new TypeError('renamenx: source and destination objects are the same');
     } else if (! this.exists(key)) {
-      throw new ReferenceError("renamenx: no such key");
+      throw new ReferenceError('renamenx: no such key');
     }
 
     if(this.exists(newkey)) {
@@ -225,6 +229,36 @@
       this.rename(key, newkey);
       return 1;
     }
+  }
+
+  // getKey
+  // Retrieves the first key associated with the passed value
+  // Returns:   A single key or list of keys if true passed as second param
+  // Params:    all = whether or not to retrieve all of the keys that match
+  proto.getKey = function (val) {
+    if (arguments.length > 2) {
+      throw new TypeError('getKey: wrong number of arguments');
+    }
+
+    var i, l,
+        k, v,
+        keys = [], all;
+
+    // Get whether or not the all flag was set
+    all = !! arguments[1];
+
+    // Look for keys with a value that matches val
+    for (i = 0, l = this.length; i < l; i++) {
+      k = this.key(i);
+      v = this.getItem(k);
+
+      if (val === v) {
+        keys.push(k);
+        if (! all) break;
+      }
+    }
+    // Return the list of keys or the single key
+    return (keys.length > 1) ? keys : keys[0];
   }
 
   // expire
