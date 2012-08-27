@@ -1,9 +1,3 @@
-afterEach(function () {
-  // It's not enough to rely on sessionStorage to
-  // flush since it only flushes on a crash
-  storage.clear();
-});
-
 describe('set', function () {
   it('should store a value indexed by its key', function () {
     var k = 'foo',
