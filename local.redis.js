@@ -174,7 +174,7 @@
     }
 
     return numKeysDeleted;
-  }
+  };
 
   // exists
   // Returns: 1 if the key exists, 0 if they key doesn't exist.
@@ -185,7 +185,7 @@
     }
 
     return (this.get(key) !== null) ? 1 : 0;
-  }
+  };
 
   // rename
   // Renames key to newkey
@@ -229,7 +229,7 @@
       this.rename(key, newkey);
       return 1;
     }
-  }
+  };
 
   // getKey
   // Retrieves the first key associated with the passed value
@@ -259,7 +259,12 @@
     }
     // Return the list of keys or the single key
     return (keys.length > 1) ? keys : keys[0];
-  }
+  };
+
+  // getset
+  proto.getset = function (key) {
+
+  };
 
   // expire
 
