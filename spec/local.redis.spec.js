@@ -160,7 +160,26 @@ describe('mset', function () {
 
   it('should be chainable', function () {
     // Throws a TypeError if invocation is illegal
-    expect(function(){ storage.mset(keysVals).mset(keysVals); }).not.toThrow(TypeError);
+    expect(function(){ storage.mset(keysVals).mset(keysVals); }).not.toThrow(new TypeError());
   });
 
 }); // end mset
+
+describe('del', function () {
+
+});
+
+describe('exists', function () {
+  it('returns 1 if the key exists', function () {
+    storage.setItem('foo', 1);
+    expect(storage.exists('foo')).toBe(1);
+  });
+
+  it('returns 0 if the key does not exist', function () {
+    expect(storage.exists('foobar')).toBe(0);
+  });
+
+  it('throws a TypeError if more than one argument is given', function () {
+    expect(function() {storage.exists('foo', 'bar')}).toThrow(new TypeError("exists: Wrong number of arguments"));
+  });
+});

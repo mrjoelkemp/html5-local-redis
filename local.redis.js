@@ -152,6 +152,27 @@
   // mdecrby
 
   // del
+  // Removes the specified key(s)
+  // Returns: the number of keys removed.
+  // Note:    if the key doesn't exist, it's ignored.
+  proto.del = function (key) {
+
+  }
+
+  // exists
+  // Returns: 1 if the key exists, 0 if they key doesn't exist.
+  // Throws:  TypeError if more than one argument is supplied
+  proto.exists = function (key) {
+    if (arguments.length > 1) {
+      throw new TypeError("exists: Wrong number of arguments");
+    }
+
+    if (this.get(key) !== null) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
 
   // expire
 
