@@ -160,7 +160,7 @@ describe('mset', function () {
 
   it('should be chainable', function () {
     // Throws a TypeError if invocation is illegal
-    expect(function(){ storage.mset(keysVals).mset(keysVals); }).not.toThrow(new TypeError());
+    expect(function(){ storage.mset(keysVals).mset(keysVals); }).not.toThrow(new TypeError("Illegal invocation"));
   });
 
 }); // end mset
@@ -233,7 +233,7 @@ describe('rename', function () {
   });
 
   it('should should throw a TypeError for more than 2 inputs', function () {
-    expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow(TypeError("rename: wrong number of arguments"));
+    expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow(new TypeError("rename: wrong number of arguments"));
   });
 
 });
