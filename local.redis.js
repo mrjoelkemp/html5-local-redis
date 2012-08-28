@@ -41,8 +41,13 @@
     key   = (typeof key   === 'string') ? key   : JSON.stringify(key);
 
     // Use the default setItem
-    this.setItem(key, value);
-
+    try {
+      this.setItem(key, value);
+    } catch (e) {
+      if (e === QUOTA_EXCEEDED_ERR) {
+        throw e;
+      }
+    }
     // Makes chainable
     return this;
   };

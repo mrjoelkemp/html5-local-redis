@@ -41,6 +41,23 @@ describe('set', function () {
     expect(function(){ storage.set('foo', 1).set('bar', 2); }).not.toThrow(TypeError);
   });
 
+  it('should throw an exception if the quota is reached', function () {
+    var i, data;
+
+    storage.set('foo', "m");
+
+    // Exceed the quota
+    for(i = 0 ; i < 40 ; i++) {
+      data = storage.getItem('foo');
+
+      try {
+        storage.set('foo', data + data);
+      } catch(e) {
+        expect(e.arguments[0]).toBe("QUOTA_EXCEEDED_ERR");
+        break;
+      }
+    }
+  });
 }); // end set
 
 describe('get', function () {
