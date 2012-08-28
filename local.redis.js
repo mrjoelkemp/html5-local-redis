@@ -7,8 +7,12 @@
   "use strict";
 
   // TODO: Fallback to some other means of storage - polyfills exist
-  if (! window.localStorage) return;
-
+  if (! window.localStorage) {
+    // Set the localStorage object to {}
+    // Create getItem, setItem, and key methods
+    // Create JSON.stringify if it doesn't exist
+    return;
+  }
   // Using the prototype grants both localStorage and sessionStorage the redis methods
   var proto = window.localStorage.constructor.prototype;
 
@@ -33,12 +37,17 @@
   // Note: Auto stringifies
   proto.set = function(key, value) {
     // Stringify the key and value, if necessary
-    value = (typeof value === "string") ? value : JSON.stringify(value);
-    key   = (typeof key   === "string") ? key   : JSON.stringify(key);
+    value = (typeof value === 'string') ? value : JSON.stringify(value);
+    key   = (typeof key   === 'string') ? key   : JSON.stringify(key);
 
     // Use the default setItem
-    this.setItem(key, value);
-
+    try {
+      this.setItem(key, value);
+    } catch (e) {
+      if (e === QUOTA_EXCEEDED_ERR) {
+        throw e;
+      }
+    }
     // Makes chainable
     return this;
   };
@@ -124,7 +133,7 @@
   proto.mincrby = function (keysAmounts) {
     var i, l, key;
 
-    if (typeof keysAmounts === "string") {
+    if (typeof keysAmounts === 'string') {
       // String literals need to be 'boxed' in order to register as an instance.
       keysAmounts = new String(keysAmounts);
     }
@@ -152,23 +161,120 @@
   // mdecrby
 
   // del
+  // Removes the specified key(s)
+  // Returns: the number of keys removed.
+  // Note:    if the key doesn't exist, it's ignored.
+  // Usage:   del('k1') or del('k1', 'k2') or del(['k1', 'k2'])
+  proto.del = function (key) {
+    var numKeysDeleted = 0,
+        i, l;
 
-  // expire
+    key = (key instanceof Array) ? key : arguments;
 
-  // rpush
+    for (i = 0, l = key.length; i < l; i++) {
+      if (this.exists(key[i])) {
+        this.removeItem(key[i]);
+        ++numKeysDeleted;
+      }
+    }
 
-  // lpush
+    return numKeysDeleted;
+  };
 
-  // lrange
+  // exists
+  // Returns: 1 if the key exists, 0 if they key doesn't exist.
+  // Throws:  TypeError if more than one argument is supplied
+  proto.exists = function (key) {
+    if (arguments.length > 1) {
+      throw new TypeError('exists: wrong number of arguments');
+    }
 
-  // llen
+    return (this.get(key) !== null) ? 1 : 0;
+  };
 
-  // lpop
+  // rename
+  // Renames key to newkey
+  // Returns:
+  // Throws:  TypeError if key == newkey
+  //          ReferenceError if key does not exist
+  // Usage:  rename(key, newkey)
+  proto.rename = function (key, newkey) {
+    if (arguments.length > 2) {
+      throw new TypeError('rename: wrong number of arguments');
+    } else if (key === newkey) {
+      throw new TypeError('rename: source and destination objects are the same');
+    } else if (! this.exists(key)) {
+      throw new ReferenceError('rename: no such key');
+    }
 
-  // rpop
+    var val = this.get(key);
+    this.set(newkey, val);
+    this.del(key);
+  };
 
-  // sadd
+  // renamenx
+  // Renames key to newkey if newkey does not exist
+  // Returns: 1 if key was renamed; 0 if newkey already exists
+  // Usage:   renamenx(key, newkey)
+  // Throws:  TypeError if key == newkey
+  //          ReferenceError if key does not exist
+  //          Fails under the same conditions as rename
+  proto.renamenx = function (key, newkey) {
+    if (arguments.length > 2) {
+      throw new TypeError('renamenx: wrong number of arguments');
+    } else if (key === newkey) {
+      throw new TypeError('renamenx: source and destination objects are the same');
+    } else if (! this.exists(key)) {
+      throw new ReferenceError('renamenx: no such key');
+    }
 
-  // srem
+    if(this.exists(newkey)) {
+      return 0;
+    } else {
+      this.rename(key, newkey);
+      return 1;
+    }
+  };
+
+  // getKey
+  // Retrieves the first key associated with the passed value
+  // Returns:   [key | keys | null]
+  //            a single key or
+  //            a list of keys if true is passed as second param or
+  //            null if no keys were found
+  // Params:    all = whether or not to retrieve all of the keys that match
+  proto.getKey = function (val) {
+    if (arguments.length > 2) {
+      throw new TypeError('getKey: wrong number of arguments');
+    }
+
+    var i, l, k, v, keys = [], all;
+
+    // Get whether or not the all flag was set
+    all = !! arguments[1];
+
+    // Look for keys with a value that matches val
+    for (i = 0, l = this.length; i < l; i++) {
+      k = this.key(i);
+      v = this.getItem(k);
+
+      if (val === v) {
+        keys.push(k);
+        if (! all) break;
+      }
+    }
+
+    // Return the single element or null if undefined
+    // Otherwise, return the populated array
+    if (keys.length === 1 && keys[0]) {
+      keys = keys[0];
+    } else if (! keys.length) {
+      keys = null;
+    }
+
+    return keys;
+  };
+
+  // getset
 
 })(window);
