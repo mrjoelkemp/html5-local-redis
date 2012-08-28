@@ -1,9 +1,7 @@
-# A sample Guardfile
-# More info at https://github.com/guard/guard#readme
-
-# Add files and commands to this file, like the example:
-#   watch(%r{file/path}) { `command(s)` }
-#
 guard 'shell' do
-  watch(/(.*).txt/) {|m| `tail #{m[0]}` }
+
+  watch(/src\/local.redis\.[0-9]*\.js/) do |m|
+    puts "Detected change on #{m}. Rebuilding local.redis.min.js #{Time.now.strftime("%H:%M:%S")}"
+    `java -jar lib/compiler.jar --js src/local.redis\.*js --js_output_file src/local.redis.min.js`
+  end
 end
