@@ -276,9 +276,6 @@
   };
 
   // getset
-  proto.getset = function (key) {
-
-  };
 
   // expire
 
