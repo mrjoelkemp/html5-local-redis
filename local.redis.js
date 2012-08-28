@@ -276,6 +276,22 @@
   };
 
   // getset
+  // Sets key to value and returns the old value stored at key
+  // Throws:  Error when key exists but does not hold a string value
+  // Usage:   getset(key, value)
+  // Returns: the old value stored at key or null when the key does not exist
+  proto.getset = function (key, value) {
+    // Grab the existing value or null if the key doesn't exist
+    var oldVal = this.get(key);
+
+    // Throw an exception if the value isn't a string
+    if (typeof oldVal !== 'string' && oldVal !== null) {
+      throw new Error('getset: not a string value');
+    }
+
+    this.set(key, value);
+    return oldVal;
+  };
 
   // expire
 

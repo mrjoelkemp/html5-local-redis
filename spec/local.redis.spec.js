@@ -1,5 +1,5 @@
 describe('set', function () {
-  it('should store a value indexed by its key', function () {
+  it('stores a value indexed by its key', function () {
     var k = 'foo',
         v = 'bar';
 
@@ -12,7 +12,7 @@ describe('set', function () {
     expect(val).toBe(v);
   });
 
-  it('should auto stringify an object being stored as a value', function () {
+  it('auto stringifies an object being stored as a value', function () {
     var k = 'foo',
         v = {"name": "Yogi Bear"},
         type;
@@ -24,7 +24,7 @@ describe('set', function () {
     expect(type).toBe('string');
   });
 
-  it('should accept objects as keys', function () {
+  it('accepts objects as keys', function () {
     var k = {"name": "Yogi Bear"},
         v = 2,
         val;
@@ -36,12 +36,12 @@ describe('set', function () {
     expect(val).toBe(v.toString());
   });
 
-  it('should be chainable', function () {
+  it('is chainable', function () {
     // Throws a TypeError if invocation is illegal
     expect(function(){ storage.set('foo', 1).set('bar', 2); }).not.toThrow(TypeError);
   });
 
-  it('should throw an exception if the quota is reached', function () {
+  it('throws an exception if the quota is reached', function () {
     var i, data;
 
     storage.set('foo', "m");
@@ -61,7 +61,7 @@ describe('set', function () {
 }); // end set
 
 describe('get', function () {
-  it('should retrieve a value for a key that exists', function () {
+  it('retrieves a value for a key that exists', function () {
     var k = 'foo',
         v = 2;
 
@@ -70,7 +70,7 @@ describe('get', function () {
     expect(storage.get(k)).toBe(v);
   });
 
-  it('should return a string if the value is a string literal (alphabetical)', function () {
+  it('returns a string if the value is a string literal (alphabetical)', function () {
     var k = 'foo',
         v = 'Yogi Bear';
 
@@ -78,7 +78,7 @@ describe('get', function () {
     expect(storage.get(k)).toBe(v);
   });
 
-  it('should return an object for a string value that contains an object', function () {
+  it('returns an object for a string value that contains an object', function () {
     var k = 'foo',
         v = {"name": "Yogi Bear"};
 
@@ -86,7 +86,7 @@ describe('get', function () {
     expect(storage.get(k)).toEqual(v);
   });
 
-  it('should return a number for a string value that contains a number', function () {
+  it('returns a number for a string value that contains a number', function () {
     var k = 'foo',
         v = 2,
         val;
@@ -98,7 +98,7 @@ describe('get', function () {
     expect(val).toBe(v);
   });
 
-  it('should accept an object as a key', function () {
+  it('accepts an object as a key', function () {
     var k = {"name": "Yogi Bear"},
         v = 2,
         val;
@@ -113,7 +113,7 @@ describe('get', function () {
 }); // end get
 
 describe('mget', function () {
-  it('should retrieve the values for multiple keys', function () {
+  it('retrieves the values for multiple keys', function () {
     var keysVals  = ['first', 'Joel', 'last', 'Kemp'],
         results   = [],
         expectVals= [keysVals[1], keysVals[3]];
@@ -145,7 +145,7 @@ describe('mset', function () {
     }
   });
 
-  it('should store multiple key-value pairs passed as separate parameters', function () {
+  it('stores multiple key-value pairs passed as separate parameters', function () {
     // Test the mset('k1', 'v1', 'k2', 'v2') syntax
     storage.mset(keysVals[0], keysVals[1], keysVals[2], keysVals[3]);
 
@@ -154,7 +154,7 @@ describe('mset', function () {
     expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
   });
 
-  it('should store multiple key-value pairs passed as a list', function () {
+  it('stores multiple key-value pairs passed as a list', function () {
     // Test the mset(['k1', 'v1', 'k2', 'v2']) syntax
     storage.mset(keysVals);
 
@@ -162,7 +162,7 @@ describe('mset', function () {
     expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
   });
 
-  it('should store multiple key-value pairs passed as an object', function () {
+  it('stores multiple key-value pairs passed as an object', function () {
     var objForm = {};
     // Note: we can't use vars with literal notation
     objForm[keysVals[0]] = keysVals[1];
@@ -175,7 +175,7 @@ describe('mset', function () {
     expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
   });
 
-  it('should be chainable', function () {
+  it('is chainable', function () {
     // Throws a TypeError if invocation is illegal
     expect(function(){ storage.mset(keysVals).mset(keysVals); }).not.toThrow(new TypeError("Illegal invocation"));
   });
@@ -233,55 +233,55 @@ describe('exists', function () {
 });
 
 describe('rename', function () {
-  it('should throw a ReferenceError when the key does not exist', function () {
+  it('throws a ReferenceError when the key does not exist', function () {
     expect(function () { storage.rename('foo', 'foobar'); }).toThrow(new ReferenceError("rename: no such key"));
   });
 
-  it('should throw a TypeError when the key is the same as the newkey', function () {
+  it('throws a TypeError when the key is the same as the newkey', function () {
     expect(function () { storage.rename('foo', 'foo'); }).toThrow(new TypeError("rename: source and destination objects are the same"));
   });
 
-  it('should rename a key to a given name', function () {
+  it('renames a key to a given name', function () {
     storage.setItem('foo', 'bar');
     storage.rename('foo', 'foobar');
     expect(storage.getItem('foo')).toBe(null);
     expect(storage.getItem('foobar')).toBe('bar');
   });
 
-  it('should should throw a TypeError for more than 2 inputs', function () {
+  it('throws a TypeError for more than 2 inputs', function () {
     expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow(new TypeError("rename: wrong number of arguments"));
   });
 });
 
 describe('renamenx', function () {
-  it('should throw a ReferenceError when the key does not exist', function () {
+  it('throws a ReferenceError when the key does not exist', function () {
     expect(function () { storage.renamenx('foo', 'foobar'); }).toThrow(new ReferenceError("renamenx: no such key"));
   });
 
-  it('should throw a TypeError when the key is the same as the newkey', function () {
+  it('throws a TypeError when the key is the same as the newkey', function () {
     expect(function () { storage.renamenx('foo', 'foo'); }).toThrow(new TypeError("renamenx: source and destination objects are the same"));
   });
 
-  it('should return 0 if the newkey already exists', function (){
+  it('returns 0 if the newkey already exists', function (){
     storage.setItem('foo', 'boo');
     storage.setItem('bar', 'coo');
     // We'll try to rename foo to bar, though bar exists
     expect(storage.renamenx('foo', 'bar')).toBe(0);
   });
 
-  it('should return 1 when key has been renamed to newkey', function () {
+  it('returns 1 when key has been renamed to newkey', function () {
     storage.setItem('foo', 'bar');
     expect(storage.renamenx('foo', 'foobar')).toBe(1);
     expect(storage.getItem('foobar')).toBe('bar');
   });
 
-  it('should should throw a TypeError for more than 2 inputs', function () {
+  it('throws a TypeError for more than 2 inputs', function () {
     expect(function () { storage.renamenx('foo', 'foobar', 'bar'); }).toThrow(new TypeError("renamenx: wrong number of arguments"));
   });
 });
 
 describe('getKey', function () {
-  it('should return the first key associated with a given value', function () {
+  it('returns the first key associated with a given value', function () {
     // setItem does not retain insertion ordering, so we
     //  can't assume the returned key is 'foo'.
     storage.setItem('foo', 'bar');
@@ -292,7 +292,7 @@ describe('getKey', function () {
     expect(containsOne).toBe(true);
   });
 
-  it('should return all keys associated with a given value if second param is true', function () {
+  it('returns all keys associated with a given value if second param is true', function () {
     storage.setItem('foo', 'bar');
     storage.setItem('coo', 'bar');
     var keys = storage.getKey('bar', true);
@@ -300,11 +300,29 @@ describe('getKey', function () {
     expect(keys).toContain('coo');
   });
 
-  it('should return null if no keys contain the passed val', function () {
+  it('returns null if no keys contain the passed val', function () {
     expect(storage.getKey('foobar')).toBe(null);
   });
 
-  it('should throw a TypeError if too many arguments are given', function () {
+  it('throws a TypeError if too many arguments are given', function () {
     expect(function () { storage.getKey('foo', 'bar', 'car'); }).toThrow(new TypeError('getKey: wrong number of arguments'));
+  });
+});
+
+describe('getset', function () {
+  it('returns the old value of the passed key', function () {
+
+  });
+
+  it ('sets the key to the passed value', function () {
+
+  });
+
+  it('returns null if the key doesn\'t exist', function () {
+
+  });
+
+  it('throws an exception when the value is not a string', function () {
+
   });
 });
