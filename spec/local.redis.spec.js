@@ -311,18 +311,23 @@ describe('getKey', function () {
 
 describe('getset', function () {
   it('returns the old value of the passed key', function () {
-
+    storage.setItem('foo', 'bar');
+    var oldVal = storage.getset('foo', 'foobar');
+    expect(oldVal).toBe('bar');
   });
 
   it ('sets the key to the passed value', function () {
-
+    storage.setItem('foo', 'bar');
+    storage.getset('foo', 'foobar');
+    expect(storage.getItem('foo')).toBe('foobar');
   });
 
   it('returns null if the key doesn\'t exist', function () {
-
+    expect(storage.getset('foo', 'bar')).toBe(null);
   });
 
-  it('throws an exception when the value is not a string', function () {
-
+  it('throws an exception when the existing value is not a string', function () {
+    storage.setItem('foo', 1);
+    expect(function () { storage.getset('foo', 'bar'); }).toThrow(new Error('getset: not a string value'));
   });
 });
