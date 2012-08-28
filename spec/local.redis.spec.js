@@ -299,11 +299,11 @@ describe('getKey', function () {
     expect(keys).toContain('coo');
   });
 
-  it('should return an empty list if no keys contain the passed val', function () {
-
+  it('should return null if no keys contain the passed val', function () {
+    expect(storage.getKey('foobar')).toBe(null);
   });
 
   it('should throw a TypeError if too many arguments are given', function () {
-
+    expect(function () { storage.getKey('foo', 'bar', 'car'); }).toThrow(new TypeError('getKey: wrong number of arguments'));
   });
 });

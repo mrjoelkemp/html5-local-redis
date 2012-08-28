@@ -238,16 +238,17 @@
 
   // getKey
   // Retrieves the first key associated with the passed value
-  // Returns:   A single key or list of keys if true passed as second param
+  // Returns:   [key | keys | null]
+  //            a single key or
+  //            a list of keys if true is passed as second param or
+  //            null if no keys were found
   // Params:    all = whether or not to retrieve all of the keys that match
   proto.getKey = function (val) {
     if (arguments.length > 2) {
       throw new TypeError('getKey: wrong number of arguments');
     }
 
-    var i, l,
-        k, v,
-        keys = [], all;
+    var i, l, k, v, keys = [], all;
 
     // Get whether or not the all flag was set
     all = !! arguments[1];
@@ -262,8 +263,16 @@
         if (! all) break;
       }
     }
-    // Return the list of keys or the single key
-    return (keys.length > 1) ? keys : keys[0];
+
+    // Return the single element or null if undefined
+    // Otherwise, return the populated array
+    if (keys.length === 1 && keys[0]) {
+      keys = keys[0];
+    } else if (! keys.length) {
+      keys = null;
+    }
+
+    return keys;
   };
 
   // getset
