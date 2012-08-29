@@ -48,7 +48,7 @@
   // Precond: key is storage key
   // Returns: A parsed expiration value object of the retrieved data
   proto._getExpirationValue = function (storageKey) {
-    var expKey = this._getExpirationKey(key),
+    var expKey = this._createExpirationKey(key),
         expVal = this.get(expKey);
 
     return expVal;
@@ -348,16 +348,15 @@
   // expire
   // Returns: 1 if the timeout was set
   //          0 if the key does not exist or the timeout couldn't be set
+  // Notes:   We "refresh" an existing expire by clearing it and creating a new one
   proto.expire = function (key, delay) {
-    var expKey = this._getExpirationKey(key),
-        expVal = this.get(expKey),
+    var expKey = this._createExpirationKey(key),
         that   = this,
         tid;
 
-    // Delete an existing expiration
-    if (expVal) {
-      this.del(expKey);
-    }
+    // Delete an existing expiration, if any
+    // del won't fail if the key doesn't exist
+    this.del(expKey);
 
     tid = setTimeout(function () {
       that.del(key);
