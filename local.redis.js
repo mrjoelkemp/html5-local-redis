@@ -13,8 +13,60 @@
     // Create JSON.stringify if it doesn't exist
     return;
   }
+
   // Using the prototype grants both localStorage and sessionStorage the redis methods
   var proto = window.localStorage.constructor.prototype;
+
+  ///////////////////////////
+  // Expiration Helpers
+  ///////////////////////////
+
+  // Used for expiration key generation
+  var expDelimiter = ':',
+      expKeyPrefix = 'exp';
+
+  // Creates the expiration key format for a given storage key
+  // Returns: the expiration key associated with the passed storage key
+  proto._createExpirationKey = function (storageKey) {
+    // Stringify if it's an object
+    storageKey = (typeof storageKey === 'string') ? storageKey : JSON.stringify(storageKey);
+    return expKeyPrefix + expDelimiter + storageKey;
+  };
+
+  // Creates the expiration value/data format for an expiration
+  //  event's ID and millisecond delay
+  // Returns: A string representation of an object created from the data
+  // Note:    Keys are as short as possible to save space when stored
+  proto._createExpirationValue = function (timeoutID, delay) {
+    return JSON.stringify({
+      id: timeoutID,
+      d: delay
+    });
+  };
+
+  // Retrieves the expiration data associated with the storage key
+  // Precond: key is storage key
+  // Returns: A parsed expiration value object of the retrieved data
+  proto._getExpirationValue = function (storageKey) {
+    var expKey = this._getExpirationKey(key),
+        expVal = this.get(expKey);
+
+    return expVal;
+  }
+
+  // Creates expiration data for the passed storage key and its
+  //  expiration event's data
+  proto._setExpirationOf = function (storageKey, timeoutID, delay) {
+    var expKey = this._createExpirationKey(storageKey),
+        expVal = this._createExpirationValue(timeoutID, delay);
+
+    this.set(expKey, expVal);
+  };
+
+
+  ///////////////////////////
+  // Key Commands
+  ///////////////////////////
 
   // get
   // Returns: [number | string | object | null] The value associated with the passed key, if it exists.
@@ -294,6 +346,28 @@
   };
 
   // expire
+  // Returns: 1 if the timeout was set
+  //          0 if the key does not exist or the timeout couldn't be set
+  proto.expire = function (key, delay) {
+    var expKey = this._getExpirationKey(key),
+        expVal = this.get(expKey),
+        that   = this,
+        tid;
+
+    // Delete an existing expiration
+    if (expVal) {
+      this.del(expKey);
+    }
+
+    tid = setTimeout(function () {
+      that.del(key);
+      // Remove key's expiration information
+      that.del(expKey);
+    }, delay);
+
+    // Create the key's new expiration data
+    this._setExpirationOf(key, tid, delay);
+  };
 
   // rpush
 
