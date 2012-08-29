@@ -266,7 +266,7 @@
 
     // Return the single element or null if undefined
     // Otherwise, return the populated array
-    if (keys.length === 1 && keys[0]) {
+    if (keys.length === 1) {
       keys = keys[0];
     } else if (! keys.length) {
       keys = null;
