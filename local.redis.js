@@ -126,7 +126,7 @@
     }
   };
 
-  // mincrby
+  // mincrby (custom)
   // Usage:   mincrby('key1', 1, 'key2', 4) or
   //          mincrby(['key1', 1, 'key2', 2]) or
   //          mincrby({'key1': 1, 'key2': 2})
@@ -236,7 +236,7 @@
     }
   };
 
-  // getKey
+  // getKey (custom)
   // Retrieves the first key associated with the passed value
   // Returns:   [key | keys | null]
   //            a single key or
