@@ -248,9 +248,12 @@ describe('rename', function () {
     expect(storage.getItem('foobar')).toBe('bar');
   });
 
-  it('throws a TypeError for more than 2 inputs', function () {
-    expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow(new TypeError("rename: wrong number of arguments"));
+  it('throws a TypeError for anything but 2 inputs', function () {
+    var expectedError = new TypeError("rename: wrong number of arguments");
+    expect(function () { storage.rename('foo'); }).toThrow(expectedError);
+    expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow(expectedError);
   });
+
 });
 
 describe('renamenx', function () {
@@ -275,8 +278,10 @@ describe('renamenx', function () {
     expect(storage.getItem('foobar')).toBe('bar');
   });
 
-  it('throws a TypeError for more than 2 inputs', function () {
-    expect(function () { storage.renamenx('foo', 'foobar', 'bar'); }).toThrow(new TypeError("renamenx: wrong number of arguments"));
+  it('throws a TypeError for anything but 2 inputs', function () {
+    var expectedError = new TypeError("renamenx: wrong number of arguments");
+    expect(function () { storage.renamenx('foo', 'foobar', 'bar'); }).toThrow(expectedError);
+    expect(function () { storage.renamenx('foo'); }).toThrow(expectedError);
   });
 });
 

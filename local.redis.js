@@ -199,7 +199,7 @@
   //          ReferenceError if key does not exist
   // Usage:  rename(key, newkey)
   proto.rename = function (key, newkey) {
-    if (arguments.length > 2) {
+    if (arguments.length !== 2) {
       throw new TypeError('rename: wrong number of arguments');
     } else if (key === newkey) {
       throw new TypeError('rename: source and destination objects are the same');
@@ -220,7 +220,7 @@
   //          ReferenceError if key does not exist
   //          Fails under the same conditions as rename
   proto.renamenx = function (key, newkey) {
-    if (arguments.length > 2) {
+    if (arguments.length !== 2) {
       throw new TypeError('renamenx: wrong number of arguments');
     } else if (key === newkey) {
       throw new TypeError('renamenx: source and destination objects are the same');
