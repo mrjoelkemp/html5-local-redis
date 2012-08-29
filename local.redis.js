@@ -178,7 +178,7 @@
     }
   };
 
-  // mincrby
+  // mincrby (custom)
   // Usage:   mincrby('key1', 1, 'key2', 4) or
   //          mincrby(['key1', 1, 'key2', 2]) or
   //          mincrby({'key1': 1, 'key2': 2})
@@ -251,7 +251,7 @@
   //          ReferenceError if key does not exist
   // Usage:  rename(key, newkey)
   proto.rename = function (key, newkey) {
-    if (arguments.length > 2) {
+    if (arguments.length !== 2) {
       throw new TypeError('rename: wrong number of arguments');
     } else if (key === newkey) {
       throw new TypeError('rename: source and destination objects are the same');
@@ -272,7 +272,7 @@
   //          ReferenceError if key does not exist
   //          Fails under the same conditions as rename
   proto.renamenx = function (key, newkey) {
-    if (arguments.length > 2) {
+    if (arguments.length !== 2) {
       throw new TypeError('renamenx: wrong number of arguments');
     } else if (key === newkey) {
       throw new TypeError('renamenx: source and destination objects are the same');
@@ -288,7 +288,7 @@
     }
   };
 
-  // getKey
+  // getKey (custom)
   // Retrieves the first key associated with the passed value
   // Returns:   [key | keys | null]
   //            a single key or
@@ -318,7 +318,7 @@
 
     // Return the single element or null if undefined
     // Otherwise, return the populated array
-    if (keys.length === 1 && keys[0]) {
+    if (keys.length === 1) {
       keys = keys[0];
     } else if (! keys.length) {
       keys = null;
