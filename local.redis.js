@@ -1,7 +1,6 @@
-// Author:  Joel Kemp
+// Authors: Joel Kemp and Eudis Duran
 // File:    local.redis.js
-// Purpose: Replicates the Redis API for use with HTML5 Local Storage
-// Notes:   Adds methods to the browser's localStorage object, if exists.
+// Purpose: Replicates the Redis API for use with HTML5 Storage Objects
 
 (function (window) {
   "use strict";
