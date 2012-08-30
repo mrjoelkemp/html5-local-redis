@@ -3,7 +3,7 @@ HTML5 Local Redis
 
 Redis-like API for HTML5 Storage Objects (localStorage and sessionStorage)
 
-Authors: @mrjoelkemp and @eudisduran
+Authors: [@mrjoelkemp](https://twitter.com/mrjoelkemp) and [@eudisduran](https://twitter.com/eudisduran)
 
 Tech: Javascript
 
