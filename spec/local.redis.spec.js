@@ -398,11 +398,20 @@ describe('expire', function () {
   });
 
   describe('_getExpirationValue', function () {
-
+    it('returns an object representation of expiry data for a storage key', function () {
+      storage.setItem('foo', 'bar');
+      storage._setExpirationOf('foo', 1, 100);
+      expect(typeof storage._getExpirationValue('foo')).toBe('object');
+    });
   });
 
   describe('_removeExpirationOf', function () {
-
+    it('removes the expiration data for the passed storage key', function () {
+      var expKey = storage._createExpirationKey('foo');
+      storage.setItem('foo', 'bar');
+      storage._setExpirationOf('foo', 1, 100);
+      storage._removeExpirationOf('foo');
+      expect(storage.getItem(expKey)).toBe(null);
+    });
   });
-
 });
