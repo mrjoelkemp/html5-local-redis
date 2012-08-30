@@ -1,18 +1,18 @@
-html5-local-redis
+HTML5 Local Redis
 =================
 
-Redis-like API for HTML5 Local Storage
+Redis-like API for HTML5 Storage Objects (localStorage and sessionStorage)
 
-### Possible Use cases
+Authors: @mrjoelkemp and @eudisduran
 
-* Teach Redis without a server
+Tech: Javascript
 
-### TODO
+#### Progress
 
-* AMD Module support for grouping parts of the API?
-* Create tests
-* Other data structures
-* Atomicity
-* Expiry
-* Persistence?
-* Queuing when 5MB capacity is exceeded.
+See our progress on the [development Trello board](http://bit.ly/NYgW7c).
+
+#### Usage
+
+Simply add the following to your main HTML file:
+
+    <script type="text/javascript" src="local.redis.js"></script>
