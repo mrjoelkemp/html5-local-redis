@@ -414,4 +414,16 @@ describe('expire', function () {
       expect(storage.getItem(expKey)).toBe(null);
     });
   });
+
+  describe('_hasExpiration', function () {
+    it('returns true when expiration data exists for the key', function () {
+      storage.setItem('foo', 'bar');
+      storage._setExpirationOf('foo', 1, 100);
+      expect(storage._hasExpiration('foo')).toBeTruthy();
+    });
+
+    it('returns false when expiration data does not exist for the key', function () {
+      expect(storage._hasExpiration('foo')).toBeFalsy();
+    });
+  });
 });

@@ -78,6 +78,11 @@
     this.removeItem(expKey);
   };
 
+  // Whether or not the given key has existing expiration data
+  // Returns:   true if expiry data exists, false otherwise
+  proto._hasExpiration = function (storageKey) {
+    return !! this._getExpirationValue(storageKey);
+  };
 
   ///////////////////////////
   // Key Commands
