@@ -345,7 +345,7 @@ describe('expire', function () {
     // Wait until the key expired or time out
     waitsFor(function () {
       return ! storage.getItem('foo');
-    }, 'key to expire', 115);
+    }, 'key did not expire', 115);
 
     runs(function () {
       expect(storage.getItem('foo')).toBe(null);
