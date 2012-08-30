@@ -16,3 +16,6 @@ See our progress on the [development Trello board](http://bit.ly/NYgW7c).
 Simply add the following to your main HTML file:
 
     <script type="text/javascript" src="local.redis.js"></script>
+
+
+**We'll have supported command documentation soon!**
