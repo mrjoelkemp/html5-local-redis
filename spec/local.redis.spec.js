@@ -215,6 +215,16 @@ describe('del', function () {
     var deleted = storage.del('foo');
     expect(deleted).toEqual(0);
   });
+
+  it('removes a key\'s existing expiration information', function () {
+    var expKey = storage._createExpirationKey('foo');
+    storage.setItem('foo', 'bar');
+
+    // Fake an expiration event
+    storage._setExpirationOf('foo', 1, 100);
+    storage.del('foo');
+    expect(storage.getItem(expKey)).toBe(null);
+  });
 });
 
 describe('exists', function () {
@@ -385,6 +395,14 @@ describe('expire', function () {
       var expKey = storage._createExpirationKey('foo');
       expect(storage.getItem(expKey)).not.toBe(null);
     });
+  });
+
+  describe('_getExpirationValue', function () {
+
+  });
+
+  describe('_removeExpirationOf', function () {
+
   });
 
 });

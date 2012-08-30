@@ -48,7 +48,7 @@
   // Precond: key is storage key
   // Returns: A parsed expiration value object of the retrieved data
   proto._getExpirationValue = function (storageKey) {
-    var expKey = this._createExpirationKey(key),
+    var expKey = this._createExpirationKey(storageKey),
         expVal = this.get(expKey);
 
     return expVal;
@@ -61,6 +61,21 @@
         expVal = this._createExpirationValue(timeoutID, delay);
 
     this.set(expKey, expVal);
+  };
+
+  // Removes/Cancels an existing expiration of the passed key
+  proto._removeExpirationOf = function (storageKey) {
+    var expKey = this._createExpirationKey(storageKey),
+        expVal = this._getExpirationValue(storageKey);
+
+    if (expVal && expVal.id) {
+      // Clear the existing timeout
+      clearTimeout(expVal.id);
+    }
+
+    // Delete the expiration data
+    // Use removeItem to avoid possible loop with del()
+    this.removeItem(expKey);
   };
 
 
@@ -215,17 +230,19 @@
   // del
   // Removes the specified key(s)
   // Returns: the number of keys removed.
-  // Note:    if the key doesn't exist, it's ignored.
+  // Notes:   if the key doesn't exist, it's ignored.
+  //          clears existing expirations on the keys
   // Usage:   del('k1') or del('k1', 'k2') or del(['k1', 'k2'])
-  proto.del = function (key) {
+  proto.del = function (keys) {
     var numKeysDeleted = 0,
         i, l;
 
-    key = (key instanceof Array) ? key : arguments;
+    keys = (keys instanceof Array) ? keys : arguments;
 
-    for (i = 0, l = key.length; i < l; i++) {
-      if (this.exists(key[i])) {
-        this.removeItem(key[i]);
+    for (i = 0, l = keys.length; i < l; i++) {
+      if (this.exists(keys[i])) {
+        this._removeExpirationOf(keys[i]);
+        this.removeItem(keys[i]);
         ++numKeysDeleted;
       }
     }
