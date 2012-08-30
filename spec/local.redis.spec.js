@@ -336,3 +336,55 @@ describe('getset', function () {
     expect(function () { storage.getset('foo', 'bar'); }).toThrow(new Error('getset: not a string value'));
   });
 });
+
+describe('expire', function () {
+  it('removes the key/value pair after the delay', function () {
+    storage.setItem('foo', 'bar');
+    storage.expire('foo', 100);
+
+    // Wait until the key expired or time out
+    waitsFor(function () {
+      return ! storage.getItem('foo');
+    }, 'key to expire', 115);
+
+    runs(function () {
+      expect(storage.getItem('foo')).toBe(null);
+    });
+  });
+
+  it('returns 1 if the timeout was set', function () {
+    storage.setItem('foo', 'bar');
+    expect(storage.expire('foo', 100)).toBe(1);
+  });
+
+  it('returns 0 if the key does not exist', function () {
+    expect(storage.expire('foo', 100)).toBe(0);
+  });
+
+  describe('_createExpirationKey', function () {
+    it('returns an expiration key', function () {
+      // We don't care what the format is, just that it returns a string
+      var expKey = storage._createExpirationKey('foo');
+      expect(typeof expKey).toBe('string');
+    });
+  });
+
+  describe('_createExpirationValue', function () {
+    it('returns a stringified object consisting of expiration data', function () {
+      var expVal = storage._createExpirationValue(100, 100);
+      expect(typeof expVal).toBe('string');
+      expect(typeof JSON.parse(expVal)).toBe('object');
+    });
+  });
+
+  describe('_setExpirationOf', function () {
+    it('stores expiration data for a given key', function () {
+      storage.setItem('foo', 'bar');
+      storage._setExpirationOf('foo', 100);
+      // Depends on _createExpirationKey, but that tests first
+      var expKey = storage._createExpirationKey('foo');
+      expect(storage.getItem(expKey)).not.toBe(null);
+    });
+  });
+
+});

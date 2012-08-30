@@ -21,15 +21,16 @@
   ///////////////////////////
 
   // Used for expiration key generation
-  var expDelimiter = ':',
-      expKeyPrefix = 'exp';
+  // Attached so that it's accessible for testing
+  var _expDelimiter = ':',
+      _expKeyPrefix = 'e';
 
   // Creates the expiration key format for a given storage key
   // Returns: the expiration key associated with the passed storage key
   proto._createExpirationKey = function (storageKey) {
     // Stringify if it's an object
     storageKey = (typeof storageKey === 'string') ? storageKey : JSON.stringify(storageKey);
-    return expKeyPrefix + expDelimiter + storageKey;
+    return _expKeyPrefix + _expDelimiter + storageKey;
   };
 
   // Creates the expiration value/data format for an expiration
@@ -353,18 +354,20 @@
         that   = this,
         tid;
 
-    // Delete an existing expiration, if any
-    // del won't fail if the key doesn't exist
+    // Create an async task to delete the key
+    // If the key doesn't exist, then the deletions do nothing
+    tid = setTimeout(function () { that.del(key, expKey); }, delay);
+
+    // If the key didn't exist or the timeout couldn't be set
+    if (! (this.exists(key) && tid)) {
+      return 0;
+    }
+
+    // Delete an existing expiration
     this.del(expKey);
-
-    tid = setTimeout(function () {
-      that.del(key);
-      // Remove key's expiration information
-      that.del(expKey);
-    }, delay);
-
     // Create the key's new expiration data
     this._setExpirationOf(key, tid, delay);
+    return 1;
   };
 
   // rpush
