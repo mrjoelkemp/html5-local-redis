@@ -405,6 +405,34 @@ describe('expire', function () {
     });
   });
 
+  describe('_getExpirationID', function() {
+    it('should return the timeout id of a given key\'s expiration', function () {
+      storage.setItem('foo', 'bar');
+      // Set a timeout id of 1
+      storage._setExpirationOf('foo', 1, 100);
+      expect(storage._getExpirationID('foo')).toBe(1);
+    });
+
+    it('should return null if there is no expiration data for the key', function () {
+      storage.setItem('foo', 'bar');
+      expect(storage._getExpirationID('foo')).toBe(null);
+    });
+  });
+
+  describe('_getExpirationDelay', function() {
+    it('should return the timeout delay of a given key\'s expiration', function () {
+      storage.setItem('foo', 'bar');
+      // Set a timeout id of 1
+      storage._setExpirationOf('foo', 1, 100);
+      expect(storage._getExpirationDelay('foo')).toBe(100);
+    });
+
+    it('should return null if there is no expiration data for the key', function () {
+      storage.setItem('foo', 'bar');
+      expect(storage._getExpirationDelay('foo')).toBe(null);
+    });
+  });
+
   describe('_removeExpirationOf', function () {
     it('removes the expiration data for the passed storage key', function () {
       var expKey = storage._createExpirationKey('foo');

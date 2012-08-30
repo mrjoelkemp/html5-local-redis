@@ -52,7 +52,21 @@
         expVal = this.get(expKey);
 
     return expVal;
-  }
+  };
+
+  // Retrieves the timeout id associated with the key's expiration
+  // Returns:   the timeout id or null
+  proto._getExpirationID = function (storageKey) {
+    var expVal = this._getExpirationValue(storageKey);
+    return (expVal && expVal.id) ? expVal.id : null;
+  };
+
+  // Retrieves the timeout delay associated with the key's expiration
+  // Returns:   the timeout delay or null
+  proto._getExpirationDelay = function (storageKey) {
+    var expVal = this._getExpirationValue(storageKey);
+    return (expVal && expVal.d) ? expVal.d : null;
+  };
 
   // Creates expiration data for the passed storage key and its
   //  expiration event's data
@@ -106,7 +120,8 @@
 
   // set
   // Stores the passed value indexed by the passed key
-  // Note: Auto stringifies
+  // Notes:   Auto stringifies
+  //          resets the
   proto.set = function(key, value) {
     // Stringify the key and value, if necessary
     value = (typeof value === 'string') ? value : JSON.stringify(value);
@@ -115,6 +130,11 @@
     // Use the default setItem
     try {
       this.setItem(key, value);
+
+      // Reset the expiration of the key, if it should expire
+      if (this._hasExpiration(key)) {
+        this.expire(key, this._getExpirationValue(key));
+      }
     } catch (e) {
       if (e === QUOTA_EXCEEDED_ERR) {
         throw e;
