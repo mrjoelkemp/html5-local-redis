@@ -61,18 +61,18 @@ describe('set', function () {
 
   it('resets the key\'s existing expiration if it has one', function () {
     storage.setItem('foo', 'bar');
-    // Set expiration of 100ms
-    storage.expire('foo', 100);
+    // Set expiration delay
+    storage.expire('foo', 30);
 
-    // Timer = 50ms
-    waits(50);
+    // Timer = 20ms
+    waits(20);
     runs(function () {
-      // Should reset the expiry
+      // Should reset the expiry back to 30
       storage.set('foo', 'foobar');
     });
 
-    // Timer = 110 ms which would expire without a reset
-    waits(60);
+    // Timer = 40ms which would expire without a reset
+    waits(20);
     runs(function () {
       // Try to grab the expiration data
       var expVal = storage.get(storage._createExpirationKey('foo'));
