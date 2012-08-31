@@ -74,7 +74,8 @@
     var expKey = this._createExpirationKey(storageKey),
         expVal = this._createExpirationValue(timeoutID, delay);
 
-    this.set(expKey, expVal);
+    // Use setItem to avoid resetting expiry
+    this.setItem(expKey, expVal);
   };
 
   // Removes/Cancels an existing expiration of the passed key
@@ -133,7 +134,7 @@
 
       // Reset the expiration of the key, if it should expire
       if (this._hasExpiration(key)) {
-        this.expire(key, this._getExpirationValue(key));
+        this.expire(key, this._getExpirationDelay(key));
       }
     } catch (e) {
       if (e === QUOTA_EXCEEDED_ERR) {
@@ -406,7 +407,10 @@
     }
 
     // Delete an existing expiration
+    // Should cancel existing timeout
+    clearTimeout(this._getExpirationID(key));
     this.del(expKey);
+
     // Create the key's new expiration data
     this._setExpirationOf(key, tid, delay);
     return 1;

@@ -44,7 +44,7 @@ describe('set', function () {
   it('throws an exception if the quota is reached', function () {
     var i, data;
 
-    storage.set('foo', "m");
+    storage.set('foo', 'm');
 
     // Exceed the quota
     for(i = 0 ; i < 40 ; i++) {
@@ -53,10 +53,31 @@ describe('set', function () {
       try {
         storage.set('foo', data + data);
       } catch(e) {
-        expect(e.arguments[0]).toBe("QUOTA_EXCEEDED_ERR");
+        expect(e.arguments[0]).toBe('QUOTA_EXCEEDED_ERR');
         break;
       }
     }
+  });
+
+  it('resets the key\'s existing expiration if it has one', function () {
+    storage.setItem('foo', 'bar');
+    // Set expiration of 100ms
+    storage.expire('foo', 100);
+
+    // Timer = 50ms
+    waits(50);
+    runs(function () {
+      // Should reset the expiry
+      storage.set('foo', 'foobar');
+    });
+
+    // Timer = 110 ms which would expire without a reset
+    waits(60);
+    runs(function () {
+      // Try to grab the expiration data
+      var expVal = storage.get(storage._createExpirationKey('foo'));
+      expect(expVal).not.toBe(null);
+    });
   });
 }); // end set
 
