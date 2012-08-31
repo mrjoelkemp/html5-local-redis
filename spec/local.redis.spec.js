@@ -75,7 +75,7 @@ describe('set', function () {
     waits(20);
     runs(function () {
       // Try to grab the expiration data
-      var expVal = storage.get(storage._createExpirationKey('foo'));
+      var expVal = storage.get(exp.createExpirationKey('foo', storage));
       expect(expVal).not.toBe(null);
     });
   });
@@ -238,11 +238,11 @@ describe('del', function () {
   });
 
   it('removes a key\'s existing expiration information', function () {
-    var expKey = storage._createExpirationKey('foo');
+    var expKey = exp.createExpirationKey('foo', storage);
     storage.setItem('foo', 'bar');
 
     // Fake an expiration event
-    storage._setExpirationOf('foo', 1, 100);
+    exp.setExpirationOf('foo', 1, 100, storage);
     storage.del('foo');
     expect(storage.getItem(expKey)).toBe(null);
   });
@@ -390,89 +390,5 @@ describe('expire', function () {
 
   it('returns 0 if the key does not exist', function () {
     expect(storage.expire('foo', 100)).toBe(0);
-  });
-
-  describe('_createExpirationKey', function () {
-    it('returns an expiration key', function () {
-      // We don't care what the format is, just that it returns a string
-      var expKey = storage._createExpirationKey('foo');
-      expect(typeof expKey).toBe('string');
-    });
-  });
-
-  describe('_createExpirationValue', function () {
-    it('returns a stringified object consisting of expiration data', function () {
-      var expVal = storage._createExpirationValue(100, 100);
-      expect(typeof expVal).toBe('string');
-      expect(typeof JSON.parse(expVal)).toBe('object');
-    });
-  });
-
-  describe('_setExpirationOf', function () {
-    it('stores expiration data for a given key', function () {
-      storage.setItem('foo', 'bar');
-      storage._setExpirationOf('foo', 100);
-      // Depends on _createExpirationKey, but that tests first
-      var expKey = storage._createExpirationKey('foo');
-      expect(storage.getItem(expKey)).not.toBe(null);
-    });
-  });
-
-  describe('_getExpirationValue', function () {
-    it('returns an object representation of expiry data for a storage key', function () {
-      storage.setItem('foo', 'bar');
-      storage._setExpirationOf('foo', 1, 100);
-      expect(typeof storage._getExpirationValue('foo')).toBe('object');
-    });
-  });
-
-  describe('_getExpirationID', function() {
-    it('should return the timeout id of a given key\'s expiration', function () {
-      storage.setItem('foo', 'bar');
-      // Set a timeout id of 1
-      storage._setExpirationOf('foo', 1, 100);
-      expect(storage._getExpirationID('foo')).toBe(1);
-    });
-
-    it('should return null if there is no expiration data for the key', function () {
-      storage.setItem('foo', 'bar');
-      expect(storage._getExpirationID('foo')).toBe(null);
-    });
-  });
-
-  describe('_getExpirationDelay', function() {
-    it('should return the timeout delay of a given key\'s expiration', function () {
-      storage.setItem('foo', 'bar');
-      // Set a timeout id of 1
-      storage._setExpirationOf('foo', 1, 100);
-      expect(storage._getExpirationDelay('foo')).toBe(100);
-    });
-
-    it('should return null if there is no expiration data for the key', function () {
-      storage.setItem('foo', 'bar');
-      expect(storage._getExpirationDelay('foo')).toBe(null);
-    });
-  });
-
-  describe('_removeExpirationOf', function () {
-    it('removes the expiration data for the passed storage key', function () {
-      var expKey = storage._createExpirationKey('foo');
-      storage.setItem('foo', 'bar');
-      storage._setExpirationOf('foo', 1, 100);
-      storage._removeExpirationOf('foo');
-      expect(storage.getItem(expKey)).toBe(null);
-    });
-  });
-
-  describe('_hasExpiration', function () {
-    it('returns true when expiration data exists for the key', function () {
-      storage.setItem('foo', 'bar');
-      storage._setExpirationOf('foo', 1, 100);
-      expect(storage._hasExpiration('foo')).toBeTruthy();
-    });
-
-    it('returns false when expiration data does not exist for the key', function () {
-      expect(storage._hasExpiration('foo')).toBeFalsy();
-    });
   });
 });

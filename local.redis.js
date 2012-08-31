@@ -2,7 +2,7 @@
 // File:    local.redis.js
 // Purpose: Replicates the Redis API for use with HTML5 Storage Objects
 
-(function (window) {
+(function (window, exp) {
   "use strict";
 
   // TODO: Fallback to some other means of storage - polyfills exist
@@ -17,86 +17,57 @@
   var proto = window.localStorage.constructor.prototype;
 
   ///////////////////////////
-  // Expiration Helpers
+  // Storage Internals
   ///////////////////////////
 
-  // Used for expiration key generation
-  // Attached so that it's accessible for testing
-  var _expDelimiter = ':',
-      _expKeyPrefix = 'e';
+  // Redis commands typically have side effects and so we should
+  //  be cautious to include calls to those functions when requiring
+  //  storage operations with no side effects.
+  // These internal functions are safer to use for storage within commands
 
-  // Creates the expiration key format for a given storage key
-  // Returns: the expiration key associated with the passed storage key
-  proto._createExpirationKey = function (storageKey) {
-    // Stringify if it's an object
-    storageKey = (typeof storageKey === 'string') ? storageKey : JSON.stringify(storageKey);
-    return _expKeyPrefix + _expDelimiter + storageKey;
-  };
+  // Stores the key/value pair
+  // Note:    Auto-stringifies non-strings
+  // Throws:  Exception on reaching the storage quota
+  proto._store = function (key, value) {
+    key   = (typeof key   !== 'string') ? JSON.stringify(key)   : key;
+    value = (typeof value !== 'string') ? JSON.stringify(value) : value;
 
-  // Creates the expiration value/data format for an expiration
-  //  event's ID and millisecond delay
-  // Returns: A string representation of an object created from the data
-  // Note:    Keys are as short as possible to save space when stored
-  proto._createExpirationValue = function (timeoutID, delay) {
-    return JSON.stringify({
-      id: timeoutID,
-      d: delay
-    });
-  };
-
-  // Retrieves the expiration data associated with the storage key
-  // Precond: key is storage key
-  // Returns: A parsed expiration value object of the retrieved data
-  proto._getExpirationValue = function (storageKey) {
-    var expKey = this._createExpirationKey(storageKey),
-        expVal = this.get(expKey);
-
-    return expVal;
-  };
-
-  // Retrieves the timeout id associated with the key's expiration
-  // Returns:   the timeout id or null
-  proto._getExpirationID = function (storageKey) {
-    var expVal = this._getExpirationValue(storageKey);
-    return (expVal && expVal.id) ? expVal.id : null;
-  };
-
-  // Retrieves the timeout delay associated with the key's expiration
-  // Returns:   the timeout delay or null
-  proto._getExpirationDelay = function (storageKey) {
-    var expVal = this._getExpirationValue(storageKey);
-    return (expVal && expVal.d) ? expVal.d : null;
-  };
-
-  // Creates expiration data for the passed storage key and its
-  //  expiration event's data
-  proto._setExpirationOf = function (storageKey, timeoutID, delay) {
-    var expKey = this._createExpirationKey(storageKey),
-        expVal = this._createExpirationValue(timeoutID, delay);
-
-    // Use setItem to avoid resetting expiry
-    this.setItem(expKey, expVal);
-  };
-
-  // Removes/Cancels an existing expiration of the passed key
-  proto._removeExpirationOf = function (storageKey) {
-    var expKey = this._createExpirationKey(storageKey),
-        expVal = this._getExpirationValue(storageKey);
-
-    if (expVal && expVal.id) {
-      // Clear the existing timeout
-      clearTimeout(expVal.id);
+    try {
+      this.setItem(key, value);
+    } catch (e) {
+      if (e === QUOTA_EXCEEDED_ERR) {
+        throw e;
+      }
     }
-
-    // Delete the expiration data
-    // Use removeItem to avoid possible loop with del()
-    this.removeItem(expKey);
   };
 
-  // Whether or not the given key has existing expiration data
-  // Returns:   true if expiry data exists, false otherwise
-  proto._hasExpiration = function (storageKey) {
-    return !! this._getExpirationValue(storageKey);
+  // Returns the (parsed) value associated with the given key
+  proto._retrieve = function (key) {
+    key = (typeof key !== 'string') ? JSON.stringify(key) : key;
+
+    var res = this.getItem(key);
+
+    try {
+      // If it's a literal string, parsing will fail
+      res = JSON.parse(res);
+    } catch (e) {
+      // We couldn't parse the literal string
+      // so just return the literal in the finally block.
+    } finally {
+      return res;
+    }
+  };
+
+  // Remove the key/value pair identified by the passed key
+  // Note:  Auto stringifies non-strings
+  proto._remove = function (key) {
+    key = (typeof key !== 'string') ? JSON.stringify(key) : key;
+    this.removeItem(key);
+  };
+
+  // Returns true if the key exists, false otherwise.
+  proto._exists = function (key) {
+    return !! this._retrieve(key);
   };
 
   ///////////////////////////
@@ -104,19 +75,9 @@
   ///////////////////////////
 
   // get
-  // Returns: [number | string | object | null] The value associated with the passed key, if it exists.
-  // Note:    Auto JSON parses
+  // Returns: [number | string | object | null] The (parsed) value associated with the passed key, if it exists.
   proto.get = function(key) {
-    key = (typeof key === 'string') ? key : JSON.stringify(key);
-
-    var res = this.getItem(key);
-
-    try {
-      // If it's a literal string, parsing will fail
-      res = JSON.parse(res);
-    } finally {
-      return res;
-    }
+    return this._retrieve(key);
   };
 
   // set
@@ -124,22 +85,16 @@
   // Notes:   Auto stringifies
   //          resets an existing expiration if set was called directly
   proto.set = function(key, value) {
-    // Stringify the key and value, if necessary
-    value = (typeof value === 'string') ? value : JSON.stringify(value);
-    key   = (typeof key   === 'string') ? key   : JSON.stringify(key);
-
-    // Use the default setItem
     try {
-      this.setItem(key, value);
+      this._store(key, value);
       // Reset the expiration of the key, if it should expire
-      if (this._hasExpiration(key)) {
-        this.expire(key, this._getExpirationDelay(key));
+      if (exp.hasExpiration(key, this)) {
+        this.expire(key, exp.getExpirationDelay(key, this));
       }
     } catch (e) {
-      if (e === QUOTA_EXCEEDED_ERR) {
-        throw e;
-      }
+      throw e;
     }
+
     // Makes chainable
     return this;
   };
@@ -156,7 +111,7 @@
 
     // Retrieve the value for each key
     for (var i in keys) {
-      results[results.length] = this.get(keys[i]);
+      results[results.length] = this._retrieve(keys[i]);
     }
 
     return results;
@@ -173,15 +128,15 @@
 
     if (isArray) {
       for (i = 0, l = keysVals.length; i < l; i += 2) {
-        this.set(keysVals[i], keysVals[i + 1]);
+        this._store(keysVals[i], keysVals[i + 1]);
       }
     } else if (isObject) {
       for (prop in keysVals) {
-        this.set(prop, keysVals[prop]);
+        this._store(prop, keysVals[prop]);
       }
     } else {
       for (i = 0, l = arguments.length; i < l; i += 2) {
-        this.set(arguments[i], arguments[i + 1]);
+        this._store(arguments[i], arguments[i + 1]);
       }
     }
 
@@ -197,7 +152,7 @@
   // incrby
   // If the key does not exists, incrby sets it first
   proto.incrby = function (key, amount) {
-    var value = this.get(key);
+    var value = this._retrieve(key);
 
     // Should test that it is not NaN before addition, to avoid
     // cases with strings.
@@ -206,7 +161,7 @@
     } else {
       value = 0 + amount;
     }
-    this.set(key, value);
+    this._store(key, value);
   };
 
   // mincr
@@ -265,9 +220,10 @@
     keys = (keys instanceof Array) ? keys : arguments;
 
     for (i = 0, l = keys.length; i < l; i++) {
-      if (this.exists(keys[i])) {
-        this._removeExpirationOf(keys[i]);
-        this.removeItem(keys[i]);
+
+      if (this._exists(keys[i])) {
+        exp.removeExpirationOf(keys[i], this);
+        this._remove(keys[i]);
         ++numKeysDeleted;
       }
     }
@@ -283,7 +239,7 @@
       throw new TypeError('exists: wrong number of arguments');
     }
 
-    return (this.get(key) !== null) ? 1 : 0;
+    return (this._exists(key)) ? 1 : 0;
   };
 
   // rename
@@ -297,13 +253,13 @@
       throw new TypeError('rename: wrong number of arguments');
     } else if (key === newkey) {
       throw new TypeError('rename: source and destination objects are the same');
-    } else if (! this.exists(key)) {
+    } else if (! this._exists(key)) {
       throw new ReferenceError('rename: no such key');
     }
 
-    var val = this.get(key);
-    this.set(newkey, val);
-    this.del(key);
+    var val = this._retrieve(key);
+    this._store(newkey, val);
+    this._remove(key);
   };
 
   // renamenx
@@ -318,13 +274,14 @@
       throw new TypeError('renamenx: wrong number of arguments');
     } else if (key === newkey) {
       throw new TypeError('renamenx: source and destination objects are the same');
-    } else if (! this.exists(key)) {
+    } else if (! this._exists(key)) {
       throw new ReferenceError('renamenx: no such key');
     }
 
-    if(this.exists(newkey)) {
+    if(this._exists(newkey)) {
       return 0;
     } else {
+      // Call rename command to refresh an existing expiration
       this.rename(key, newkey);
       return 1;
     }
@@ -376,13 +333,14 @@
   // Returns: the old value stored at key or null when the key does not exist
   proto.getset = function (key, value) {
     // Grab the existing value or null if the key doesn't exist
-    var oldVal = this.get(key);
+    var oldVal = this._retrieve(key);
 
     // Throw an exception if the value isn't a string
     if (typeof oldVal !== 'string' && oldVal !== null) {
       throw new Error('getset: not a string value');
     }
 
+    // Use set to refresh an existing expiration
     this.set(key, value);
     return oldVal;
   };
@@ -392,26 +350,30 @@
   //          0 if the key does not exist or the timeout couldn't be set
   // Notes:   We "refresh" an existing expire by clearing it and creating a new one
   proto.expire = function (key, delay) {
-    var expKey = this._createExpirationKey(key),
+    var expKey = exp.createExpirationKey(key),
         that   = this,
         tid;
 
     // Create an async task to delete the key
     // If the key doesn't exist, then the deletions do nothing
-    tid = setTimeout(function () { that.del(key, expKey); }, delay);
+    tid = setTimeout(function () {
+      // Avoid calling del() for side effects
+      that._remove(key);
+      that._remove(expKey);
+    }, delay);
 
     // If the key didn't exist or the timeout couldn't be set
-    if (! (this.exists(key) && tid)) {
+    if (! (this._exists(key) && tid)) {
       return 0;
     }
 
     // Delete an existing expiration
     // Should cancel existing timeout
-    clearTimeout(this._getExpirationID(key));
-    this.del(expKey);
+    clearTimeout(exp.getExpirationID(key, this));
+    this._remove(expKey);
 
     // Create the key's new expiration data
-    this._setExpirationOf(key, tid, delay);
+    exp.setExpirationOf(key, tid, delay, this);
     return 1;
   };
 
@@ -431,4 +393,4 @@
 
   // srem
 
-})(window);
+})(window, LocalRedis.Utils.Expiration);
