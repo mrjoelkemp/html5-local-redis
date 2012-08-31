@@ -122,7 +122,7 @@
   // set
   // Stores the passed value indexed by the passed key
   // Notes:   Auto stringifies
-  //          resets the
+  //          resets an existing expiration if set was called directly
   proto.set = function(key, value) {
     // Stringify the key and value, if necessary
     value = (typeof value === 'string') ? value : JSON.stringify(value);
@@ -131,7 +131,6 @@
     // Use the default setItem
     try {
       this.setItem(key, value);
-
       // Reset the expiration of the key, if it should expire
       if (this._hasExpiration(key)) {
         this.expire(key, this._getExpirationDelay(key));
