@@ -346,12 +346,15 @@
   };
 
   // expire
+  // Expires the passed key after the passed seconds
+  // Precond: delay in seconds
   // Returns: 1 if the timeout was set
   //          0 if the key does not exist or the timeout couldn't be set
   // Notes:   We "refresh" an existing expire by clearing it and creating a new one
   proto.expire = function (key, delay) {
     var expKey = exp.createExpirationKey(key),
         that   = this,
+        msInSec= 1000,
         tid;
 
     // Create an async task to delete the key
@@ -360,7 +363,7 @@
       // Avoid calling del() for side effects
       that._remove(key);
       that._remove(expKey);
-    }, delay);
+    }, delay * msInSec);       // delay in milliseconds
 
     // If the key didn't exist or the timeout couldn't be set
     if (! (this._exists(key) && tid)) {

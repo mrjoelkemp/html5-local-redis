@@ -371,12 +371,13 @@ describe('getset', function () {
 describe('expire', function () {
   it('removes the key/value pair after the delay', function () {
     storage.setItem('foo', 'bar');
-    storage.expire('foo', 100);
+    // 10 ms
+    storage.expire('foo', 10 / 1000);
 
     // Wait until the key expired or time out
     waitsFor(function () {
       return ! storage.getItem('foo');
-    }, 'key did not expire', 115);
+    }, 'key did not expire', 15 / 1000);
 
     runs(function () {
       expect(storage.getItem('foo')).toBe(null);
@@ -385,10 +386,52 @@ describe('expire', function () {
 
   it('returns 1 if the timeout was set', function () {
     storage.setItem('foo', 'bar');
-    expect(storage.expire('foo', 100)).toBe(1);
+    expect(storage.expire('foo', 1 / 1000)).toBe(1);
   });
 
   it('returns 0 if the key does not exist', function () {
-    expect(storage.expire('foo', 100)).toBe(0);
+    expect(storage.expire('foo', 1 / 1000)).toBe(0);
+  });
+
+  it('delays in seconds', function () {
+    storage.setItem('foo', 'bar');
+    // Set expiration delay of a tenth of a second (10ms)
+    storage.expire('foo', 10/1000);
+
+    // If it accepted ms, then it would have expired at 10/1000ms < 1ms
+    waits(1);
+    runs(function () {
+      // Expiry data should still be there after 1ms
+      expect(storage._retrieve(exp.createExpirationKey('foo'))).not.toBe(null);
+    });
+  });
+
+  // Returns whether or passed command resets an existing expiration
+  var resetsExpiration = function (command) {
+    storage.setItem('foo', 'bar');
+    // Set expiration delay of 10ms
+    storage.expire('foo', 10 / 1000);
+
+    waits(5);
+    runs(function () {
+      // Call the command to test whether or not it affected expiry
+      command.call(storage, 'foo', 'foobar');
+    });
+
+    // Should expire if command doesn't reset expiry
+    waits(6);
+    runs(function () {
+      // Try to grab the expiration data
+      var expVal = storage._retrieve(exp.createExpirationKey('foo'));
+      return !! expVal;
+    });
+  };
+
+  it('gets called by set to reset an expiration', function () {
+    expect(resetsExpiration(storage.set)).toBeTruthy();
+  });
+
+  it('does not get affected with mset', function () {
+    expect(resetsExpiration(storage.mset)).toBeFalsy();
   });
 });
