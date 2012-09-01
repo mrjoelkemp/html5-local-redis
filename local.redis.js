@@ -21,8 +21,8 @@
   ///////////////////////////
 
   // Redis commands typically have side effects and so we should
-  //  be cautious to include calls to those functions when requiring
-  //  storage operations with no side effects.
+  // be cautious to include calls to those functions when requiring
+  // storage operations with no side effects.
   // These internal functions are safer to use for storage within commands
 
   // Stores the key/value pair
@@ -144,22 +144,39 @@
   };
 
   // incr
-  // If the key does not exists, incr sets it first
+  // If the key does not exist, incr sets it to 1
   proto.incr = function (key) {
-    this.incrby(key, 1);
+    var value = this._retrieve(key);
+
+    if (arguments.length > 1) {
+      throw new TypeError('incr: wrong number of arguments');
+    }
+
+    if (value !== null) {
+      value += 1;
+    } else if (typeof value === 'string') {
+      throw new TypeError('value is not an integer or out of range');
+    } else {
+      value = 1;
+    }
+    this._store(key, value);
   };
 
   // incrby
-  // If the key does not exists, incrby sets it first
+  // If the key does not exist, incrby sets it to amount
   proto.incrby = function (key, amount) {
     var value = this._retrieve(key);
 
-    // Should test that it is not NaN before addition, to avoid
-    // cases with strings.
-    if (!isNaN(parseInt(value, 10))) {
+    if (arguments.length !== 2) {
+      throw new TypeError('incrby: wrong number of arguments');
+    }
+
+    if (value !== null) {
       value += amount;
+    } else if (typeof value === 'string' || typeof amount === 'string') {
+      throw new TypeError('incrby: value is not an integer or out of range');
     } else {
-      value = 0 + amount;
+      value = 1 + amount;
     }
     this._store(key, value);
   };
@@ -180,16 +197,11 @@
   proto.mincrby = function (keysAmounts) {
     var i, l, key;
 
-    if (typeof keysAmounts === 'string') {
-      // String literals need to be 'boxed' in order to register as an instance.
-      keysAmounts = new String(keysAmounts);
-    }
-
-    if (keysAmounts instanceof Array || keysAmounts instanceof String) {
+    if (keysAmounts instanceof Array || typeof keysAmounts === 'string') {
       keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
       // Need to make sure an even number of arguments is passed in
       if ((keysAmounts.length & 0x1) !== 0) {
-        return;
+        throw new TypeError('exists: wrong number of arguments');
       }
       for (i = 0, l = keysAmounts.length; i < l; i += 2) {
         this.incrby(keysAmounts[i], keysAmounts[i + 1]);
