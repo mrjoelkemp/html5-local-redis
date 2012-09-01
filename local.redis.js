@@ -361,6 +361,8 @@
     delay = parseFloat(delay, 10);
     if (! delay) {
       throw new TypeError('expire: delay should be convertible to a number');
+    } else if(! this._exists(key)) {
+      return 0;
     }
 
     // Convert the delay to ms (1000ms in 1s)
@@ -374,10 +376,8 @@
       that._remove(expKey);
     }, delay);
 
-    // If the key didn't exist or the timeout couldn't be set
-    if (! (this._exists(key) && tid)) {
-      return 0;
-    }
+    // If the timeout couldn't be set
+    if (! tid) return 0;
 
     // Delete an existing expiration
     if (exp.hasExpiration(key, this)) {
