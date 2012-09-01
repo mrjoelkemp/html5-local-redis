@@ -393,6 +393,11 @@ describe('expire', function () {
     expect(storage.expire('foo', 1 / 1000)).toBe(0);
   });
 
+  it('throws an error if a number (or string version of a number) was not supplied', function () {
+    storage.setItem('foo', 'bar');
+    expect(function () { storage.expire('foo', 'bar'); }).toThrow(new TypeError('expire: delay should be convertible to a number'));
+  });
+
   it('delays in seconds', function () {
     storage.setItem('foo', 'bar');
     // Set expiration delay of a tenth of a second (10ms)

@@ -357,6 +357,12 @@
         msInSec= 1000,
         tid;
 
+    // Check if the delay is/contains a number
+    delay = parseFloat(delay, 10);
+    if (! delay) {
+      throw new TypeError('expire: delay should be convertible to a number');
+    }
+
     // Create an async task to delete the key
     // If the key doesn't exist, then the deletions do nothing
     tid = setTimeout(function () {
