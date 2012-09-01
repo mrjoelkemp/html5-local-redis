@@ -363,13 +363,16 @@
       throw new TypeError('expire: delay should be convertible to a number');
     }
 
+    // Convert the delay to ms (1000ms in 1s)
+    delay *= 1000;
+
     // Create an async task to delete the key
     // If the key doesn't exist, then the deletions do nothing
     tid = setTimeout(function () {
       // Avoid calling del() for side effects
       that._remove(key);
       that._remove(expKey);
-    }, delay * msInSec);       // delay in milliseconds
+    }, delay);
 
     // If the key didn't exist or the timeout couldn't be set
     if (! (this._exists(key) && tid)) {
@@ -377,9 +380,11 @@
     }
 
     // Delete an existing expiration
-    // Should cancel existing timeout
-    clearTimeout(exp.getExpirationID(key, this));
-    this._remove(expKey);
+    if (exp.hasExpiration(key, this)) {
+      // Should cancel existing timeout
+      clearTimeout(exp.getExpirationID(key, this));
+      this._remove(expKey);
+    }
 
     // Create the key's new expiration data
     exp.setExpirationOf(key, tid, delay, this);

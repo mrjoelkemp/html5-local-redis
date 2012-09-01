@@ -58,27 +58,6 @@ describe('set', function () {
       }
     }
   });
-
-  it('resets the key\'s existing expiration if it has one', function () {
-    storage.setItem('foo', 'bar');
-    // Set expiration delay
-    storage.expire('foo', 30);
-
-    // Timer = 20ms
-    waits(20);
-    runs(function () {
-      // Should reset the expiry back to 30
-      storage.set('foo', 'foobar');
-    });
-
-    // Timer = 40ms which would expire without a reset
-    waits(20);
-    runs(function () {
-      // Try to grab the expiration data
-      var expVal = storage.get(exp.createExpirationKey('foo', storage));
-      expect(expVal).not.toBe(null);
-    });
-  });
 }); // end set
 
 describe('get', function () {
@@ -413,23 +392,28 @@ describe('expire', function () {
 
   // Returns whether or passed command resets an existing expiration
   var resetsExpiration = function (command) {
+    var expVal;
+
     storage.setItem('foo', 'bar');
     // Set expiration delay of 10ms
-    storage.expire('foo', 10 / 1000);
+    storage.expire('foo', 1);
 
-    waits(5);
+    waits(900);
     runs(function () {
       // Call the command to test whether or not it affected expiry
       command.call(storage, 'foo', 'foobar');
     });
 
     // Should expire if command doesn't reset expiry
-    waits(6);
+    waits(200);
+
     runs(function () {
       // Try to grab the expiration data
-      var expVal = storage._retrieve(exp.createExpirationKey('foo'));
+      expVal = storage._retrieve(exp.createExpirationKey('foo'));
       return !! expVal;
     });
+
+
   };
 
   it('gets called by set to reset an expiration', function () {
