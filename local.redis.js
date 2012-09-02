@@ -85,11 +85,17 @@
   // Notes:   Auto stringifies
   //          resets an existing expiration if set was called directly
   proto.set = function(key, value) {
+    var hasExpiration = exp.hasExpiration(key, this),
+        expDelay;
+
     try {
       this._store(key, value);
       // Reset the expiration of the key, if it should expire
-      if (exp.hasExpiration(key, this)) {
-        this.expire(key, exp.getExpirationDelay(key, this));
+      if (hasExpiration) {
+        expDelay = exp.getExpirationDelay(key, this);
+
+        this.persist(key);
+        this.expire(key, expDelay);
       }
     } catch (e) {
       throw e;
@@ -350,11 +356,9 @@
   // Precond: delay in seconds
   // Returns: 1 if the timeout was set
   //          0 if the key does not exist or the timeout couldn't be set
-  // Notes:   We "refresh" an existing expire by clearing it and creating a new one
   proto.expire = function (key, delay) {
     var expKey = exp.createExpirationKey(key),
         that   = this,
-        msInSec= 1000,
         tid;
 
     // Check if the delay is/contains a number
@@ -376,19 +380,26 @@
       that._remove(expKey);
     }, delay);
 
-    // If the timeout couldn't be set
+    // If then timeout couldn't be set
     if (! tid) return 0;
-
-    // Delete an existing expiration
-    if (exp.hasExpiration(key, this)) {
-      // Should cancel existing timeout
-      clearTimeout(exp.getExpirationID(key, this));
-      this._remove(expKey);
-    }
 
     // Create the key's new expiration data
     exp.setExpirationOf(key, tid, delay, this);
     return 1;
+  };
+
+  // Removes the expiration associated with the key
+  // Returns:   0 if the key does not exist or does not have an expiration
+  //            1 if the expiration was removed
+  proto.persist = function (key) {
+
+    if (! (this._exists(key) && exp.hasExpiration(key, this))) {
+      return 0;
+    } else {
+      clearTimeout(exp.getExpirationID(key, this));
+      this._remove(exp.createExpirationKey(key));
+      return 1;
+    }
   };
 
   // rpush

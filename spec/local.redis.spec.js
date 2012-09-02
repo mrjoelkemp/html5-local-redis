@@ -58,6 +58,24 @@ describe('set', function () {
       }
     }
   });
+
+  it('refreshes an existing expiration for the key', function () {
+    storage._store('foo', 'bar');
+    // expire foo after 15ms
+    storage.expire('foo', 15 / 1000);
+
+    waits(10);
+    runs(function () {
+      // Should reset the expiration to 15ms
+      storage.set('foo', 'foobar');
+    });
+
+    // Expires 'foo' if it hasn't been reset by 'set'
+    waits(10);
+    runs(function () {
+      expect(exp.hasExpiration('foo', storage)).toBeTruthy();
+    });
+  });
 }); // end set
 
 describe('get', function () {
@@ -178,6 +196,23 @@ describe('mset', function () {
   it('is chainable', function () {
     // Throws a TypeError if invocation is illegal
     expect(function(){ storage.mset(keysVals).mset(keysVals); }).not.toThrow(new TypeError("Illegal invocation"));
+  });
+
+  it('does not reset a key\'s existing expiration', function () {
+    storage._store('foo', 'bar');
+    storage.expire('foo', 15 / 1000);
+
+    waits(10);
+    runs(function () {
+      // Should not affect the expiration of 'foo'
+      storage.mset('foo', 'foobar');
+    });
+
+    waits(10);
+    runs(function () {
+      // 'foo' should have expired
+      expect(storage._exists('foo')).toBeFalsy();
+    });
   });
 }); // end mset
 
@@ -378,49 +413,21 @@ describe('expire', function () {
   });
 
   it('delays in seconds', function () {
-    storage.setItem('foo', 'bar');
+    storage._store('foo', 'bar');
     // Set expiration delay of a tenth of a second (10ms)
-    storage.expire('foo', 10/1000);
+    storage.expire('foo', 10 / 1000);
 
-    // If it accepted ms, then it would have expired at 10/1000ms < 1ms
-    waits(1);
-    runs(function () {
-      // Expiry data should still be there after 1ms
-      expect(storage._retrieve(exp.createExpirationKey('foo'))).not.toBe(null);
-    });
+    // If expire didn't accept seconds (but ms), it would expire instantly 0.0001 ms
+    // Expiry data should still be there after 1ms
+    expect(exp.hasExpiration('foo', storage)).toBeTruthy();
   });
+});
 
-  // Returns whether or passed command resets an existing expiration
-  var resetsExpiration = function (command) {
-    var expVal;
-
-    storage.setItem('foo', 'bar');
-    // Set expiration delay of 10ms
-    storage.expire('foo', 1);
-
-    waits(900);
-    runs(function () {
-      // Call the command to test whether or not it affected expiry
-      command.call(storage, 'foo', 'foobar');
-    });
-
-    // Should expire if command doesn't reset expiry
-    waits(200);
-
-    runs(function () {
-      // Try to grab the expiration data
-      expVal = storage._retrieve(exp.createExpirationKey('foo'));
-      return !! expVal;
-    });
-
-
-  };
-
-  it('gets called by set to reset an expiration', function () {
-    expect(resetsExpiration(storage.set)).toBeTruthy();
-  });
-
-  it('does not get affected with mset', function () {
-    expect(resetsExpiration(storage.mset)).toBeFalsy();
+describe('persist', function () {
+  it('cancels an existing expiration for the key', function () {
+    storage._store('foo', 'bar');
+    storage.expire('foo', 15 / 1000);
+    storage.persist('foo');
+    expect(exp.hasExpiration('foo', storage)).toBeFalsy();
   });
 });
