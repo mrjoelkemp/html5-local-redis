@@ -380,6 +380,24 @@ describe('getset', function () {
     storage.setItem('foo', 1);
     expect(function () { storage.getset('foo', 'bar'); }).toThrow(new Error('getset: not a string value'));
   });
+
+  it('refreshes an existing expiration for the key', function () {
+    storage._store('foo', 'bar');
+    // expire foo after 15ms
+    storage.expire('foo', 15 / 1000);
+
+    waits(10);
+    runs(function () {
+      // Should reset the expiration to 15ms
+      storage.getset('foo', 'foobar');
+    });
+
+    // Expires 'foo' if it hasn't been reset by getset
+    waits(10);
+    runs(function () {
+      expect(exp.hasExpiration('foo', storage)).toBeTruthy();
+    });
+  });
 });
 
 describe('expire', function () {
