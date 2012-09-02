@@ -146,16 +146,35 @@
   // incr
   // If the key does not exist, incr sets it to 1
   proto.incr = function (key) {
-    var value = this._retrieve(key);
+    var value          = this._retrieve(key),
+        keyType        = typeof key,
+        valType        = typeof value,
+        parsedValue    = parseInt(value, 10),
+        valueIsNaN     = isNaN(parsedValue),
+        isNumberStr    = valType === 'string' && !valueIsNaN,
+        isNotNumberStr = valType === 'string' && valueIsNaN,
+        valOutOfRange  = false;
 
     if (arguments.length > 1) {
       throw new TypeError('incr: wrong number of arguments');
     }
+    // Test to see if the value is out of range.
+    if (!valueIsNaN && (value >= Number.MAX_VALUE)) {
+      valOutOfRange = true;
+    }
 
-    if (value !== null) {
-      value += 1;
-    } else if (typeof value === 'string') {
-      throw new TypeError('value is not an integer or out of range');
+    // Before we decide whether to throw an error or to increment, we
+    // must distinguish between keys that have a value of null,
+    // and keys that simply do not exist in the local/session
+    // storage.  In the former case, we want to throw an error
+    // if the key exists, has a value of null and there is an attempt
+    // to increment.  In the former case we want to create the key
+    // and set it to 1.  This follows the Redis spec.
+    if ((valType !== 'number' && isNotNumberStr) || valOutOfRange || (valueIsNaN && key in this)) {
+      // If the key exists and is set to null, an increment should throw an error
+      throw new TypeError('incr: value is not an integer or out of range');
+    } else if (valType === 'number' || isNumberStr) {
+      value = parsedValue + 1;
     } else {
       value = 1;
     }
@@ -165,18 +184,35 @@
   // incrby
   // If the key does not exist, incrby sets it to amount
   proto.incrby = function (key, amount) {
-    var value = this._retrieve(key);
+    var value                = this._retrieve(key),
+        valType              = typeof value,
+        amountType           = typeof amount,
+        parsedValue          = parseInt(value, 10),
+        parsedAmount         = parseInt(amount, 10),
+        amountIsNaN          = isNaN(parsedAmount),
+        valueIsNaN           = isNaN(parsedValue),
+        isValNumberStr       = valType === 'string' && !valueIsNaN,
+        isValNotNumberStr    = valType === 'string' && valueIsNaN,
+        isAmountNumberStr     = amountType === 'string' && !amountIsNaN,
+        isAmountNotNumberStr = amountType === 'string' && amountIsNaN,
+        anyOutOfRange        = false;
 
     if (arguments.length !== 2) {
       throw new TypeError('incrby: wrong number of arguments');
     }
-
-    if (value !== null) {
-      value += amount;
-    } else if (typeof value === 'string' || typeof amount === 'string') {
+    // Test to see if value or amount is out of range.
+    if (!valueIsNaN && (value >= Number.MAX_VALUE) || !amountIsNaN && (amount >= Number.MAX_VALUE)) {
+      anyOutOfRange = true;
+    }
+    if ((valType !== 'number' && isValNotNumberStr || (valueIsNaN && key in this) || amountIsNaN)
+       || (amountType !== 'number' && isAmountNotNumberStr)
+       || anyOutOfRange) {
       throw new TypeError('incrby: value is not an integer or out of range');
-    } else {
-      value = 1 + amount;
+    } else if ((valType === 'number' || isValNumberStr)
+                && (amountType === 'number' || isAmountNumberStr)) {
+      value = parsedValue + parsedAmount;
+    } else if (amountType === 'number' || isAmountNumberStr) {
+      value = parsedAmount;
     }
     this._store(key, value);
   };
@@ -201,7 +237,7 @@
       keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
       // Need to make sure an even number of arguments is passed in
       if ((keysAmounts.length & 0x1) !== 0) {
-        throw new TypeError('exists: wrong number of arguments');
+        throw new TypeError('mincrby: wrong number of arguments');
       }
       for (i = 0, l = keysAmounts.length; i < l; i += 2) {
         this.incrby(keysAmounts[i], keysAmounts[i + 1]);
