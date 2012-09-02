@@ -388,6 +388,20 @@
     return 1;
   };
 
+  // Expiry in milliseconds
+  // Returns: the same output as expire
+  proto.pexpire = function (key, delay) {
+    // Check if the delay is/contains a number
+    delay = parseFloat(delay, 10);
+    if (! delay) {
+      throw new TypeError('pexpire: delay should be convertible to a number');
+    }
+
+    // Expire will convert the delay to seconds,
+    // so we account for that by canceling out the conversion from ms to s
+    return this.expire(key, delay / 1000);
+  };
+
   // Removes the expiration associated with the key
   // Returns:   0 if the key does not exist or does not have an expiration
   //            1 if the expiration was removed

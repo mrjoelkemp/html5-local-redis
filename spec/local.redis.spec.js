@@ -441,11 +441,42 @@ describe('expire', function () {
   });
 });
 
+describe('pexpire', function () {
+  it('should expire a key with based on a supplied millisecond delay', function () {
+    storage._store('foo', 'bar');
+    storage.pexpire('foo', 15);
+
+    // Wait until the key expires or fail after 20ms
+    waitsFor(function () {
+      return !exp.hasExpiration('foo', storage);
+    }, 'key did not expire', 20);
+
+    runs(function () {
+      expect(storage._exists('foo')).toBeFalsy();
+    });
+  });
+});
+
 describe('persist', function () {
   it('cancels an existing expiration for the key', function () {
     storage._store('foo', 'bar');
     storage.expire('foo', 15 / 1000);
     storage.persist('foo');
     expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+  });
+
+  it('returns 0 if the key does not exist', function () {
+    expect(storage.persist('foo')).toBe(0);
+  });
+
+  it('returns 0 if the key does not have an expiration', function () {
+    storage._store('foo', 'bar');
+    expect(storage.persist('foo')).toBe(0);
+  });
+
+  it('returns 1 if an existing expiration was removed', function () {
+    storage._store('foo', 'bar');
+    storage.expire('foo', 15 / 1000);
+    expect(storage.persist('foo')).toBe(1);
   });
 });
