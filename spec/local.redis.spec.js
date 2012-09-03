@@ -442,6 +442,23 @@ describe('expire', function () {
     // Expiry data should still be there after 1ms
     expect(exp.hasExpiration('foo', storage)).toBeTruthy();
   });
+
+  it('refreshes an existing expiration if called again', function () {
+    storage._store('foobar', 'bar');
+    // Expire in 15ms
+    storage.expire('foobar', 15 / 1000);
+
+    waits(10);
+    runs(function () {
+      // Refreshes expiration to 10ms
+      storage.expire('foobar', 10 / 1000);
+    });
+    // Should expire original if second call didn't refresh
+    waits(6);
+    runs(function () {
+      expect(exp.hasExpiration('foobar', storage)).toBeTruthy();
+    });
+  });
 });
 
 describe('pexpire', function () {

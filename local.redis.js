@@ -383,6 +383,12 @@
     // If then timeout couldn't be set
     if (! tid) return 0;
 
+    // Subsequent calls to expire on the same key
+    // will refresh the expiration with the new delay
+    if (exp.hasExpiration(key, this)) {
+      exp.removeExpirationOf(key, this);
+    }
+
     // Create the key's new expiration data
     exp.setExpirationOf(key, tid, delay, new Date().getTime(), this);
     return 1;
