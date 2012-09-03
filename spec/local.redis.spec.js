@@ -59,21 +59,21 @@ describe('set', function () {
     }
   });
 
-  it('refreshes an existing expiration for the key', function () {
+  it('cancels an existing expiration for the key', function () {
     storage._store('foo', 'bar');
     // expire foo after 15ms
     storage.expire('foo', 15 / 1000);
 
     waits(10);
     runs(function () {
-      // Should reset the expiration to 15ms
+      // Shouldn't refresh the expiration
       storage.set('foo', 'foobar');
     });
 
     // Expires 'foo' if it hasn't been reset by 'set'
     waits(10);
     runs(function () {
-      expect(exp.hasExpiration('foo', storage)).toBeTruthy();
+      expect(exp.hasExpiration('foo', storage)).toBeFalsy();
     });
   });
 }); // end set
@@ -346,8 +346,13 @@ describe('renamenx', function () {
     expect(function () { storage.renamenx('foo'); }).toThrow(expectedError);
   });
 
-  xit('doesn\'t transfer the TTL of a key\'s existing expiration', function () {
+  it('doesn\'t transfer the TTL of a key\'s existing expiration', function () {
+    storage._store('foo', 'bar');
+    exp.setExpirationOf('foo', 1, 100, new Date().getTime(), storage);
 
+    storage.renamenx('foo', 'car');
+    // The new key shouldn't have the ttl
+    expect(exp.getExpirationTTL('car', storage)).toBe(null);
   });
 
 });
@@ -403,21 +408,21 @@ describe('getset', function () {
     expect(function () { storage.getset('foo', 'bar'); }).toThrow(new Error('getset: not a string value'));
   });
 
-  it('refreshes an existing expiration for the key', function () {
+  it('cancels an existing expiration for the key', function () {
     storage._store('foo', 'bar');
     // expire foo after 15ms
     storage.expire('foo', 15 / 1000);
 
     waits(10);
     runs(function () {
-      // Should reset the expiration to 15ms
+      // Shouldn't reset the expiration
       storage.getset('foo', 'foobar');
     });
 
     // Expires 'foo' if it hasn't been reset by getset
     waits(10);
     runs(function () {
-      expect(exp.hasExpiration('foo', storage)).toBeTruthy();
+      expect(exp.hasExpiration('foo', storage)).toBeFalsy();
     });
   });
 });

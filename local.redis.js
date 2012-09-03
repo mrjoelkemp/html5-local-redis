@@ -90,12 +90,11 @@
 
     try {
       this._store(key, value);
-      // Reset the expiration of the key, if it should expire
+      // Cancel the expiration of the key
       if (hasExpiration) {
         expDelay = exp.getExpirationDelay(key, this);
 
         this.persist(key);
-        this.expire(key, expDelay);
       }
     } catch (e) {
       throw e;
@@ -284,23 +283,25 @@
   // Renames key to newkey if newkey does not exist
   // Returns: 1 if key was renamed; 0 if newkey already exists
   // Usage:   renamenx(key, newkey)
+  // Notes:   Does not affect expiry
   // Throws:  TypeError if key == newkey
   //          ReferenceError if key does not exist
   //          Fails under the same conditions as rename
-  proto.renamenx = function (key, newkey) {
+  proto.renamenx = function (key, newKey) {
     if (arguments.length !== 2) {
       throw new TypeError('renamenx: wrong number of arguments');
-    } else if (key === newkey) {
+    } else if (key === newKey) {
       throw new TypeError('renamenx: source and destination objects are the same');
     } else if (! this._exists(key)) {
       throw new ReferenceError('renamenx: no such key');
     }
 
-    if(this._exists(newkey)) {
+    if(this._exists(newKey)) {
       return 0;
     } else {
-      // Call rename command to refresh an existing expiration
-      this.rename(key, newkey);
+      var val = this._retrieve(key);
+      this._store(newKey, val);
+      this._remove(key);
       return 1;
     }
   };
