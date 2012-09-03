@@ -254,17 +254,29 @@
   // Throws:  TypeError if key == newkey
   //          ReferenceError if key does not exist
   // Usage:  rename(key, newkey)
-  proto.rename = function (key, newkey) {
+  proto.rename = function (key, newKey) {
     if (arguments.length !== 2) {
       throw new TypeError('rename: wrong number of arguments');
-    } else if (key === newkey) {
+    } else if (key === newKey) {
       throw new TypeError('rename: source and destination objects are the same');
     } else if (! this._exists(key)) {
       throw new ReferenceError('rename: no such key');
     }
 
     var val = this._retrieve(key);
-    this._store(newkey, val);
+    this._store(newKey, val);
+
+    if (exp.hasExpiration(key, this)) {
+      // Get the TTL
+      var ttl = exp.getExpirationTTL(key, this);
+
+      // Transfer the TTL (ms) to the new key
+      this.pexpire(newKey, ttl);
+
+      // Remove the old key's expiration
+      exp.removeExpirationOf(key, this);
+    }
+
     this._remove(key);
   };
 

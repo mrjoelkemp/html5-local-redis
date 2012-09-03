@@ -299,9 +299,22 @@ describe('rename', function () {
     expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow(expectedError);
   });
 
-  xit('transfers the ttl of the old key\' expiration', function () {
+  it('transfers the ttl of the old key\'s expiration', function () {
+    storage.setItem('foo', 'bar');
+    storage.pexpire('foo', 15);
 
-    expect(false).toBeTruthy();
+    waits(5);
+    runs(function () {
+      storage.rename('foo', 'foobar');
+      // Make sure the new key has an expiration
+      expect(exp.hasExpiration('foobar', storage)).toBeTruthy();
+      var ttl = exp.getExpirationTTL('foobar', storage);
+      // Make sure the new key's ttl is <= the elapsed time
+      expect(ttl).toBeLessThan(11);
+      expect(ttl).toBeGreaterThan(0);
+      // Make sure the old key's expiration was removed
+      expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+    });
   });
 });
 
@@ -332,6 +345,11 @@ describe('renamenx', function () {
     expect(function () { storage.renamenx('foo', 'foobar', 'bar'); }).toThrow(expectedError);
     expect(function () { storage.renamenx('foo'); }).toThrow(expectedError);
   });
+
+  xit('doesn\'t transfer the TTL of a key\'s existing expiration', function () {
+
+  });
+
 });
 
 describe('getKey', function () {
