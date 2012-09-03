@@ -249,10 +249,10 @@
 
   // rename
   // Renames key to newkey
-  // Returns:
   // Throws:  TypeError if key == newkey
   //          ReferenceError if key does not exist
-  // Usage:  rename(key, newkey)
+  // Usage:   rename(key, newkey)
+  // Notes:   Transfers the key's TTL to the newKey
   proto.rename = function (key, newKey) {
     if (arguments.length !== 2) {
       throw new TypeError('rename: wrong number of arguments');
@@ -349,6 +349,7 @@
   // Sets key to value and returns the old value stored at key
   // Throws:  Error when key exists but does not hold a string value
   // Usage:   getset(key, value)
+  // Notes:   Removes an existing expiration for key
   // Returns: the old value stored at key or null when the key does not exist
   proto.getset = function (key, value) {
     // Grab the existing value or null if the key doesn't exist
