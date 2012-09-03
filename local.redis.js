@@ -384,7 +384,7 @@
     if (! tid) return 0;
 
     // Create the key's new expiration data
-    exp.setExpirationOf(key, tid, delay, this);
+    exp.setExpirationOf(key, tid, delay, new Date().getTime(), this);
     return 1;
   };
 
@@ -406,7 +406,6 @@
   // Returns:   0 if the key does not exist or does not have an expiration
   //            1 if the expiration was removed
   proto.persist = function (key) {
-
     if (! (this._exists(key) && exp.hasExpiration(key, this))) {
       return 0;
     } else {
@@ -414,6 +413,19 @@
       this._remove(exp.createExpirationKey(key));
       return 1;
     }
+  };
+
+  // Returns: the time to live in seconds
+  //          -1 when key does not exist or does not have an expiration
+  // Notes:   Due to the possible delay between expiration timeout
+  //          firing and the callback execution, this ttl only reflects
+  //          the TTL for the timeout firing
+  proto.ttl = function (key) {
+    if(! (this._exists(key) && exp.hasExpiration(key, this))) {
+      return -1;
+    }
+
+    return exp.getExpirationTTL(key, this);
   };
 
   // rpush

@@ -256,7 +256,7 @@ describe('del', function () {
     storage.setItem('foo', 'bar');
 
     // Fake an expiration event
-    exp.setExpirationOf('foo', 1, 100, storage);
+    exp.setExpirationOf('foo', 1, 100, 100, storage);
     storage.del('foo');
     expect(storage.getItem(expKey)).toBe(null);
   });
@@ -299,6 +299,9 @@ describe('rename', function () {
     expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow(expectedError);
   });
 
+  it('transfers the ttl of the old key\' expiration', function () {
+    expect(false).toBeTruthy();
+  });
 });
 
 describe('renamenx', function () {
@@ -460,7 +463,7 @@ describe('pexpire', function () {
 describe('persist', function () {
   it('cancels an existing expiration for the key', function () {
     storage._store('foo', 'bar');
-    storage.expire('foo', 15 / 1000);
+    storage.expire('foo', 10 / 1000);
     storage.persist('foo');
     expect(exp.hasExpiration('foo', storage)).toBeFalsy();
   });
@@ -476,7 +479,31 @@ describe('persist', function () {
 
   it('returns 1 if an existing expiration was removed', function () {
     storage._store('foo', 'bar');
-    storage.expire('foo', 15 / 1000);
+    storage.expire('foo', 5 / 1000);
     expect(storage.persist('foo')).toBe(1);
+    expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+  });
+});
+
+describe('ttl', function () {
+  it('returns the time to live for a key\'s expiration', function () {
+    storage.setItem('foobar', 'bar');
+    // Fake an expiration of 100ms
+    exp.setExpirationOf('foobar', 1, 100, new Date().getTime(), storage);
+
+    waits(10);
+    runs(function () {
+      var ttl = storage.ttl('foobar');
+      expect(ttl).toBeGreaterThan(0);
+    });
+  });
+
+  it('returns -1 if the key does not exist', function () {
+    expect(storage.ttl('foo')).toBe(-1);
+  });
+
+  it('returns -1 if the key does not have an expiration', function () {
+    storage._store('foo', 'bar');
+    expect(storage.ttl('foo')).toBe(-1);
   });
 });
