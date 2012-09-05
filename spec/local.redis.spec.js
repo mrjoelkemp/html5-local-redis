@@ -132,29 +132,25 @@ describe('get', function () {
 
 describe('mget', function () {
   it('retrieves the values for multiple keys', function () {
-    var keysVals  = ['first', 'Joel', 'last', 'Kemp'],
-        results   = [],
-        expectVals= [keysVals[1], keysVals[3]];
-
-    // Store all of the data
-    for (var i = 0, l = keysVals.length; i < l; i += 2) {
-      storage.setItem(keysVals[i], keysVals[i + 1]);
-    }
-
+    storage._store('foo', 'foobar');
+    storage._store('bar', 'foobar');
     // Check the mget('key1', 'key2') syntax
-    results[0] = storage.mget(keysVals[0], keysVals[2]);
+    var results = storage.mget('foo', 'bar');
+    // Check that the results sets have the proper value
+    expect(results).toEqual(['foobar', 'foobar']);
+  });
 
+  it('retrieves the values for each key in a supplied list of keys', function () {
+    storage._store('foo', 'foobar');
+    storage._store('bar', 'foobar');
     // Check the mget(['key1', 'key2']) syntax
-    results[1] = storage.mget([keysVals[0], keysVals[2]]);
-
-    // Check that the results sets have the proper values
-    expect(results[0]).toEqual(expectVals);
-    expect(results[1]).toEqual(expectVals);
+    var results = storage.mget(['foo', 'bar']);
+    expect(results).toEqual(['foobar', 'foobar']);
   });
 }); // end mget
 
 describe('mset', function () {
-  var keysVals  = ['first', 'Joel', 'last', 'Kemp'];
+  var keysVals  = ['foo', 'foobar', 'bar', 'foobar'];
 
   afterEach(function () {
     // Remove the dummy data to test other insertion syntaxes
