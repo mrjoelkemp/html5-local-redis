@@ -151,6 +151,7 @@
         valType        = typeof value,
         parsedValue    = parseInt(value, 10),
         valueIsNaN     = isNaN(parsedValue),
+        isValNumber    = valType === 'number',
         isNumberStr    = valType === 'string' && !valueIsNaN,
         isNotNumberStr = valType === 'string' && valueIsNaN,
         valOutOfRange  = false;
@@ -170,10 +171,11 @@
     // if the key exists, has a value of null and there is an attempt
     // to increment.  In the former case we want to create the key
     // and set it to 1.  This follows the Redis spec.
-    if ((valType !== 'number' && isNotNumberStr) || valOutOfRange || (valueIsNaN && key in this)) {
+
+    if ((!isValNumber && isNotNumberStr) || valOutOfRange || (valueIsNaN && this.hasOwnProperty(key))) {
       // If the key exists and is set to null, an increment should throw an error
       throw new TypeError('incr: value is not an integer or out of range');
-    } else if (valType === 'number' || isNumberStr) {
+    } else if (isValNumber || isNumberStr) {
       value = parsedValue + 1;
     } else {
       value = 1;
@@ -191,9 +193,11 @@
         parsedAmount         = parseInt(amount, 10),
         amountIsNaN          = isNaN(parsedAmount),
         valueIsNaN           = isNaN(parsedValue),
+        isValNumber          = valType === 'number',
+        isAmountNumber       = amountType === 'number',
         isValNumberStr       = valType === 'string' && !valueIsNaN,
         isValNotNumberStr    = valType === 'string' && valueIsNaN,
-        isAmountNumberStr     = amountType === 'string' && !amountIsNaN,
+        isAmountNumberStr    = amountType === 'string' && !amountIsNaN,
         isAmountNotNumberStr = amountType === 'string' && amountIsNaN,
         anyOutOfRange        = false;
 
@@ -204,14 +208,13 @@
     if (!valueIsNaN && (value >= Number.MAX_VALUE) || !amountIsNaN && (amount >= Number.MAX_VALUE)) {
       anyOutOfRange = true;
     }
-    if ((valType !== 'number' && isValNotNumberStr || (valueIsNaN && key in this) || amountIsNaN)
-       || (amountType !== 'number' && isAmountNotNumberStr)
+    if ((!isValNumber && isValNotNumberStr || (valueIsNaN && this.hasOwnProperty(key)) || amountIsNaN)
+       || (!isAmountNumber && isAmountNotNumberStr)
        || anyOutOfRange) {
       throw new TypeError('incrby: value is not an integer or out of range');
-    } else if ((valType === 'number' || isValNumberStr)
-                && (amountType === 'number' || isAmountNumberStr)) {
+    } else if ((isValNumber || isValNumberStr) && (isAmountNumber || isAmountNumberStr)) {
       value = parsedValue + parsedAmount;
-    } else if (amountType === 'number' || isAmountNumberStr) {
+    } else if (isAmountNumber || isAmountNumberStr) {
       value = parsedAmount;
     }
     this._store(key, value);
