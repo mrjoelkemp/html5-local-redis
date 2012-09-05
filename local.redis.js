@@ -1,6 +1,12 @@
 // Authors: Joel Kemp and Eudis Duran
 // File:    local.redis.js
 // Purpose: Replicates the Redis API for use with HTML5 Storage Objects
+// Usage:   window.localStorage.command where command is any of the
+//          supported redis-like commands. window.sessionStorage can also be used.
+
+// Fetch the utils
+var LocalRedis    = LocalRedis || {};
+LocalRedis.Utils  = LocalRedis.Utils || {};
 
 (function (window, exp) {
   "use strict";
