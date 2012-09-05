@@ -458,7 +458,8 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
       return -1;
     }
 
-    return exp.getExpirationTTL(key, this);
+    // 1sec = 1000ms
+    return exp.getExpirationTTL(key, this) / 1000;
   };
 
   // rpush
