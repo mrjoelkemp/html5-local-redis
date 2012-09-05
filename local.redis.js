@@ -262,9 +262,16 @@
       throw new ReferenceError('rename: no such key');
     }
 
+    // Remove newKey's existing expiration
+    // since newKey inherits all characteristics from key
+    if (exp.hasExpiration(newKey, this)) {
+      exp.removeExpirationOf(newKey, this);
+    }
+
     var val = this._retrieve(key);
     this._store(newKey, val);
 
+    // Transfer an existing expiration to newKey
     if (exp.hasExpiration(key, this)) {
       // Get the TTL
       var ttl = exp.getExpirationTTL(key, this);

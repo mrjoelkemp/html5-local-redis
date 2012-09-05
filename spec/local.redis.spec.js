@@ -316,6 +316,18 @@ describe('rename', function () {
       expect(exp.hasExpiration('foo', storage)).toBeFalsy();
     });
   });
+
+  it('removes the newkey\'s existing expiration', function () {
+    storage._store('foo', 'bar');
+    storage._store('foobar', 'bar');
+    storage.pexpire('foobar', 15);
+    waits(5);
+    runs(function () {
+      // Should remove the expiration of 'foobar'
+      storage.rename('foo', 'foobar');
+      expect(exp.hasExpiration('foobar', storage)).toBeFalsy();
+    });
+  });
 });
 
 describe('renamenx', function () {
