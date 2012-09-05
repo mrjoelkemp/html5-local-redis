@@ -462,6 +462,13 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return exp.getExpirationTTL(key, this) / 1000;
   };
 
+  // Returns: the time to live in milliseconds
+  //          -1 when key does not exist or does not have an expiration
+  // Note:    this command is just like ttl with ms units
+  proto.pttl = function (key) {
+    return this.ttl(key) * 1000;
+  };
+
   // rpush
 
   // lpush

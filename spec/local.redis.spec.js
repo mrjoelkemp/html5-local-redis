@@ -556,3 +556,16 @@ describe('ttl', function () {
     expect(storage.ttl('foo')).toBe(-1);
   });
 });
+
+describe('pttl', function () {
+  it('returns the time to live for a key\'s expiration', function () {
+    storage._store('foo', 'bar');
+    exp.setExpirationOf('foo', 1, 100, new Date().getTime(), storage);
+    waits(10);
+    runs(function () {
+      var ttl = storage.ttl('foo');
+      expect(ttl).toBeGreaterThan(0);
+      expect(ttl).toBeLessThan(100);
+    });
+  });
+})
