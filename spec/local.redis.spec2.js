@@ -1,13 +1,13 @@
 describe('Incr Commands - ', function () {
   var keysValsObj = {
-        'number' : 23,
-        'number1' : 1,
-        'number2': 0,
-        'string' : 'abcd',
+        'number': 23,
+        'number1': 1,
+        'number2': '0',
+        'string': 'abcd',
         'null': null,
         'undefined': undefined,
-        'pi' : 3.141592653589793238462643383279502884197169399375105820974944592307816406286,
-        'really-big-number' : Number.MAX_VALUE + Number.MAX_VALUE
+        'pi': 3.141592653589793238462643383279502884197169399375105820974944592307816406286,
+        'really-big-number': Number.MAX_VALUE + Number.MAX_VALUE
       },
       baseKeys = Object.keys(keysValsObj),
       keys = [],
@@ -131,8 +131,10 @@ describe('Incr Commands - ', function () {
   });
 
   describe('mincr', function() {
-    it('increments a set of keys by 1, and sets a key\'s value to 1 if it does not exist', function () {
-      keys = [];
+    var f = function (k) { var keys = k; return function () { storage.mincr(keys); }; };
+    it('increments a set of keys by 1', function () {
+      keysThatThrow = [];
+      keysThatDontThrow = [];
       for (i = 0; i < baseKeys.length; i++) {
           keys.push(baseKeys[i]);
           storage._store(baseKeys[i], keysValsObj[baseKeys[i]]);
@@ -148,36 +150,81 @@ describe('Incr Commands - ', function () {
           }
       }
 
-      var f = function (k) { var keys = k; return function () { storage.mincr(keys); }; };
+      expect(f(keysThatThrow)).toThrow();
+      expect(f(keysThatDontThrow)).not.toThrow();
+
+      // Check that keys that do not throw have the proper values
+      for (i in keysThatDontThrow) {
+        key = keysThatDontThrow[i];
+        expect(storage._retrieve(key)).toBe(parseInt(keysValsObj[key], 10) + 1);
+      }
+    });
+
+    it('sets a key\'s value to 1 if it does not exist in the key set', function () {
+      keys = [];
+      for (i = 0; i < baseKeys.length; i++) {
+          keys.push(baseKeys[i]);
+      }
+
+      // We do not expect keys to throw on increment, if the keys do not exist in localStorage
+      // (provided these are valid keys).
+      expect(f(keys)).not.toThrow();
+
+      // Check that keys that do not throw have the proper values
+      for (i in keys) {
+        key = keys[i];
+        expect(storage._retrieve(key)).toBe(1);
+      }
+    });
+  });
+
+  describe('mincrby', function() {
+    var f = function (k) { var keys = k; return function () { storage.mincrby(keys); }; };
+    it('increments a set of keys by their respective amounts', function () {
+      keysThatThrow = [];
+      keysThatDontThrow = [];
+      amount = Math.ceil(Math.random() * 100);
+      for (i = 0; i < baseKeys.length; i++) {
+          storage._store(baseKeys[i], keysValsObj[baseKeys[i]]);
+          switch(baseKeys[i]) {
+            case 'number':
+            case 'number1':
+            case 'number2':
+              keysThatDontThrow.push(baseKeys[i]);
+              keysThatDontThrow.push(amount);
+              break;
+            default:
+              keysThatThrow.push(baseKeys[i]);
+              keysThatThrow.push(amount);
+              break;
+          }
+      }
 
       expect(f(keysThatThrow)).toThrow();
       expect(f(keysThatDontThrow)).not.toThrow();
 
+      for (i = 0; i < keysThatDontThrow.length; i += 2) {
+        key = keysThatDontThrow[i];
+        amount = keysThatDontThrow[i + 1];
+        expect(storage._retrieve(key)).toBe(parseInt(keysValsObj[key], 10) + amount);
+      }
+    });
+
+    it('sets a key\'s value to its respective amount if it does not exist in the key set', function () {
+      keys = [];
+      amount = Math.ceil(Math.random() * 100);
+      for (i = 0; i < baseKeys.length; i++) {
+          keys.push(baseKeys[i]);
+          keys.push(amount);
+      }
+
+      expect(f(keys)).not.toThrow();
+
+      for (i = 0; i < keys.length; i += 2) {
+        key = keys[i];
+        amount = keys[i + 1];
+        expect(storage._retrieve(key)).toBe(amount);
+      }
     });
   });
-
-  // describe('mincrby', function() {
-  //   it('increments a set of keys by amount, and sets a key\'s value to 1 if it does not exist', function () {
-  //     for (i = 0; i < baseKeys.length; i++) {
-  //       if (typeof keysValsObj[baseKeys[i]] === 'number') {
-  //         keys.push(baseKeys[i]);
-  //         storage._store(baseKeys[i], keysValsObj[baseKeys[i]]);
-  //       }
-  //     }
-
-  //     amount = Math.ceil(Math.random() * 100);
-
-  //     // Input format: List
-  //     for (key in keys) {
-  //       array.push(keys[key]);
-  //       array.push(amount);
-  //     }
-
-  //     storage.mincrby(array);
-
-  //     for (i = 0; i < array.length; i += 2) {
-  //       //expect(storage._retrieve(array[i])).toBe(keysValsObj[array[i]] + array[i + 1]);
-  //     }
-  //   });
-  // });
 });
