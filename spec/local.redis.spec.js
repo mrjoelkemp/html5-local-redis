@@ -615,3 +615,33 @@ describe('randomkey', function () {
     }
   });
 });
+
+describe('keys', function () {
+  it('returns a list of keys that match pattern', function () {
+    var numKeys = 10,
+        pattern = 'foo*', // All keys that contain foo
+        i, l,
+        results,
+        keys,
+        containsKey;
+
+    // Store 10 misc key/value pairs
+    for (i = 0; i < numKeys; i++) {
+      storage._store('foo' + i, 'bar');
+    }
+
+    keys = Object.keys(storage);
+
+    results = storage.keys(pattern);
+
+    // Expect all of the keys in the results set
+    for (i = 0, l = keys.length; i < l; i++) {
+      containsKey = results.indexOf(keys[i]) > -1;
+      expect(containsKey).toBeTruthy();
+    }
+  });
+
+  it('returns an empty list if no keys match pattern', function () {
+    expect(storage.keys()).toEqual([]);
+  });
+});

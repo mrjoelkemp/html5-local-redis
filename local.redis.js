@@ -485,6 +485,22 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return keys[rindex];
   };
 
+  // Returns:   all keys matching the supplied pattern
+  proto.keys = function (pattern) {
+    var regex = new RegExp(pattern),
+        i, l,
+        results = [],
+        keys = Object.keys(this);
+
+    for (i = 0, l = keys.length; i < l; i++) {
+      if (regex.test(keys[i])) {
+        results.push(keys[i]);
+      }
+    }
+
+    return results;
+  };
+
   // rpush
 
   // lpush
