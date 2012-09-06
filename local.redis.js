@@ -1,6 +1,12 @@
 // Authors: Joel Kemp and Eudis Duran
 // File:    local.redis.js
 // Purpose: Replicates the Redis API for use with HTML5 Storage Objects
+// Usage:   window.localStorage.command where command is any of the
+//          supported redis-like commands. window.sessionStorage can also be used.
+
+// Fetch the utils
+var LocalRedis    = LocalRedis || {};
+LocalRedis.Utils  = LocalRedis.Utils || {};
 
 (function (window, exp) {
   "use strict";
@@ -85,11 +91,16 @@
   // Notes:   Auto stringifies
   //          resets an existing expiration if set was called directly
   proto.set = function(key, value) {
+    var hasExpiration = exp.hasExpiration(key, this),
+        expDelay;
+
     try {
       this._store(key, value);
-      // Reset the expiration of the key, if it should expire
-      if (exp.hasExpiration(key, this)) {
-        this.expire(key, exp.getExpirationDelay(key, this));
+      // Cancel the expiration of the key
+      if (hasExpiration) {
+        expDelay = exp.getExpirationDelay(key, this);
+
+        this.persist(key);
       }
     } catch (e) {
       throw e;
@@ -295,21 +306,40 @@
 
   // rename
   // Renames key to newkey
-  // Returns:
   // Throws:  TypeError if key == newkey
   //          ReferenceError if key does not exist
-  // Usage:  rename(key, newkey)
-  proto.rename = function (key, newkey) {
+  // Usage:   rename(key, newkey)
+  // Notes:   Transfers the key's TTL to the newKey
+  proto.rename = function (key, newKey) {
     if (arguments.length !== 2) {
       throw new TypeError('rename: wrong number of arguments');
-    } else if (key === newkey) {
+    } else if (key === newKey) {
       throw new TypeError('rename: source and destination objects are the same');
     } else if (! this._exists(key)) {
       throw new ReferenceError('rename: no such key');
     }
 
+    // Remove newKey's existing expiration
+    // since newKey inherits all characteristics from key
+    if (exp.hasExpiration(newKey, this)) {
+      exp.removeExpirationOf(newKey, this);
+    }
+
     var val = this._retrieve(key);
-    this._store(newkey, val);
+    this._store(newKey, val);
+
+    // Transfer an existing expiration to newKey
+    if (exp.hasExpiration(key, this)) {
+      // Get the TTL
+      var ttl = exp.getExpirationTTL(key, this);
+
+      // Transfer the TTL (ms) to the new key
+      this.pexpire(newKey, ttl);
+
+      // Remove the old key's expiration
+      exp.removeExpirationOf(key, this);
+    }
+
     this._remove(key);
   };
 
@@ -317,23 +347,25 @@
   // Renames key to newkey if newkey does not exist
   // Returns: 1 if key was renamed; 0 if newkey already exists
   // Usage:   renamenx(key, newkey)
+  // Notes:   Does not affect expiry
   // Throws:  TypeError if key == newkey
   //          ReferenceError if key does not exist
   //          Fails under the same conditions as rename
-  proto.renamenx = function (key, newkey) {
+  proto.renamenx = function (key, newKey) {
     if (arguments.length !== 2) {
       throw new TypeError('renamenx: wrong number of arguments');
-    } else if (key === newkey) {
+    } else if (key === newKey) {
       throw new TypeError('renamenx: source and destination objects are the same');
     } else if (! this._exists(key)) {
       throw new ReferenceError('renamenx: no such key');
     }
 
-    if(this._exists(newkey)) {
+    if(this._exists(newKey)) {
       return 0;
     } else {
-      // Call rename command to refresh an existing expiration
-      this.rename(key, newkey);
+      var val = this._retrieve(key);
+      this._store(newKey, val);
+      this._remove(key);
       return 1;
     }
   };
@@ -381,6 +413,7 @@
   // Sets key to value and returns the old value stored at key
   // Throws:  Error when key exists but does not hold a string value
   // Usage:   getset(key, value)
+  // Notes:   Removes an existing expiration for key
   // Returns: the old value stored at key or null when the key does not exist
   proto.getset = function (key, value) {
     // Grab the existing value or null if the key doesn't exist
@@ -401,12 +434,21 @@
   // Precond: delay in seconds
   // Returns: 1 if the timeout was set
   //          0 if the key does not exist or the timeout couldn't be set
-  // Notes:   We "refresh" an existing expire by clearing it and creating a new one
   proto.expire = function (key, delay) {
     var expKey = exp.createExpirationKey(key),
         that   = this,
-        msInSec= 1000,
         tid;
+
+    // Check if the delay is/contains a number
+    delay = parseFloat(delay, 10);
+    if (! delay) {
+      throw new TypeError('expire: delay should be convertible to a number');
+    } else if(! this._exists(key)) {
+      return 0;
+    }
+
+    // Convert the delay to ms (1000ms in 1s)
+    delay *= 1000;
 
     // Create an async task to delete the key
     // If the key doesn't exist, then the deletions do nothing
@@ -414,21 +456,68 @@
       // Avoid calling del() for side effects
       that._remove(key);
       that._remove(expKey);
-    }, delay * msInSec);       // delay in milliseconds
+    }, delay);
 
-    // If the key didn't exist or the timeout couldn't be set
-    if (! (this._exists(key) && tid)) {
-      return 0;
+    // If then timeout couldn't be set
+    if (! tid) return 0;
+
+    // Subsequent calls to expire on the same key
+    // will refresh the expiration with the new delay
+    if (exp.hasExpiration(key, this)) {
+      exp.removeExpirationOf(key, this);
     }
 
-    // Delete an existing expiration
-    // Should cancel existing timeout
-    clearTimeout(exp.getExpirationID(key, this));
-    this._remove(expKey);
-
     // Create the key's new expiration data
-    exp.setExpirationOf(key, tid, delay, this);
+    exp.setExpirationOf(key, tid, delay, new Date().getTime(), this);
     return 1;
+  };
+
+  // Expiry in milliseconds
+  // Returns: the same output as expire
+  proto.pexpire = function (key, delay) {
+    // Check if the delay is/contains a number
+    delay = parseFloat(delay, 10);
+    if (! delay) {
+      throw new TypeError('pexpire: delay should be convertible to a number');
+    }
+
+    // Expire will convert the delay to seconds,
+    // so we account for that by canceling out the conversion from ms to s
+    return this.expire(key, delay / 1000);
+  };
+
+  // Removes the expiration associated with the key
+  // Returns:   0 if the key does not exist or does not have an expiration
+  //            1 if the expiration was removed
+  proto.persist = function (key) {
+    if (! (this._exists(key) && exp.hasExpiration(key, this))) {
+      return 0;
+    } else {
+      clearTimeout(exp.getExpirationID(key, this));
+      this._remove(exp.createExpirationKey(key));
+      return 1;
+    }
+  };
+
+  // Returns: the time to live in seconds
+  //          -1 when key does not exist or does not have an expiration
+  // Notes:   Due to the possible delay between expiration timeout
+  //          firing and the callback execution, this ttl only reflects
+  //          the TTL for the timeout firing
+  proto.ttl = function (key) {
+    if(! (this._exists(key) && exp.hasExpiration(key, this))) {
+      return -1;
+    }
+
+    // 1sec = 1000ms
+    return exp.getExpirationTTL(key, this) / 1000;
+  };
+
+  // Returns: the time to live in milliseconds
+  //          -1 when key does not exist or does not have an expiration
+  // Note:    this command is just like ttl with ms units
+  proto.pttl = function (key) {
+    return this.ttl(key) * 1000;
   };
 
   // rpush
