@@ -501,20 +501,12 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return results;
   };
 
-  // rpush
+  ///////////////////////////
+  // String Commands
+  ///////////////////////////
 
-  // lpush
+  proto.append = function () {
 
-  // lrange
-
-  // llen
-
-  // lpop
-
-  // rpop
-
-  // sadd
-
-  // srem
+  };
 
 })(window, LocalRedis.Utils.Expiration);
