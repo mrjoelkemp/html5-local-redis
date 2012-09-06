@@ -569,3 +569,49 @@ describe('pttl', function () {
     });
   });
 })
+
+describe('randomkey', function () {
+  it('returns a random key within the storage object', function () {
+    storage._store('foo', 'bar');
+    storage._store('bar', 'foo');
+    storage._store('foobar', 'foobar');
+
+    var randKey = storage.randomkey(),
+        isValidKey = ['foo', 'bar', 'foobar'].indexOf(randKey) > -1;
+
+    expect(isValidKey).toBeTruthy();
+  });
+
+  it('returns null if the storage object is empty', function () {
+    expect(storage.randomkey()).toBe(null);
+  });
+
+  it('ensures fairness in that every key has a chance of being chosen', function () {
+    var numKeys = 10,
+        counts  = new Array(numKeys),
+        i;
+
+    // Store 10 misc key/value pairs
+    for (i = 0; i < numKeys; i++) {
+      storage._store('foo' + i, 'bar');
+      counts[i] = 0;
+    }
+
+    var keys  = Object.keys(storage),
+        index;
+
+    // Run 100 times and see if every key gets chosen at least once
+    for (i = 0; i < 100; i++) {
+      index = keys.indexOf(storage.randomkey());
+
+      expect(index).toBeGreaterThan(-1);
+
+      counts[index]++;
+    }
+
+    // Ensure that each key was called
+    for (i = 0; i < numKeys; i++) {
+      expect(counts[i]).toBeGreaterThan(0);
+    }
+  });
+});

@@ -469,6 +469,22 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return this.ttl(key) * 1000;
   };
 
+  // Returns:   a random key from the calling storage object.
+  //            null when the database is empty
+  proto.randomkey = function () {
+    var keys = Object.keys(this),
+        length = this.length,
+        // Random position within the list of keys
+        rindex = Math.floor(Math.random() * length);
+
+
+    if (! length) {
+      return null;
+    }
+
+    return keys[rindex];
+  };
+
   // rpush
 
   // lpush
