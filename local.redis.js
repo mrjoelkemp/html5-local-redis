@@ -115,13 +115,14 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Note:    Values match keys by index.
   // Usage:   mget('key1', 'key2', 'key3') or mget(['key1', 'key2', 'key3'])
   proto.mget = function(keys) {
-    var results = [];
+    var results = [],
+        i, l;
 
     // Determine the form of the parameters
     keys = (keys instanceof Array) ? keys : arguments;
 
     // Retrieve the value for each key
-    for (var i in keys) {
+    for (i = 0, l = keys.length; i < l; i++) {
       results[results.length] = this._retrieve(keys[i]);
     }
 
