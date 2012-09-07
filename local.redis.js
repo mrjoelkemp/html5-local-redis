@@ -27,8 +27,8 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   ///////////////////////////
 
   // Redis commands typically have side effects and so we should
-  //  be cautious to include calls to those functions when requiring
-  //  storage operations with no side effects.
+  // be cautious to include calls to those functions when requiring
+  // storage operations with no side effects.
   // These internal functions are safer to use for storage within commands
 
   // Stores the key/value pair
@@ -115,13 +115,14 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Note:    Values match keys by index.
   // Usage:   mget('key1', 'key2', 'key3') or mget(['key1', 'key2', 'key3'])
   proto.mget = function(keys) {
-    var results = [];
+    var results = [],
+        i, l;
 
     // Determine the form of the parameters
     keys = (keys instanceof Array) ? keys : arguments;
 
     // Retrieve the value for each key
-    for (var i in keys) {
+    for (i = 0, l = keys.length; i < l; i++) {
       results[results.length] = this._retrieve(keys[i]);
     }
 
@@ -155,22 +156,78 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   };
 
   // incr
-  // If the key does not exists, incr sets it first
+  // If the key does not exist, incr sets it to 1
   proto.incr = function (key) {
-    this.incrby(key, 1);
+    if (arguments.length !== 1) {
+      throw new TypeError('incr: wrong number of arguments');
+    }
+    var value          = this._retrieve(key),
+        keyType        = typeof key,
+        valType        = typeof value,
+        parsedValue    = parseInt(value, 10),
+        valueIsNaN     = isNaN(parsedValue),
+        isValNumber    = valType === 'number',
+        isNumberStr    = valType === 'string' && !valueIsNaN,
+        isNotNumberStr = valType === 'string' && valueIsNaN,
+        valOutOfRange  = false;
+
+    // Test to see if the value is out of range.
+    if (!valueIsNaN && (value >= Number.MAX_VALUE)) {
+      valOutOfRange = true;
+    }
+
+    // Before we decide whether to throw an error or to increment, we
+    // must distinguish between keys that have a value of null,
+    // and keys that simply do not exist in the local/session
+    // storage.  In the former case, we want to throw an error
+    // if the key exists, has a value of null and there is an attempt
+    // to increment.  In the former case we want to create the key
+    // and set it to 1.  This follows the Redis spec.
+
+    if ((!isValNumber && isNotNumberStr) || valOutOfRange || (valueIsNaN && this.hasOwnProperty(key))) {
+      // If the key exists and is set to null, an increment should throw an error
+      throw new TypeError('incr: value is not an integer or out of range');
+    } else if (isValNumber || isNumberStr) {
+      value = parsedValue + 1;
+    } else {
+      value = 1;
+    }
+    this._store(key, value);
   };
 
   // incrby
-  // If the key does not exists, incrby sets it first
+  // If the key does not exist, incrby sets it to amount
   proto.incrby = function (key, amount) {
-    var value = this._retrieve(key);
+    if (arguments.length !== 2) {
+      throw new TypeError('incrby: wrong number of arguments');
+    }
+    var value                = this._retrieve(key),
+        valType              = typeof value,
+        amountType           = typeof amount,
+        parsedValue          = parseInt(value, 10),
+        parsedAmount         = parseInt(amount, 10),
+        amountIsNaN          = isNaN(parsedAmount),
+        valueIsNaN           = isNaN(parsedValue),
+        isValNumber          = valType === 'number',
+        isAmountNumber       = amountType === 'number',
+        isValNumberStr       = valType === 'string' && !valueIsNaN,
+        isValNotNumberStr    = valType === 'string' && valueIsNaN,
+        isAmountNumberStr    = amountType === 'string' && !amountIsNaN,
+        isAmountNotNumberStr = amountType === 'string' && amountIsNaN,
+        anyOutOfRange        = false;
 
-    // Should test that it is not NaN before addition, to avoid
-    // cases with strings.
-    if (!isNaN(parseInt(value, 10))) {
-      value += amount;
-    } else {
-      value = 0 + amount;
+    // Test to see if value or amount is out of range.
+    if (!valueIsNaN && (value >= Number.MAX_VALUE) || !amountIsNaN && (amount >= Number.MAX_VALUE)) {
+      anyOutOfRange = true;
+    }
+    if ((!isValNumber && isValNotNumberStr || (valueIsNaN && this.hasOwnProperty(key)) || amountIsNaN)
+       || (!isAmountNumber && isAmountNotNumberStr)
+       || anyOutOfRange) {
+      throw new TypeError('incrby: value is not an integer or out of range');
+    } else if ((isValNumber || isValNumberStr) && (isAmountNumber || isAmountNumberStr)) {
+      value = parsedValue + parsedAmount;
+    } else if (isAmountNumber || isAmountNumberStr) {
+      value = parsedAmount;
     }
     this._store(key, value);
   };
@@ -191,16 +248,11 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   proto.mincrby = function (keysAmounts) {
     var i, l, key;
 
-    if (typeof keysAmounts === 'string') {
-      // String literals need to be 'boxed' in order to register as an instance.
-      keysAmounts = new String(keysAmounts);
-    }
-
-    if (keysAmounts instanceof Array || keysAmounts instanceof String) {
+    if (keysAmounts instanceof Array || typeof keysAmounts === 'string') {
       keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
       // Need to make sure an even number of arguments is passed in
       if ((keysAmounts.length & 0x1) !== 0) {
-        return;
+        throw new TypeError('mincrby: wrong number of arguments');
       }
       for (i = 0, l = keysAmounts.length; i < l; i += 2) {
         this.incrby(keysAmounts[i], keysAmounts[i + 1]);

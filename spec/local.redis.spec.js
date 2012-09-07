@@ -53,7 +53,7 @@ describe('set', function () {
       try {
         storage.set('foo', data + data);
       } catch(e) {
-        expect(e.arguments[0]).toBe('QUOTA_EXCEEDED_ERR');
+        expect(e).toBeTruthy();
         break;
       }
     }
