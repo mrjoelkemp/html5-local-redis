@@ -559,26 +559,20 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
 
   // Appends the value at the end of the string
   // Returns: the length of the string after appending
+  //          the original length for non-string values
   // Notes:   Appends if the key exists and is a string
-  //          Creates key and sets its value as the empty string
-  //          if the key does not exist
-
-  // FIXME: Redis still concats numerical values
+  //          If key does not exist, we initialize it to empty
+  //          and perform the append
   proto.append = function (key, value) {
-    var val;
+    var val = this._exists(key) ? this._retrieve(key) : "",
+        isString = typeof val === 'string';
 
-    if(this._exists(key)) {
-      val = this._retrieve(key);
-
-      if (typeof val === 'string') {
-        val += value;
-      }
-    } else {
-      val = "";
+    if (isString) {
+      val += value;
+      this._store(key, val);
     }
 
-    this._store(key, val);
-    return val.length;
+    return isString ? val.length : 1;
   };
 
 })(window, LocalRedis.Utils.Expiration);
