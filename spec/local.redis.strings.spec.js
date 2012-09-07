@@ -21,3 +21,7 @@ describe('append', function () {
     expect(storage._retrieve('foo')).toBe(4);
   });
 });
+
+describe('strlen', function () {
+
+});

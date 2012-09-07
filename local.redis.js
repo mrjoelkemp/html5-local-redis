@@ -575,4 +575,15 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return isString ? val.length : 1;
   };
 
+  // Returns: the length of the string value stored at key.
+  //          0 when key does not exist
+  // Throws:  when the key holds a non-string value
+  proto.strlen = function (key) {
+
+    if (! this._exists(key)) {
+      return 0;
+    }
+  };
+
+
 })(window, LocalRedis.Utils.Expiration);
