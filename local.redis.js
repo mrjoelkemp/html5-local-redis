@@ -157,6 +157,9 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // incr
   // If the key does not exist, incr sets it to 1
   proto.incr = function (key) {
+    if (arguments.length !== 1) {
+      throw new TypeError('incr: wrong number of arguments');
+    }
     var value          = this._retrieve(key),
         keyType        = typeof key,
         valType        = typeof value,
@@ -167,9 +170,6 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
         isNotNumberStr = valType === 'string' && valueIsNaN,
         valOutOfRange  = false;
 
-    if (arguments.length > 1) {
-      throw new TypeError('incr: wrong number of arguments');
-    }
     // Test to see if the value is out of range.
     if (!valueIsNaN && (value >= Number.MAX_VALUE)) {
       valOutOfRange = true;
@@ -197,6 +197,9 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // incrby
   // If the key does not exist, incrby sets it to amount
   proto.incrby = function (key, amount) {
+    if (arguments.length !== 2) {
+      throw new TypeError('incrby: wrong number of arguments');
+    }
     var value                = this._retrieve(key),
         valType              = typeof value,
         amountType           = typeof amount,
@@ -212,9 +215,6 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
         isAmountNotNumberStr = amountType === 'string' && amountIsNaN,
         anyOutOfRange        = false;
 
-    if (arguments.length !== 2) {
-      throw new TypeError('incrby: wrong number of arguments');
-    }
     // Test to see if value or amount is out of range.
     if (!valueIsNaN && (value >= Number.MAX_VALUE) || !amountIsNaN && (amount >= Number.MAX_VALUE)) {
       anyOutOfRange = true;

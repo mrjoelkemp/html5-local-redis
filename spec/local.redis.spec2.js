@@ -6,7 +6,6 @@ describe('Incr Commands - ', function () {
         'string': 'abcd',
         'null': null,
         'undefined': undefined,
-        'pi': 3.141592653589793238462643383279502884197169399375105820974944592307816406286,
         'really-big-number': Number.MAX_VALUE + Number.MAX_VALUE
       },
       baseKeys = Object.keys(keysValsObj),
@@ -15,9 +14,6 @@ describe('Incr Commands - ', function () {
       i,
       amount,
       array = [],
-      ROUND_AMOUNT = 1000,
-      roundedValue,
-      roundedRetrievedValue,
       keysThatThrow = [],
       keysThatDontThrow = [];
 
@@ -34,20 +30,12 @@ describe('Incr Commands - ', function () {
 
       for(i = 0; i < keys.length; i++) {
         // Javascript does late binding, we must call a lambda to bind at the point
-        // of interation.
+        // of iteration.
         (function (key) {
           // We provide closure so that the inner (throwing) function knows about 'key'
           var f = (function (k) { var key = k; return function () { storage.incr(key); }; })(key);
           // There are a few special cases that we explicitly handle.
           switch(key) {
-            case 'pi':
-              // Floating point comparision is not accurate as per the IEEE standard, we must
-              // work around this
-              roundedValue = Math.round(parseFloat(keysValsObj[key] + 1) * ROUND_AMOUNT / ROUND_AMOUNT);
-              storage.incr(key);
-              roundedRetrievedValue = Math.round(parseFloat(storage._retrieve(key)) * ROUND_AMOUNT / ROUND_AMOUNT);
-              expect(roundedRetrievedValue).toBe(roundedValue);
-              break;
             case 'string':
             case 'undefined':
             case 'null':
@@ -56,14 +44,14 @@ describe('Incr Commands - ', function () {
              break;
             default:
               storage.incr(key);
-              expect(storage._retrieve(key)).toBe( parseInt(keysValsObj[key] + 1, 10) );
+              expect(storage._retrieve(key)).toBe(parseInt(keysValsObj[key] + 1, 10));
               break;
           }
         })(keys[i]);
       }
     });
 
-    it('is 1 if the key does not exist', function () {
+    it('sets the value of a non-existent key to 1', function () {
       keys = [];
       for (i = 0; i < baseKeys.length; i++) {
         keys.push(baseKeys[i]);
@@ -71,13 +59,13 @@ describe('Incr Commands - ', function () {
       //Attempt to increment with no value set in storage.
       for(i = 0; i < keys.length; i++) {
         storage.incr(keys[i]);
-        expect(storage._retrieve(keys[i])).toBe(parseInt(1, 10) );
+        expect(storage._retrieve(keys[i])).toBe(parseInt(1, 10));
       }
     });
   });
 
   describe('incrby', function() {
-    it('increments a key\'s value by \'amount\', and set it to 1 if it does not exist', function () {
+    it('increments a key\'s value by \'amount\', and sets it to 1 if it does not exist', function () {
       keys = [];
       for (i = 0; i < baseKeys.length; i++) {
         keys.push(baseKeys[i]);
@@ -90,14 +78,6 @@ describe('Incr Commands - ', function () {
         (function (key, a) {
           var f = (function (k) { var key = k, amount = a; return function () { storage.incrby(key, amount); }; })(key, amount);
           switch(key) {
-            case 'pi':
-              // Floating point comparision is not accurate as per the IEEE standard, we must
-              // work around this
-              roundedValue = Math.round(parseFloat(keysValsObj[key] + amount) * ROUND_AMOUNT / ROUND_AMOUNT);
-              storage.incrby(key, amount);
-              roundedRetrievedValue = Math.round(parseFloat(storage._retrieve(key)) * ROUND_AMOUNT / ROUND_AMOUNT);
-              expect(roundedRetrievedValue).toBe(roundedValue);
-              break;
             case 'string':
             case 'undefined':
             case 'null':
@@ -113,7 +93,7 @@ describe('Incr Commands - ', function () {
       }
     });
 
-    it('is \'amount\' if the keys does not exist', function () {
+    it('is \'amount\' if the key does not exist', function () {
       keys = [];
       for (i = 0; i < baseKeys.length; i++) {
         keys.push(baseKeys[i]);
@@ -124,7 +104,7 @@ describe('Incr Commands - ', function () {
       // Attempt to increment with no value set in storage.
       for(i = 0; i < keys.length; i++) {
         storage.incrby(keys[i], amount);
-        expect(storage._retrieve(keys[i])).toBe(parseInt(amount, 10) );
+        expect(storage._retrieve(keys[i])).toBe(parseInt(amount, 10));
       }
     });
 
