@@ -373,8 +373,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
 
   // getKey (custom)
   // Retrieves the first key associated with the passed value
-  // Returns:   [key | keys | null]
-  //            a single key or
+  // Returns:   a single key or
   //            a list of keys if true is passed as second param or
   //            null if no keys were found
   // Params:    all = whether or not to retrieve all of the keys that match
