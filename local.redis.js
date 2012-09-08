@@ -72,8 +72,9 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   };
 
   // Returns true if the key exists, false otherwise.
+  // Notes:   A key with a set value of null still exists.
   proto._exists = function (key) {
-    return !! this._retrieve(key);
+    return !! this.hasOwnProperty(key);
   };
 
   ///////////////////////////

@@ -1,3 +1,33 @@
+describe('Internal Helpers', function () {
+  describe('_store', function () {
+
+  });
+
+  describe('_retrieve', function () {
+
+  });
+
+  describe('_remove', function () {
+
+  });
+
+  describe('_exists', function () {
+    it('should return true for a key with a set value of null', function () {
+      storage._store('foo', null);
+      expect(storage._exists('foo')).toBeTruthy();
+    });
+
+    it('should return false for a key that does not exist', function () {
+      expect(storage._exists('foo')).toBeFalsy();
+    });
+
+    it('should return true for a key that has a value', function () {
+      storage._store('foo', 'bar');
+      expect(storage._exists('foo')).toBeTruthy();
+    });
+  });
+});
+
 describe('set', function () {
   it('stores a value indexed by its key', function () {
     var k = 'foo',
