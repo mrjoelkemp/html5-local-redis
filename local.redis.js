@@ -578,9 +578,14 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //          0 when key does not exist
   // Throws:  when the key holds a non-string value
   proto.strlen = function (key) {
+    var val = this._retrieve(key);
 
-    if (! this._exists(key)) {
-      return 0;
+    if (! val) return 0;
+
+    if (typeof val === 'string') {
+      return val.length;
+    } else {
+      throw new Error('strlen: non-string value');
     }
   };
 

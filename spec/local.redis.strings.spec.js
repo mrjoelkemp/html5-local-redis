@@ -23,5 +23,15 @@ describe('append', function () {
 });
 
 describe('strlen', function () {
+  it('throws when the key\'s value is not a string', function () {
 
+  });
+
+  it('returns the length of the key\'s string value', function () {
+
+  });
+
+  it('returns 0 when the key does not exist', function () {
+
+  });
 });
