@@ -106,7 +106,7 @@ describe('set', function () {
 
   it('is chainable', function () {
     // Throws a TypeError if invocation is illegal
-    expect(function(){ storage.set('foo', 1).set('bar', 2); }).not.toThrow(TypeError);
+    expect(function(){ storage.set('foo', 1).set('bar', 2); }).not.toThrow();
   });
 
   it('throws an exception if the quota is reached', function () {
@@ -231,7 +231,7 @@ describe('mset', function () {
 
   it('is chainable', function () {
     // Throws a TypeError if invocation is illegal
-    expect(function(){ storage.mset(keysVals).mset(keysVals); }).not.toThrow(new TypeError("Illegal invocation"));
+    expect(function(){ storage.mset(keysVals).mset(keysVals); }).not.toThrow();
   });
 
   it('does not reset a key\'s existing expiration', function () {
@@ -309,17 +309,17 @@ describe('exists', function () {
   });
 
   it('throws a TypeError if more than one argument is given', function () {
-    expect(function() {storage.exists('foo', 'bar')}).toThrow(new TypeError("exists: wrong number of arguments"));
+    expect(function() {storage.exists('foo', 'bar')}).toThrow();
   });
 });
 
 describe('rename', function () {
   it('throws a ReferenceError when the key does not exist', function () {
-    expect(function () { storage.rename('foo', 'foobar'); }).toThrow(new ReferenceError("rename: no such key"));
+    expect(function () { storage.rename('foo', 'foobar'); }).toThrow();
   });
 
   it('throws a TypeError when the key is the same as the newkey', function () {
-    expect(function () { storage.rename('foo', 'foo'); }).toThrow(new TypeError("rename: source and destination objects are the same"));
+    expect(function () { storage.rename('foo', 'foo'); }).toThrow();
   });
 
   it('renames a key to a given name', function () {
@@ -330,9 +330,8 @@ describe('rename', function () {
   });
 
   it('throws a TypeError for anything but 2 inputs', function () {
-    var expectedError = new TypeError("rename: wrong number of arguments");
-    expect(function () { storage.rename('foo'); }).toThrow(expectedError);
-    expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow(expectedError);
+    expect(function () { storage.rename('foo'); }).toThrow();
+    expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow();
   });
 
   it('transfers the ttl of the old key\'s expiration', function () {
@@ -368,11 +367,11 @@ describe('rename', function () {
 
 describe('renamenx', function () {
   it('throws a ReferenceError when the key does not exist', function () {
-    expect(function () { storage.renamenx('foo', 'foobar'); }).toThrow(new ReferenceError("renamenx: no such key"));
+    expect(function () { storage.renamenx('foo', 'foobar'); }).toThrow();
   });
 
   it('throws a TypeError when the key is the same as the newkey', function () {
-    expect(function () { storage.renamenx('foo', 'foo'); }).toThrow(new TypeError("renamenx: source and destination objects are the same"));
+    expect(function () { storage.renamenx('foo', 'foo'); }).toThrow();
   });
 
   it('returns 0 if the newkey already exists', function (){
@@ -389,9 +388,8 @@ describe('renamenx', function () {
   });
 
   it('throws a TypeError for anything but 2 inputs', function () {
-    var expectedError = new TypeError("renamenx: wrong number of arguments");
-    expect(function () { storage.renamenx('foo', 'foobar', 'bar'); }).toThrow(expectedError);
-    expect(function () { storage.renamenx('foo'); }).toThrow(expectedError);
+    expect(function () { storage.renamenx('foo', 'foobar', 'bar'); }).toThrow();
+    expect(function () { storage.renamenx('foo'); }).toThrow();
   });
 
   it('doesn\'t transfer the TTL of a key\'s existing expiration', function () {
@@ -430,7 +428,7 @@ describe('getKey', function () {
   });
 
   it('throws a TypeError if too many arguments are given', function () {
-    expect(function () { storage.getKey('foo', 'bar', 'car'); }).toThrow(new TypeError('getKey: wrong number of arguments'));
+    expect(function () { storage.getKey('foo', 'bar', 'car'); }).toThrow();
   });
 });
 
@@ -453,7 +451,7 @@ describe('getset', function () {
 
   it('throws an exception when the existing value is not a string', function () {
     storage.setItem('foo', 1);
-    expect(function () { storage.getset('foo', 'bar'); }).toThrow(new Error('getset: not a string value'));
+    expect(function () { storage.getset('foo', 'bar'); }).toThrow();
   });
 
   it('cancels an existing expiration for the key', function () {
@@ -502,7 +500,7 @@ describe('expire', function () {
 
   it('throws an error if a number (or string version of a number) was not supplied', function () {
     storage.setItem('foo', 'bar');
-    expect(function () { storage.expire('foo', 'bar'); }).toThrow(new TypeError('expire: delay should be convertible to a number'));
+    expect(function () { storage.expire('foo', 'bar'); }).toThrow();
   });
 
   it('delays in seconds', function () {
