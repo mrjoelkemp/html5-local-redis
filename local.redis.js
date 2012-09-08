@@ -81,197 +81,11 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Key Commands
   ///////////////////////////
 
-  // get
   // Returns: The (parsed) value associated with the passed key, if it exists.
   proto.get = function(key) {
     return this._retrieve(key);
   };
 
-  // set
-  // Stores the passed value indexed by the passed key
-  // Notes:   Auto stringifies
-  //          resets an existing expiration if set was called directly
-  proto.set = function(key, value) {
-    var hasExpiration = exp.hasExpiration(key, this),
-        expDelay;
-
-    try {
-      this._store(key, value);
-      // Cancel the expiration of the key
-      if (hasExpiration) {
-        expDelay = exp.getExpirationDelay(key, this);
-
-        this.persist(key);
-      }
-    } catch (e) {
-      throw e;
-    }
-
-    // Makes chainable
-    return this;
-  };
-
-  // mget
-  // Returns: A list of values for the passed key(s).
-  // Note:    Values match keys by index.
-  // Usage:   mget('key1', 'key2', 'key3') or mget(['key1', 'key2', 'key3'])
-  proto.mget = function(keys) {
-    var results = [],
-        i, l;
-
-    // Determine the form of the parameters
-    keys = (keys instanceof Array) ? keys : arguments;
-
-    // Retrieve the value for each key
-    for (i = 0, l = keys.length; i < l; i++) {
-      results[results.length] = this._retrieve(keys[i]);
-    }
-
-    return results;
-  };
-
-  // mset
-  // Allows the setting of multiple key value pairs
-  // Usage:   mset('key1', 'val1', 'key2', 'val2') or mset(['key1', 'val1', 'key2', 'val2'])
-  // Notes:   If there's an odd number of elements, unset values default to undefined
-  proto.mset = function (keysVals) {
-    var isArray   = keysVals instanceof Array,
-        isObject  = keysVals instanceof Object,
-        i, l, prop;
-
-    if (isArray) {
-      for (i = 0, l = keysVals.length; i < l; i += 2) {
-        this._store(keysVals[i], keysVals[i + 1]);
-      }
-    } else if (isObject) {
-      for (prop in keysVals) {
-        this._store(prop, keysVals[prop]);
-      }
-    } else {
-      for (i = 0, l = arguments.length; i < l; i += 2) {
-        this._store(arguments[i], arguments[i + 1]);
-      }
-    }
-
-    return this;
-  };
-
-  // incr
-  // If the key does not exist, incr sets it to 1
-  proto.incr = function (key) {
-    if (arguments.length !== 1) {
-      throw new TypeError('incr: wrong number of arguments');
-    }
-    var value          = this._retrieve(key),
-        keyType        = typeof key,
-        valType        = typeof value,
-        parsedValue    = parseInt(value, 10),
-        valueIsNaN     = isNaN(parsedValue),
-        isValNumber    = valType === 'number',
-        isNumberStr    = valType === 'string' && !valueIsNaN,
-        isNotNumberStr = valType === 'string' && valueIsNaN,
-        valOutOfRange  = false;
-
-    // Test to see if the value is out of range.
-    if (!valueIsNaN && (value >= Number.MAX_VALUE)) {
-      valOutOfRange = true;
-    }
-
-    // Before we decide whether to throw an error or to increment, we
-    // must distinguish between keys that have a value of null,
-    // and keys that simply do not exist in the local/session
-    // storage.  In the former case, we want to throw an error
-    // if the key exists, has a value of null and there is an attempt
-    // to increment.  In the former case we want to create the key
-    // and set it to 1.  This follows the Redis spec.
-
-    if ((!isValNumber && isNotNumberStr) || valOutOfRange || (valueIsNaN && this.hasOwnProperty(key))) {
-      // If the key exists and is set to null, an increment should throw an error
-      throw new TypeError('incr: value is not an integer or out of range');
-    } else if (isValNumber || isNumberStr) {
-      value = parsedValue + 1;
-    } else {
-      value = 1;
-    }
-    this._store(key, value);
-  };
-
-  // incrby
-  // If the key does not exist, incrby sets it to amount
-  proto.incrby = function (key, amount) {
-    if (arguments.length !== 2) {
-      throw new TypeError('incrby: wrong number of arguments');
-    }
-    var value                = this._retrieve(key),
-        valType              = typeof value,
-        amountType           = typeof amount,
-        parsedValue          = parseInt(value, 10),
-        parsedAmount         = parseInt(amount, 10),
-        amountIsNaN          = isNaN(parsedAmount),
-        valueIsNaN           = isNaN(parsedValue),
-        isValNumber          = valType === 'number',
-        isAmountNumber       = amountType === 'number',
-        isValNumberStr       = valType === 'string' && !valueIsNaN,
-        isValNotNumberStr    = valType === 'string' && valueIsNaN,
-        isAmountNumberStr    = amountType === 'string' && !amountIsNaN,
-        isAmountNotNumberStr = amountType === 'string' && amountIsNaN,
-        anyOutOfRange        = false;
-
-    // Test to see if value or amount is out of range.
-    if (!valueIsNaN && (value >= Number.MAX_VALUE) || !amountIsNaN && (amount >= Number.MAX_VALUE)) {
-      anyOutOfRange = true;
-    }
-    if ((!isValNumber && isValNotNumberStr || (valueIsNaN && this.hasOwnProperty(key)) || amountIsNaN)
-       || (!isAmountNumber && isAmountNotNumberStr)
-       || anyOutOfRange) {
-      throw new TypeError('incrby: value is not an integer or out of range');
-    } else if ((isValNumber || isValNumberStr) && (isAmountNumber || isAmountNumberStr)) {
-      value = parsedValue + parsedAmount;
-    } else if (isAmountNumber || isAmountNumberStr) {
-      value = parsedAmount;
-    }
-    this._store(key, value);
-  };
-
-  // mincr
-  proto.mincr = function (keys) {
-    var i, l;
-    keys = (keys instanceof Array) ? keys : arguments;
-    for(i = 0, l = keys.length; i < l; i++) {
-      this.incr(keys[i]);
-    }
-  };
-
-  // mincrby (custom)
-  // Usage:   mincrby('key1', 1, 'key2', 4) or
-  //          mincrby(['key1', 1, 'key2', 2]) or
-  //          mincrby({'key1': 1, 'key2': 2})
-  proto.mincrby = function (keysAmounts) {
-    var i, l, key;
-
-    if (keysAmounts instanceof Array || typeof keysAmounts === 'string') {
-      keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
-      // Need to make sure an even number of arguments is passed in
-      if ((keysAmounts.length & 0x1) !== 0) {
-        throw new TypeError('mincrby: wrong number of arguments');
-      }
-      for (i = 0, l = keysAmounts.length; i < l; i += 2) {
-        this.incrby(keysAmounts[i], keysAmounts[i + 1]);
-      }
-    } else if (keysAmounts instanceof Object) {
-      for (key in keysAmounts) {
-        this.incrby(key, keysAmounts[key]);
-      }
-    }
-  };
-
-  // decr
-
-  // decrby
-
-  // mdecrby
-
-  // del
   // Removes the specified key(s)
   // Returns: the number of keys removed.
   // Notes:   if the key doesn't exist, it's ignored.
@@ -295,7 +109,6 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return numKeysDeleted;
   };
 
-  // exists
   // Returns: 1 if the key exists, 0 if they key doesn't exist.
   // Throws:  TypeError if more than one argument is supplied
   proto.exists = function (key) {
@@ -306,7 +119,6 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return (this._exists(key)) ? 1 : 0;
   };
 
-  // rename
   // Renames key to newkey
   // Throws:  TypeError if key == newkey
   //          ReferenceError if key does not exist
@@ -345,7 +157,6 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     this._remove(key);
   };
 
-  // renamenx
   // Renames key to newkey if newkey does not exist
   // Returns: 1 if key was renamed; 0 if newkey already exists
   // Usage:   renamenx(key, newkey)
@@ -372,12 +183,12 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     }
   };
 
-  // getKey (custom)
   // Retrieves the first key associated with the passed value
   // Returns:   a single key or
   //            a list of keys if true is passed as second param or
   //            null if no keys were found
   // Params:    all = whether or not to retrieve all of the keys that match
+  // Notes:     Custom, non-redis method
   proto.getKey = function (val) {
     if (arguments.length > 2) {
       throw new TypeError('getKey: wrong number of arguments');
@@ -410,27 +221,6 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return keys;
   };
 
-  // getset
-  // Sets key to value and returns the old value stored at key
-  // Throws:  Error when key exists but does not hold a string value
-  // Usage:   getset(key, value)
-  // Notes:   Removes an existing expiration for key
-  // Returns: the old value stored at key or null when the key does not exist
-  proto.getset = function (key, value) {
-    // Grab the existing value or null if the key doesn't exist
-    var oldVal = this._retrieve(key);
-
-    // Throw an exception if the value isn't a string
-    if (typeof oldVal !== 'string' && oldVal !== null) {
-      throw new Error('getset: not a string value');
-    }
-
-    // Use set to refresh an existing expiration
-    this.set(key, value);
-    return oldVal;
-  };
-
-  // expire
   // Expires the passed key after the passed seconds
   // Precond: delay in seconds
   // Returns: 1 if the timeout was set
@@ -556,6 +346,204 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   ///////////////////////////
   // String Commands
   ///////////////////////////
+
+  // Stores the passed value indexed by the passed key
+  // Notes:   Auto stringifies
+  //          resets an existing expiration if set was called directly
+  proto.set = function(key, value) {
+    var hasExpiration = exp.hasExpiration(key, this),
+        expDelay;
+
+    try {
+      this._store(key, value);
+      // Cancel the expiration of the key
+      if (hasExpiration) {
+        expDelay = exp.getExpirationDelay(key, this);
+
+        this.persist(key);
+      }
+    } catch (e) {
+      throw e;
+    }
+
+    // Makes chainable
+    return this;
+  };
+
+  // Returns: A list of values for the passed key(s).
+  // Note:    Values match keys by index.
+  // Usage:   mget('key1', 'key2', 'key3') or mget(['key1', 'key2', 'key3'])
+  proto.mget = function(keys) {
+    var results = [],
+        i, l;
+
+    // Determine the form of the parameters
+    keys = (keys instanceof Array) ? keys : arguments;
+
+    // Retrieve the value for each key
+    for (i = 0, l = keys.length; i < l; i++) {
+      results[results.length] = this._retrieve(keys[i]);
+    }
+
+    return results;
+  };
+
+  // Allows the setting of multiple key value pairs
+  // Usage:   mset('key1', 'val1', 'key2', 'val2') or mset(['key1', 'val1', 'key2', 'val2'])
+  // Notes:   If there's an odd number of elements, unset values default to undefined
+  proto.mset = function (keysVals) {
+    var isArray   = keysVals instanceof Array,
+        isObject  = keysVals instanceof Object,
+        i, l, prop;
+
+    if (isArray) {
+      for (i = 0, l = keysVals.length; i < l; i += 2) {
+        this._store(keysVals[i], keysVals[i + 1]);
+      }
+    } else if (isObject) {
+      for (prop in keysVals) {
+        this._store(prop, keysVals[prop]);
+      }
+    } else {
+      for (i = 0, l = arguments.length; i < l; i += 2) {
+        this._store(arguments[i], arguments[i + 1]);
+      }
+    }
+
+    return this;
+  };
+
+  // Sets key to value and returns the old value stored at key
+  // Throws:  Error when key exists but does not hold a string value
+  // Usage:   getset(key, value)
+  // Notes:   Removes an existing expiration for key
+  // Returns: the old value stored at key or null when the key does not exist
+  proto.getset = function (key, value) {
+    // Grab the existing value or null if the key doesn't exist
+    var oldVal = this._retrieve(key);
+
+    // Throw an exception if the value isn't a string
+    if (typeof oldVal !== 'string' && oldVal !== null) {
+      throw new Error('getset: not a string value');
+    }
+
+    // Use set to refresh an existing expiration
+    this.set(key, value);
+    return oldVal;
+  };
+
+  // If the key does not exist, incr sets it to 1
+  proto.incr = function (key) {
+    if (arguments.length !== 1) {
+      throw new TypeError('incr: wrong number of arguments');
+    }
+    var value          = this._retrieve(key),
+        keyType        = typeof key,
+        valType        = typeof value,
+        parsedValue    = parseInt(value, 10),
+        valueIsNaN     = isNaN(parsedValue),
+        isValNumber    = valType === 'number',
+        isNumberStr    = valType === 'string' && !valueIsNaN,
+        isNotNumberStr = valType === 'string' && valueIsNaN,
+        valOutOfRange  = false;
+
+    // Test to see if the value is out of range.
+    if (!valueIsNaN && (value >= Number.MAX_VALUE)) {
+      valOutOfRange = true;
+    }
+
+    // Before we decide whether to throw an error or to increment, we
+    // must distinguish between keys that have a value of null,
+    // and keys that simply do not exist in the local/session
+    // storage.  In the former case, we want to throw an error
+    // if the key exists, has a value of null and there is an attempt
+    // to increment.  In the former case we want to create the key
+    // and set it to 1.  This follows the Redis spec.
+
+    if ((!isValNumber && isNotNumberStr) || valOutOfRange || (valueIsNaN && this.hasOwnProperty(key))) {
+      // If the key exists and is set to null, an increment should throw an error
+      throw new TypeError('incr: value is not an integer or out of range');
+    } else if (isValNumber || isNumberStr) {
+      value = parsedValue + 1;
+    } else {
+      value = 1;
+    }
+    this._store(key, value);
+  };
+
+  // If the key does not exist, incrby sets it to amount
+  proto.incrby = function (key, amount) {
+    if (arguments.length !== 2) {
+      throw new TypeError('incrby: wrong number of arguments');
+    }
+    var value                = this._retrieve(key),
+        valType              = typeof value,
+        amountType           = typeof amount,
+        parsedValue          = parseInt(value, 10),
+        parsedAmount         = parseInt(amount, 10),
+        amountIsNaN          = isNaN(parsedAmount),
+        valueIsNaN           = isNaN(parsedValue),
+        isValNumber          = valType === 'number',
+        isAmountNumber       = amountType === 'number',
+        isValNumberStr       = valType === 'string' && !valueIsNaN,
+        isValNotNumberStr    = valType === 'string' && valueIsNaN,
+        isAmountNumberStr    = amountType === 'string' && !amountIsNaN,
+        isAmountNotNumberStr = amountType === 'string' && amountIsNaN,
+        anyOutOfRange        = false;
+
+    // Test to see if value or amount is out of range.
+    if (!valueIsNaN && (value >= Number.MAX_VALUE) || !amountIsNaN && (amount >= Number.MAX_VALUE)) {
+      anyOutOfRange = true;
+    }
+    if ((!isValNumber && isValNotNumberStr || (valueIsNaN && this.hasOwnProperty(key)) || amountIsNaN)
+       || (!isAmountNumber && isAmountNotNumberStr)
+       || anyOutOfRange) {
+      throw new TypeError('incrby: value is not an integer or out of range');
+    } else if ((isValNumber || isValNumberStr) && (isAmountNumber || isAmountNumberStr)) {
+      value = parsedValue + parsedAmount;
+    } else if (isAmountNumber || isAmountNumberStr) {
+      value = parsedAmount;
+    }
+    this._store(key, value);
+  };
+
+  // Increments multiple keys by 1
+  proto.mincr = function (keys) {
+    var i, l;
+    keys = (keys instanceof Array) ? keys : arguments;
+    for(i = 0, l = keys.length; i < l; i++) {
+      this.incr(keys[i]);
+    }
+  };
+
+  // Usage:   mincrby('key1', 1, 'key2', 4) or
+  //          mincrby(['key1', 1, 'key2', 2]) or
+  //          mincrby({'key1': 1, 'key2': 2})
+  // Notes:   Custom, non-redis method
+  proto.mincrby = function (keysAmounts) {
+    var i, l, key;
+
+    if (keysAmounts instanceof Array || typeof keysAmounts === 'string') {
+      keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
+      // Need to make sure an even number of arguments is passed in
+      if ((keysAmounts.length & 0x1) !== 0) {
+        throw new TypeError('mincrby: wrong number of arguments');
+      }
+      for (i = 0, l = keysAmounts.length; i < l; i += 2) {
+        this.incrby(keysAmounts[i], keysAmounts[i + 1]);
+      }
+    } else if (keysAmounts instanceof Object) {
+      for (key in keysAmounts) {
+        this.incrby(key, keysAmounts[key]);
+      }
+    }
+  };
+
+  // decr
+
+  // decrby
+
+  // mdecrby
 
   // Appends the value at the end of the string
   // Returns: the length of the string after appending
