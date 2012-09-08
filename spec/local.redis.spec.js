@@ -19,7 +19,38 @@ describe('Internal Helpers', function () {
   });
 
   describe('_retrieve', function () {
+    it('returns the value associated with the key', function () {
+      storage._store('foo', 'bar');
+      expect(storage._retrieve('foo')).toBe('bar');
+    });
 
+    it('returns a string if the value is a string literal (alphabetical)', function () {
+      var k = 'foo',
+          v = 'foobar';
+
+      storage.setItem(k, v);
+      expect(storage._retrieve(k)).toBe(v);
+    });
+
+    it('returns an object for a string value that contains an object', function () {
+      var k = 'foo',
+          v = {"name": "foobar"};
+
+      storage.setItem(k, stringify(v));
+      expect(storage._retrieve(k)).toEqual(v);
+    });
+
+    it('returns a number for a string value that contains a number', function () {
+      var k = 'foo',
+          v = 2,
+          val;
+
+      storage.setItem(k, v);
+
+      val = storage._retrieve(k);
+
+      expect(val).toBe(v);
+    });
   });
 
   describe('_remove', function () {
@@ -119,34 +150,6 @@ describe('get', function () {
     // Set the data – uses the safer setItem to avoid dependency on untested set().
     storage.setItem(k, v);
     expect(storage.get(k)).toBe(v);
-  });
-
-  it('returns a string if the value is a string literal (alphabetical)', function () {
-    var k = 'foo',
-        v = 'Yogi Bear';
-
-    storage.setItem(k, v);
-    expect(storage.get(k)).toBe(v);
-  });
-
-  it('returns an object for a string value that contains an object', function () {
-    var k = 'foo',
-        v = {"name": "Yogi Bear"};
-
-    storage.setItem(k, stringify(v));
-    expect(storage.get(k)).toEqual(v);
-  });
-
-  it('returns a number for a string value that contains a number', function () {
-    var k = 'foo',
-        v = 2,
-        val;
-
-    storage.setItem(k, v);
-
-    val = storage.get(k);
-
-    expect(val).toBe(v);
   });
 
   it('accepts an object as a key', function () {
