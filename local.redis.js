@@ -82,7 +82,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   ///////////////////////////
 
   // get
-  // Returns: [number | string | object | null] The (parsed) value associated with the passed key, if it exists.
+  // Returns: The (parsed) value associated with the passed key, if it exists.
   proto.get = function(key) {
     return this._retrieve(key);
   };
