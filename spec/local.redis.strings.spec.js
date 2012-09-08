@@ -24,14 +24,16 @@ describe('append', function () {
 
 describe('strlen', function () {
   it('throws when the key\'s value is not a string', function () {
-
+    storage._store('foo', 4);
+    expect(function () { storage.strlen('foo'); }).toThrow();
   });
 
   it('returns the length of the key\'s string value', function () {
-
+    storage._store('foo', 'bar');
+    expect(storage.strlen('foo')).toBe('bar'.length);
   });
 
   it('returns 0 when the key does not exist', function () {
-
+    expect(storage.strlen('foo')).toBe(0);
   });
 });
