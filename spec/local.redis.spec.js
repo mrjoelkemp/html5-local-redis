@@ -1,3 +1,83 @@
+describe('Internal Helpers', function () {
+  describe('_store', function () {
+    it('sets the key to the given value', function () {
+      storage._store('foo', 'bar');
+      expect(storage.getItem('foo')).toBe('bar');
+    });
+
+    it('auto stringifies an object being stored as a value', function () {
+      var k = 'foo',
+          v = {"name": "foobar"},
+          type;
+
+      storage._store(k, v);
+
+      // Check that the value stored is a string
+      type = typeof storage.getItem(k);
+      expect(type).toBe('string');
+    });
+  });
+
+  describe('_retrieve', function () {
+    it('returns the value associated with the key', function () {
+      storage._store('foo', 'bar');
+      expect(storage._retrieve('foo')).toBe('bar');
+    });
+
+    it('returns a string if the value is a string literal (alphabetical)', function () {
+      var k = 'foo',
+          v = 'foobar';
+
+      storage.setItem(k, v);
+      expect(storage._retrieve(k)).toBe(v);
+    });
+
+    it('returns an object for a string value that contains an object', function () {
+      var k = 'foo',
+          v = {"name": "foobar"};
+
+      storage.setItem(k, stringify(v));
+      expect(storage._retrieve(k)).toEqual(v);
+    });
+
+    it('returns a number for a string value that contains a number', function () {
+      var k = 'foo',
+          v = 2,
+          val;
+
+      storage.setItem(k, v);
+
+      val = storage._retrieve(k);
+
+      expect(val).toBe(v);
+    });
+  });
+
+  describe('_remove', function () {
+    it('deletes the key and its value from storage', function () {
+      storage._store('foo', 'bar');
+      storage._remove('foo');
+      expect(storage._retrieve('foo')).toBe(null);
+    });
+  });
+
+  describe('_exists', function () {
+    it('returns true for a key with a set value of null', function () {
+      storage._store('foo', null);
+      expect(storage._exists('foo')).toBeTruthy();
+    });
+
+    it('returns false for a key that does not exist', function () {
+      expect(storage._exists('foo')).toBeFalsy();
+    });
+
+    it('returns true for a key that has a value', function () {
+      storage._store('foo', 'bar');
+      expect(storage._exists('foo')).toBeTruthy();
+    });
+  });
+});
+
 describe('set', function () {
   it('stores a value indexed by its key', function () {
     var k = 'foo',
@@ -10,18 +90,6 @@ describe('set', function () {
     // Uses getItem to avoid the dependency on the untested get()
     var val = storage.getItem(k);
     expect(val).toBe(v);
-  });
-
-  it('auto stringifies an object being stored as a value', function () {
-    var k = 'foo',
-        v = {"name": "Yogi Bear"},
-        type;
-
-    storage.set(k, v);
-
-    // Check that the value stored is a string
-    type = typeof storage.getItem(k);
-    expect(type).toBe('string');
   });
 
   it('accepts objects as keys', function () {
@@ -44,7 +112,7 @@ describe('set', function () {
   it('throws an exception if the quota is reached', function () {
     var i, data;
 
-    storage.set('foo', "m");
+    storage.set('foo', 'm');
 
     // Exceed the quota
     for(i = 0 ; i < 40 ; i++) {
@@ -53,10 +121,28 @@ describe('set', function () {
       try {
         storage.set('foo', data + data);
       } catch(e) {
-        expect(e.arguments[0]).toBe("QUOTA_EXCEEDED_ERR");
+        expect(e).toBeTruthy();
         break;
       }
     }
+  });
+
+  it('cancels an existing expiration for the key', function () {
+    storage._store('foo', 'bar');
+    // expire foo after 15ms
+    storage.expire('foo', 15 / 1000);
+
+    waits(10);
+    runs(function () {
+      // Shouldn't refresh the expiration
+      storage.set('foo', 'foobar');
+    });
+
+    // Expires 'foo' if it hasn't been reset by 'set'
+    waits(10);
+    runs(function () {
+      expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+    });
   });
 }); // end set
 
@@ -68,34 +154,6 @@ describe('get', function () {
     // Set the data – uses the safer setItem to avoid dependency on untested set().
     storage.setItem(k, v);
     expect(storage.get(k)).toBe(v);
-  });
-
-  it('returns a string if the value is a string literal (alphabetical)', function () {
-    var k = 'foo',
-        v = 'Yogi Bear';
-
-    storage.setItem(k, v);
-    expect(storage.get(k)).toBe(v);
-  });
-
-  it('returns an object for a string value that contains an object', function () {
-    var k = 'foo',
-        v = {"name": "Yogi Bear"};
-
-    storage.setItem(k, stringify(v));
-    expect(storage.get(k)).toEqual(v);
-  });
-
-  it('returns a number for a string value that contains a number', function () {
-    var k = 'foo',
-        v = 2,
-        val;
-
-    storage.setItem(k, v);
-
-    val = storage.get(k);
-
-    expect(val).toBe(v);
   });
 
   it('accepts an object as a key', function () {
@@ -114,29 +172,25 @@ describe('get', function () {
 
 describe('mget', function () {
   it('retrieves the values for multiple keys', function () {
-    var keysVals  = ['first', 'Joel', 'last', 'Kemp'],
-        results   = [],
-        expectVals= [keysVals[1], keysVals[3]];
-
-    // Store all of the data
-    for (var i = 0, l = keysVals.length; i < l; i += 2) {
-      storage.setItem(keysVals[i], keysVals[i + 1]);
-    }
-
+    storage._store('foo', 'foobar');
+    storage._store('bar', 'foobar');
     // Check the mget('key1', 'key2') syntax
-    results[0] = storage.mget(keysVals[0], keysVals[2]);
+    var results = storage.mget('foo', 'bar');
+    // Check that the results sets have the proper value
+    expect(results).toEqual(['foobar', 'foobar']);
+  });
 
+  it('retrieves the values for each key in a supplied list of keys', function () {
+    storage._store('foo', 'foobar');
+    storage._store('bar', 'foobar');
     // Check the mget(['key1', 'key2']) syntax
-    results[1] = storage.mget([keysVals[0], keysVals[2]]);
-
-    // Check that the results sets have the proper values
-    expect(results[0]).toEqual(expectVals);
-    expect(results[1]).toEqual(expectVals);
+    var results = storage.mget(['foo', 'bar']);
+    expect(results).toEqual(['foobar', 'foobar']);
   });
 }); // end mget
 
 describe('mset', function () {
-  var keysVals  = ['first', 'Joel', 'last', 'Kemp'];
+  var keysVals  = ['foo', 'foobar', 'bar', 'foobar'];
 
   afterEach(function () {
     // Remove the dummy data to test other insertion syntaxes
@@ -179,6 +233,23 @@ describe('mset', function () {
     // Throws a TypeError if invocation is illegal
     expect(function(){ storage.mset(keysVals).mset(keysVals); }).not.toThrow(new TypeError("Illegal invocation"));
   });
+
+  it('does not reset a key\'s existing expiration', function () {
+    storage._store('foo', 'bar');
+    storage.expire('foo', 15 / 1000);
+
+    waits(10);
+    runs(function () {
+      // Should not affect the expiration of 'foo'
+      storage.mset('foo', 'foobar');
+    });
+
+    waits(10);
+    runs(function () {
+      // 'foo' should have expired
+      expect(storage._exists('foo')).toBeFalsy();
+    });
+  });
 }); // end mset
 
 describe('del', function () {
@@ -214,6 +285,16 @@ describe('del', function () {
   it('ignores keys that don\'t exist', function () {
     var deleted = storage.del('foo');
     expect(deleted).toEqual(0);
+  });
+
+  it('removes a key\'s existing expiration information', function () {
+    var expKey = exp.createExpirationKey('foo', storage);
+    storage.setItem('foo', 'bar');
+
+    // Fake an expiration event
+    exp.setExpirationOf('foo', 1, 100, 100, storage);
+    storage.del('foo');
+    expect(storage.getItem(expKey)).toBe(null);
   });
 });
 
@@ -254,6 +335,35 @@ describe('rename', function () {
     expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow(expectedError);
   });
 
+  it('transfers the ttl of the old key\'s expiration', function () {
+    storage.setItem('foo', 'bar');
+    storage.pexpire('foo', 15);
+
+    waits(5);
+    runs(function () {
+      storage.rename('foo', 'foobar');
+      // Make sure the new key has an expiration
+      expect(exp.hasExpiration('foobar', storage)).toBeTruthy();
+      var ttl = exp.getExpirationTTL('foobar', storage);
+      // Make sure the new key's ttl is <= the elapsed time
+      expect(ttl).toBeLessThan(11);
+      expect(ttl).toBeGreaterThan(0);
+      // Make sure the old key's expiration was removed
+      expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+    });
+  });
+
+  it('removes the newkey\'s existing expiration', function () {
+    storage._store('foo', 'bar');
+    storage._store('foobar', 'bar');
+    storage.pexpire('foobar', 15);
+    waits(5);
+    runs(function () {
+      // Should remove the expiration of 'foobar'
+      storage.rename('foo', 'foobar');
+      expect(exp.hasExpiration('foobar', storage)).toBeFalsy();
+    });
+  });
 });
 
 describe('renamenx', function () {
@@ -283,6 +393,16 @@ describe('renamenx', function () {
     expect(function () { storage.renamenx('foo', 'foobar', 'bar'); }).toThrow(expectedError);
     expect(function () { storage.renamenx('foo'); }).toThrow(expectedError);
   });
+
+  it('doesn\'t transfer the TTL of a key\'s existing expiration', function () {
+    storage._store('foo', 'bar');
+    exp.setExpirationOf('foo', 1, 100, new Date().getTime(), storage);
+
+    storage.renamenx('foo', 'car');
+    // The new key shouldn't have the ttl
+    expect(exp.getExpirationTTL('car', storage)).toBeFalsy();
+  });
+
 });
 
 describe('getKey', function () {
@@ -335,4 +455,157 @@ describe('getset', function () {
     storage.setItem('foo', 1);
     expect(function () { storage.getset('foo', 'bar'); }).toThrow(new Error('getset: not a string value'));
   });
+
+  it('cancels an existing expiration for the key', function () {
+    storage._store('foo', 'bar');
+    // expire foo after 15ms
+    storage.expire('foo', 15 / 1000);
+
+    waits(10);
+    runs(function () {
+      // Shouldn't reset the expiration
+      storage.getset('foo', 'foobar');
+    });
+
+    // Expires 'foo' if it hasn't been reset by getset
+    waits(10);
+    runs(function () {
+      expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+    });
+  });
 });
+
+describe('expire', function () {
+  it('removes the key/value pair after the delay', function () {
+    storage.setItem('foo', 'bar');
+    // 10 ms
+    storage.expire('foo', 10 / 1000);
+
+    // Wait until the key expired or time out
+    waitsFor(function () {
+      return ! storage.getItem('foo');
+    }, 'key did not expire', 15 / 1000);
+
+    runs(function () {
+      expect(storage.getItem('foo')).toBe(null);
+    });
+  });
+
+  it('returns 1 if the timeout was set', function () {
+    storage.setItem('foo', 'bar');
+    expect(storage.expire('foo', 1 / 1000)).toBe(1);
+  });
+
+  it('returns 0 if the key does not exist', function () {
+    expect(storage.expire('foo', 1 / 1000)).toBe(0);
+  });
+
+  it('throws an error if a number (or string version of a number) was not supplied', function () {
+    storage.setItem('foo', 'bar');
+    expect(function () { storage.expire('foo', 'bar'); }).toThrow(new TypeError('expire: delay should be convertible to a number'));
+  });
+
+  it('delays in seconds', function () {
+    storage._store('foo', 'bar');
+    // Set expiration delay of a tenth of a second (10ms)
+    storage.expire('foo', 10 / 1000);
+
+    // If expire didn't accept seconds (but ms), it would expire instantly 0.0001 ms
+    // Expiry data should still be there after 1ms
+    expect(exp.hasExpiration('foo', storage)).toBeTruthy();
+  });
+
+  it('refreshes an existing expiration if called again', function () {
+    storage._store('foobar', 'bar');
+    // Expire in 15ms
+    storage.expire('foobar', 15 / 1000);
+
+    waits(10);
+    runs(function () {
+      // Refreshes expiration to 10ms
+      storage.expire('foobar', 10 / 1000);
+    });
+    // Should expire original if second call didn't refresh
+    waits(6);
+    runs(function () {
+      expect(exp.hasExpiration('foobar', storage)).toBeTruthy();
+    });
+  });
+});
+
+describe('pexpire', function () {
+  it('should expire a key with based on a supplied millisecond delay', function () {
+    storage._store('foo', 'bar');
+    storage.pexpire('foo', 15);
+
+    // Wait until the key expires or fail after 20ms
+    waitsFor(function () {
+      return !exp.hasExpiration('foo', storage);
+    }, 'key did not expire', 20);
+
+    runs(function () {
+      expect(storage._exists('foo')).toBeFalsy();
+    });
+  });
+});
+
+describe('persist', function () {
+  it('cancels an existing expiration for the key', function () {
+    storage._store('foo', 'bar');
+    storage.expire('foo', 10 / 1000);
+    storage.persist('foo');
+    expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+  });
+
+  it('returns 0 if the key does not exist', function () {
+    expect(storage.persist('foo')).toBe(0);
+  });
+
+  it('returns 0 if the key does not have an expiration', function () {
+    storage._store('foo', 'bar');
+    expect(storage.persist('foo')).toBe(0);
+  });
+
+  it('returns 1 if an existing expiration was removed', function () {
+    storage._store('foo', 'bar');
+    storage.expire('foo', 5 / 1000);
+    expect(storage.persist('foo')).toBe(1);
+    expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+  });
+});
+
+describe('ttl', function () {
+  it('returns the time to live for a key\'s expiration', function () {
+    storage.setItem('foobar', 'bar');
+    // Fake an expiration of 100ms
+    exp.setExpirationOf('foobar', 1, 100, new Date().getTime(), storage);
+
+    waits(10);
+    runs(function () {
+      var ttl = storage.ttl('foobar');
+      expect(ttl).toBeGreaterThan(0);
+    });
+  });
+
+  it('returns -1 if the key does not exist', function () {
+    expect(storage.ttl('foo')).toBe(-1);
+  });
+
+  it('returns -1 if the key does not have an expiration', function () {
+    storage._store('foo', 'bar');
+    expect(storage.ttl('foo')).toBe(-1);
+  });
+});
+
+describe('pttl', function () {
+  it('returns the time to live for a key\'s expiration', function () {
+    storage._store('foo', 'bar');
+    exp.setExpirationOf('foo', 1, 100, new Date().getTime(), storage);
+    waits(10);
+    runs(function () {
+      var ttl = storage.ttl('foo');
+      expect(ttl).toBeGreaterThan(0);
+      expect(ttl).toBeLessThan(100);
+    });
+  });
+})
