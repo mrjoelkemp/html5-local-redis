@@ -78,74 +78,6 @@ describe('Internal Helpers', function () {
   });
 });
 
-describe('set', function () {
-  it('stores a value indexed by its key', function () {
-    var k = 'foo',
-        v = 'bar';
-
-    // Attempt to store
-    storage.set(k, v);
-
-    // Retrieve the value and make sure it's equal to the stored value
-    // Uses getItem to avoid the dependency on the untested get()
-    var val = storage.getItem(k);
-    expect(val).toBe(v);
-  });
-
-  it('accepts objects as keys', function () {
-    var k = {"name": "Yogi Bear"},
-        v = 2,
-        val;
-
-    storage.set(k, v);
-
-    val = storage.getItem(stringify(k));
-    // getItem() returns string values
-    expect(val).toBe(v.toString());
-  });
-
-  it('is chainable', function () {
-    // Throws a TypeError if invocation is illegal
-    expect(function(){ storage.set('foo', 1).set('bar', 2); }).not.toThrow();
-  });
-
-  it('throws an exception if the quota is reached', function () {
-    var i, data;
-
-    storage.set('foo', 'm');
-
-    // Exceed the quota
-    for(i = 0 ; i < 40 ; i++) {
-      data = storage.getItem('foo');
-
-      try {
-        storage.set('foo', data + data);
-      } catch(e) {
-        expect(e).toBeTruthy();
-        break;
-      }
-    }
-  });
-
-  it('cancels an existing expiration for the key', function () {
-    storage._store('foo', 'bar');
-    // expire foo after 15ms
-    storage.expire('foo', 15 / 1000);
-
-    waits(10);
-    runs(function () {
-      // Shouldn't refresh the expiration
-      storage.set('foo', 'foobar');
-    });
-
-    // Expires 'foo' if it hasn't been reset by 'set'
-    waits(10);
-    runs(function () {
-      expect(exp.hasExpiration('foo', storage)).toBeFalsy();
-    });
-  });
-}); // end set
-
 describe('get', function () {
   it('retrieves a value for a key that exists', function () {
     var k = 'foo',
@@ -169,88 +101,6 @@ describe('get', function () {
     expect(val).toBe(v);
   });
 }); // end get
-
-describe('mget', function () {
-  it('retrieves the values for multiple keys', function () {
-    storage._store('foo', 'foobar');
-    storage._store('bar', 'foobar');
-    // Check the mget('key1', 'key2') syntax
-    var results = storage.mget('foo', 'bar');
-    // Check that the results sets have the proper value
-    expect(results).toEqual(['foobar', 'foobar']);
-  });
-
-  it('retrieves the values for each key in a supplied list of keys', function () {
-    storage._store('foo', 'foobar');
-    storage._store('bar', 'foobar');
-    // Check the mget(['key1', 'key2']) syntax
-    var results = storage.mget(['foo', 'bar']);
-    expect(results).toEqual(['foobar', 'foobar']);
-  });
-}); // end mget
-
-describe('mset', function () {
-  var keysVals  = ['foo', 'foobar', 'bar', 'foobar'];
-
-  afterEach(function () {
-    // Remove the dummy data to test other insertion syntaxes
-    for (var i = 0, l = keysVals.length; i < l; i += 2) {
-      storage.removeItem(keysVals[i]);
-    }
-  });
-
-  it('stores multiple key-value pairs passed as separate parameters', function () {
-    // Test the mset('k1', 'v1', 'k2', 'v2') syntax
-    storage.mset(keysVals[0], keysVals[1], keysVals[2], keysVals[3]);
-
-    // The values should be correct if the mset worked
-    expect(storage.getItem(keysVals[0])).toBe(keysVals[1]);
-    expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
-  });
-
-  it('stores multiple key-value pairs passed as a list', function () {
-    // Test the mset(['k1', 'v1', 'k2', 'v2']) syntax
-    storage.mset(keysVals);
-
-    expect(storage.getItem(keysVals[0])).toBe(keysVals[1]);
-    expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
-  });
-
-  it('stores multiple key-value pairs passed as an object', function () {
-    var objForm = {};
-    // Note: we can't use vars with literal notation
-    objForm[keysVals[0]] = keysVals[1];
-    objForm[keysVals[2]] = keysVals[3];
-
-    // Test the mset({'k1': 'v1', 'k2': 'v2'}) syntax
-    storage.mset(objForm);
-
-    expect(storage.getItem(keysVals[0])).toBe(keysVals[1]);
-    expect(storage.getItem(keysVals[2])).toBe(keysVals[3]);
-  });
-
-  it('is chainable', function () {
-    // Throws a TypeError if invocation is illegal
-    expect(function(){ storage.mset(keysVals).mset(keysVals); }).not.toThrow();
-  });
-
-  it('does not reset a key\'s existing expiration', function () {
-    storage._store('foo', 'bar');
-    storage.expire('foo', 15 / 1000);
-
-    waits(10);
-    runs(function () {
-      // Should not affect the expiration of 'foo'
-      storage.mset('foo', 'foobar');
-    });
-
-    waits(10);
-    runs(function () {
-      // 'foo' should have expired
-      expect(storage._exists('foo')).toBeFalsy();
-    });
-  });
-}); // end mset
 
 describe('del', function () {
   it('deletes the row/entry identified by the given key', function () {
@@ -403,13 +253,13 @@ describe('renamenx', function () {
 
 });
 
-describe('getKey', function () {
+describe('getkey', function () {
   it('returns the first key associated with a given value', function () {
     // setItem does not retain insertion ordering, so we
     //  can't assume the returned key is 'foo'.
     storage.setItem('foo', 'bar');
     storage.setItem('coo', 'bar');
-    var key = storage.getKey('bar'),
+    var key = storage.getkey('bar'),
         containsOne = key === 'foo' || key === 'coo';
 
     expect(containsOne).toBe(true);
@@ -418,58 +268,17 @@ describe('getKey', function () {
   it('returns all keys associated with a given value if second param is true', function () {
     storage.setItem('foo', 'bar');
     storage.setItem('coo', 'bar');
-    var keys = storage.getKey('bar', true);
+    var keys = storage.getkey('bar', true);
     expect(keys).toContain('foo');
     expect(keys).toContain('coo');
   });
 
   it('returns null if no keys contain the passed val', function () {
-    expect(storage.getKey('foobar')).toBe(null);
+    expect(storage.getkey('foobar')).toBe(null);
   });
 
   it('throws a TypeError if too many arguments are given', function () {
-    expect(function () { storage.getKey('foo', 'bar', 'car'); }).toThrow();
-  });
-});
-
-describe('getset', function () {
-  it('returns the old value of the passed key', function () {
-    storage.setItem('foo', 'bar');
-    var oldVal = storage.getset('foo', 'foobar');
-    expect(oldVal).toBe('bar');
-  });
-
-  it ('sets the key to the passed value', function () {
-    storage.setItem('foo', 'bar');
-    storage.getset('foo', 'foobar');
-    expect(storage.getItem('foo')).toBe('foobar');
-  });
-
-  it('returns null if the key doesn\'t exist', function () {
-    expect(storage.getset('foo', 'bar')).toBe(null);
-  });
-
-  it('throws an exception when the existing value is not a string', function () {
-    storage.setItem('foo', 1);
-    expect(function () { storage.getset('foo', 'bar'); }).toThrow();
-  });
-
-  it('cancels an existing expiration for the key', function () {
-    storage._store('foo', 'bar');
-    // expire foo after 15ms
-    storage.expire('foo', 15 / 1000);
-
-    waits(10);
-    runs(function () {
-      // Shouldn't reset the expiration
-      storage.getset('foo', 'foobar');
-    });
-
-    // Expires 'foo' if it hasn't been reset by getset
-    waits(10);
-    runs(function () {
-      expect(exp.hasExpiration('foo', storage)).toBeFalsy();
-    });
+    expect(function () { storage.getkey('foo', 'bar', 'car'); }).toThrow();
   });
 });
 

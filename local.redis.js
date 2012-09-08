@@ -189,9 +189,9 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //            null if no keys were found
   // Params:    all = whether or not to retrieve all of the keys that match
   // Notes:     Custom, non-redis method
-  proto.getKey = function (val) {
+  proto.getkey = function (val) {
     if (arguments.length > 2) {
-      throw new TypeError('getKey: wrong number of arguments');
+      throw new TypeError('getkey: wrong number of arguments');
     }
 
     var i, l, k, v, keys = [], all;
