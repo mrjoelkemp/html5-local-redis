@@ -250,7 +250,6 @@ describe('renamenx', function () {
     // The new key shouldn't have the ttl
     expect(exp.getExpirationTTL('car', storage)).toBe(null);
   });
-
 });
 
 describe('getkey', function () {
