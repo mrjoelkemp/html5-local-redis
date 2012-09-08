@@ -1,6 +1,21 @@
 describe('Internal Helpers', function () {
   describe('_store', function () {
+    it('sets the key to the given value', function () {
+      storage._store('foo', 'bar');
+      expect(storage.getItem('foo')).toBe('bar');
+    });
 
+    it('auto stringifies an object being stored as a value', function () {
+      var k = 'foo',
+          v = {"name": "foobar"},
+          type;
+
+      storage._store(k, v);
+
+      // Check that the value stored is a string
+      type = typeof storage.getItem(k);
+      expect(type).toBe('string');
+    });
   });
 
   describe('_retrieve', function () {
@@ -40,18 +55,6 @@ describe('set', function () {
     // Uses getItem to avoid the dependency on the untested get()
     var val = storage.getItem(k);
     expect(val).toBe(v);
-  });
-
-  it('auto stringifies an object being stored as a value', function () {
-    var k = 'foo',
-        v = {"name": "Yogi Bear"},
-        type;
-
-    storage.set(k, v);
-
-    // Check that the value stored is a string
-    type = typeof storage.getItem(k);
-    expect(type).toBe('string');
   });
 
   it('accepts objects as keys', function () {
