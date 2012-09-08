@@ -1,3 +1,83 @@
+describe('Internal Helpers', function () {
+  describe('_store', function () {
+    it('sets the key to the given value', function () {
+      storage._store('foo', 'bar');
+      expect(storage.getItem('foo')).toBe('bar');
+    });
+
+    it('auto stringifies an object being stored as a value', function () {
+      var k = 'foo',
+          v = {"name": "foobar"},
+          type;
+
+      storage._store(k, v);
+
+      // Check that the value stored is a string
+      type = typeof storage.getItem(k);
+      expect(type).toBe('string');
+    });
+  });
+
+  describe('_retrieve', function () {
+    it('returns the value associated with the key', function () {
+      storage._store('foo', 'bar');
+      expect(storage._retrieve('foo')).toBe('bar');
+    });
+
+    it('returns a string if the value is a string literal (alphabetical)', function () {
+      var k = 'foo',
+          v = 'foobar';
+
+      storage.setItem(k, v);
+      expect(storage._retrieve(k)).toBe(v);
+    });
+
+    it('returns an object for a string value that contains an object', function () {
+      var k = 'foo',
+          v = {"name": "foobar"};
+
+      storage.setItem(k, stringify(v));
+      expect(storage._retrieve(k)).toEqual(v);
+    });
+
+    it('returns a number for a string value that contains a number', function () {
+      var k = 'foo',
+          v = 2,
+          val;
+
+      storage.setItem(k, v);
+
+      val = storage._retrieve(k);
+
+      expect(val).toBe(v);
+    });
+  });
+
+  describe('_remove', function () {
+    it('deletes the key and its value from storage', function () {
+      storage._store('foo', 'bar');
+      storage._remove('foo');
+      expect(storage._retrieve('foo')).toBe(null);
+    });
+  });
+
+  describe('_exists', function () {
+    it('returns true for a key with a set value of null', function () {
+      storage._store('foo', null);
+      expect(storage._exists('foo')).toBeTruthy();
+    });
+
+    it('returns false for a key that does not exist', function () {
+      expect(storage._exists('foo')).toBeFalsy();
+    });
+
+    it('returns true for a key that has a value', function () {
+      storage._store('foo', 'bar');
+      expect(storage._exists('foo')).toBeTruthy();
+    });
+  });
+});
+
 describe('set', function () {
   it('stores a value indexed by its key', function () {
     var k = 'foo',
@@ -10,18 +90,6 @@ describe('set', function () {
     // Uses getItem to avoid the dependency on the untested get()
     var val = storage.getItem(k);
     expect(val).toBe(v);
-  });
-
-  it('auto stringifies an object being stored as a value', function () {
-    var k = 'foo',
-        v = {"name": "Yogi Bear"},
-        type;
-
-    storage.set(k, v);
-
-    // Check that the value stored is a string
-    type = typeof storage.getItem(k);
-    expect(type).toBe('string');
   });
 
   it('accepts objects as keys', function () {
@@ -86,34 +154,6 @@ describe('get', function () {
     // Set the data – uses the safer setItem to avoid dependency on untested set().
     storage.setItem(k, v);
     expect(storage.get(k)).toBe(v);
-  });
-
-  it('returns a string if the value is a string literal (alphabetical)', function () {
-    var k = 'foo',
-        v = 'Yogi Bear';
-
-    storage.setItem(k, v);
-    expect(storage.get(k)).toBe(v);
-  });
-
-  it('returns an object for a string value that contains an object', function () {
-    var k = 'foo',
-        v = {"name": "Yogi Bear"};
-
-    storage.setItem(k, stringify(v));
-    expect(storage.get(k)).toEqual(v);
-  });
-
-  it('returns a number for a string value that contains a number', function () {
-    var k = 'foo',
-        v = 2,
-        val;
-
-    storage.setItem(k, v);
-
-    val = storage.get(k);
-
-    expect(val).toBe(v);
   });
 
   it('accepts an object as a key', function () {

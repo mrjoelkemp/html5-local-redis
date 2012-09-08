@@ -72,8 +72,9 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   };
 
   // Returns true if the key exists, false otherwise.
+  // Notes:   A key with a set value of null still exists.
   proto._exists = function (key) {
-    return !! this._retrieve(key);
+    return !! this.hasOwnProperty(key);
   };
 
   ///////////////////////////
@@ -81,7 +82,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   ///////////////////////////
 
   // get
-  // Returns: [number | string | object | null] The (parsed) value associated with the passed key, if it exists.
+  // Returns: The (parsed) value associated with the passed key, if it exists.
   proto.get = function(key) {
     return this._retrieve(key);
   };
