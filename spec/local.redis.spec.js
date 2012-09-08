@@ -54,7 +54,11 @@ describe('Internal Helpers', function () {
   });
 
   describe('_remove', function () {
-
+    it('deletes the key and its value from storage', function () {
+      storage._store('foo', 'bar');
+      storage._remove('foo');
+      expect(storage._retrieve('foo')).toBe(null);
+    });
   });
 
   describe('_exists', function () {
