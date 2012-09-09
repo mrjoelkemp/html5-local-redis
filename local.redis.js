@@ -230,30 +230,6 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return keys;
   };
 
-  // getset
-  // Sets key to value and returns the old value stored at key
-  // Throws:  Error when key exists but does not hold a string value
-  // Usage:   getset(key, value)
-  // Notes:   Removes an existing expiration for key
-  // Returns: the old value stored at key or null when the key does not exist
-  proto.getset = function (key, value) {
-    if (arguments.length !== 2) {
-      throw new TypeError('getset: wrong number of arguments');
-    }
-
-    // Grab the existing value or null if the key doesn't exist
-    var oldVal = this._retrieve(key);
-
-    // Throw an exception if the value isn't a string
-    if (typeof oldVal !== 'string' && oldVal !== null) {
-      throw new Error('getset: not a string value');
-    }
-
-    // Use set to refresh an existing expiration
-    this.set(key, value);
-    return oldVal;
-  };
-
   // expire
   // Expires the passed key after the passed seconds
   // Precond: delay in seconds
@@ -427,6 +403,29 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
 
     // Makes chainable
     return this;
+  };
+
+  // Sets key to value and returns the old value stored at key
+  // Throws:  Error when key exists but does not hold a string value
+  // Usage:   getset(key, value)
+  // Notes:   Removes an existing expiration for key
+  // Returns: the old value stored at key or null when the key does not exist
+  proto.getset = function (key, value) {
+    if (arguments.length !== 2) {
+      throw new TypeError('getset: wrong number of arguments');
+    }
+
+    // Grab the existing value or null if the key doesn't exist
+    var oldVal = this._retrieve(key);
+
+    // Throw an exception if the value isn't a string
+    if (typeof oldVal !== 'string' && oldVal !== null) {
+      throw new Error('getset: not a string value');
+    }
+
+    // Use set to refresh an existing expiration
+    this.set(key, value);
+    return oldVal;
   };
 
   // Returns: A list of values for the passed key(s).
