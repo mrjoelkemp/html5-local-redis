@@ -246,6 +246,29 @@ describe('strlen', function () {
   });
 });
 
+describe('setnx', function () {
+  it('sets a key to the value if the key does not exist', function () {
+    storage.setnx('foo', 'bar');
+    expect(storage._retrieve('foo')).toBe('bar');
+  });
+
+  it('returns 1 if the key was set to the value', function () {
+    expect(storage.setnx('foo', 'bar')).toBe(1);
+  });
+
+  it('returns 0 if the key already exists', function () {
+    storage._store('foo', 'bar');
+    expect(storage.setnx('foo', 'foobar')).toBe(0);
+    expect(storage._retrieve('foo')).toBe('bar');
+  });
+
+  it('throws for any number but two arguments', function () {
+    expect(function () { storage.setnx('foo'); }).toThrow();
+    expect(function () { storage.setnx(); }).toThrow();
+    expect(function () { storage.setnx('foo', 'bar', 'foobar'); }).toThrow();
+  });
+});
+
 describe('msetnx', function () {
   it('sets keys to values if none of the keys exist', function () {
     storage.msetnx('foo', 'bar', 'bar', 'foo');

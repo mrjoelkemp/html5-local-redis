@@ -477,6 +477,21 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return this;
   };
 
+  // Set key to hold string value if key does not exist.
+  // Returns:   1 if the key was set
+  //            0 if the key was not set
+  // Note:      When key already holds a value, no operation is performed.
+  proto.setnx = function (key, value) {
+    if(arguments.length !== 2) {
+      throw new TypeError('setnx: wrong number of arguments');
+    }
+
+    if (this._exists(key)) return 0;
+
+    this._store(key, value);
+    return 1;
+  };
+
   // Sets the given keys to their respective values.
   // Returns:   1 if the all the keys were set.
   //            0 if no key was set (at least one key already existed).
