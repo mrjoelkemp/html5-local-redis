@@ -479,11 +479,11 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   };
 
   // Sets the given keys to their respective values.
-  // msetnx will not perform any operation at all even
-  // if just a single key already exists.
   // Returns:   1 if the all the keys were set.
   //            0 if no key was set (at least one key already existed).
-  // Notes:     Accepts the same types of params as mset
+  // Notes:     Accepts the same types of params as mset.
+  //            If just a single key already exists,
+  //            no set operations are performed
   proto.msetnx = function (keysVals) {
     var isArray = keysVals instanceof Array,
         isObject = keysVals instanceof Object,
