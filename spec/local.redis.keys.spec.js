@@ -75,6 +75,17 @@ describe('Internal Helpers', function () {
       storage._store('foo', 'bar');
       expect(storage._exists('foo')).toBeTruthy();
     });
+
+    it('returns true if all the passed keys exist', function () {
+      storage._store('foo', 'bar');
+      storage._store('bar', 'foo');
+      expect(storage._exists(['foo', 'bar'])).toBeTruthy();
+    });
+
+    it('returns false if any of the passed keys don\'t exist', function () {
+      storage._store('foo', 'bar');
+      expect(storage._exists(['foo', 'bar'])).toBeFalsy();
+    });
   });
 });
 

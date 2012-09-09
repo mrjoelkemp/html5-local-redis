@@ -71,10 +71,24 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     this.removeItem(key);
   };
 
-  // Returns true if the key exists, false otherwise.
+  // Returns true if the key(s) exists, false otherwise.
   // Notes:   A key with a set value of null still exists.
+  // Usage:   _exists('foo') or _exists(['foo', 'bar'])
   proto._exists = function (key) {
-    return !! this.hasOwnProperty(key);
+    var allExist = true,
+    i, l;
+
+    if (key instanceof Array) {
+      for (i = 0, l = key.length; i < l; i++) {
+        if (! this.hasOwnProperty(key[i])) {
+          allExist = false;
+        }
+      }
+    } else {
+      allExist = !! this.hasOwnProperty(key);
+    }
+
+    return allExist;
   };
 
   ///////////////////////////
@@ -465,7 +479,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   };
 
   // Sets the given keys to their respective values.
-  // MSETNX will not perform any operation at all even
+  // msetnx will not perform any operation at all even
   // if just a single key already exists.
   // Returns:   1 if the all the keys were set.
   //            0 if no key was set (at least one key already existed).
@@ -486,8 +500,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
       }
     }
 
-    // Check for the existence of every key
-    // FIXME: Make _exists accept a list and scrap this code
+    // If any key exists, then don't store anything
     for (i = 0, l = keys.length; i < l; i++) {
       if (this._exists(keys[i])) {
         return 0;
