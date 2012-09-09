@@ -196,7 +196,6 @@ describe('rename', function () {
       var ttl = exp.getExpirationTTL('foobar', storage);
       // Make sure the new key's ttl is <= the elapsed time
       expect(ttl).toBeLessThan(11);
-      expect(ttl).toBeGreaterThan(0);
       // Make sure the old key's expiration was removed
       expect(exp.hasExpiration('foo', storage)).toBeFalsy();
     });

@@ -434,24 +434,30 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   };
 
   // Allows the setting of multiple key value pairs
-  // Usage:   mset('key1', 'val1', 'key2', 'val2') or mset(['key1', 'val1', 'key2', 'val2'])
-  // Notes:   If there's an odd number of elements, unset values default to undefined
+  // Usage:   mset('key1', 'val1', 'key2', 'val2') or
+  //          mset(['key1', 'val1', 'key2', 'val2']) or
+  //          mset({key1: val1, key2: val2})
+  // Notes:   If there's an odd number of elements,
+  //          unset values default to undefined.
   proto.mset = function (keysVals) {
     var isArray   = keysVals instanceof Array,
         isObject  = keysVals instanceof Object,
-        i, l, prop;
+        i, l,
+        keys;
 
-    if (isArray) {
-      for (i = 0, l = keysVals.length; i < l; i += 2) {
-        this._store(keysVals[i], keysVals[i + 1]);
-      }
-    } else if (isObject) {
-      for (prop in keysVals) {
-        this._store(prop, keysVals[prop]);
+    // Arrays are both an array and an object
+    // but an object is solely an object
+    if (isObject && !isArray) {
+      keys = Object.keys(keysVals);
+      for (i = 0, l = keys.length; i < l; i++) {
+        this._store(keys[i], keysVals[keys[i]]);
       }
     } else {
-      for (i = 0, l = arguments.length; i < l; i += 2) {
-        this._store(arguments[i], arguments[i + 1]);
+
+      keysVals = isArray ? keysVals : arguments;
+
+      for (i = 0, l = keysVals.length; i < l; i += 2) {
+        this._store(keysVals[i], keysVals[i + 1]);
       }
     }
 

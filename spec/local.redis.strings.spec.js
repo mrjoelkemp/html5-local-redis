@@ -88,13 +88,6 @@ describe('mget', function () {
 describe('mset', function () {
   var keysVals  = ['foo', 'foobar', 'bar', 'foobar'];
 
-  afterEach(function () {
-    // Remove the dummy data to test other insertion syntaxes
-    for (var i = 0, l = keysVals.length; i < l; i += 2) {
-      storage.removeItem(keysVals[i]);
-    }
-  });
-
   it('stores multiple key-value pairs passed as separate parameters', function () {
     // Test the mset('k1', 'v1', 'k2', 'v2') syntax
     storage.mset(keysVals[0], keysVals[1], keysVals[2], keysVals[3]);
