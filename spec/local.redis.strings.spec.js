@@ -1,3 +1,27 @@
+describe('get', function () {
+  it('retrieves a value for a key that exists', function () {
+    var k = 'foo',
+        v = 2;
+
+    // Set the data – uses the safer setItem to avoid dependency on untested set().
+    storage.setItem(k, v);
+    expect(storage.get(k)).toBe(v);
+  });
+
+  it('accepts an object as a key', function () {
+    var k = {"name": "Yogi Bear"},
+        v = 2,
+        val;
+
+    storage.setItem(stringify(k), v);
+
+    val = storage.get(k);
+
+    // Get auto parses, so we don't need v.toString()
+    expect(val).toBe(v);
+  });
+});
+
 describe('set', function () {
   it('stores a value indexed by its key', function () {
     var k = 'foo',

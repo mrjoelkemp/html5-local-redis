@@ -95,11 +95,6 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Key Commands
   ///////////////////////////
 
-  // Returns: The (parsed) value associated with the passed key, if it exists.
-  proto.get = function(key) {
-    return this._retrieve(key);
-  };
-
   // Removes the specified key(s)
   // Returns: the number of keys removed.
   // Notes:   if the key doesn't exist, it's ignored.
@@ -405,6 +400,11 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   ///////////////////////////
   // String Commands
   ///////////////////////////
+
+  // Returns: The (parsed) value associated with the passed key, if it exists.
+  proto.get = function(key) {
+    return this._retrieve(key);
+  };
 
   // Stores the passed value indexed by the passed key
   // Notes:   Auto stringifies
