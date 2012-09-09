@@ -221,3 +221,32 @@ describe('strlen', function () {
     expect(storage.strlen('foo')).toBe(0);
   });
 });
+
+describe('msetnx', function () {
+  it('sets keys to values if none of the keys exist', function () {
+    storage.msetnx('foo', 'bar', 'bar', 'foo');
+    expect(storage._retrieve('foo')).toBe('bar');
+    expect(storage._retrieve('bar')).toBe('foo');
+
+    storage.clear();
+
+    storage.msetnx(['foo', 'bar', 'bar', 'foo']);
+    expect(storage._retrieve('foo')).toBe('bar');
+    expect(storage._retrieve('bar')).toBe('foo');
+  });
+
+  it('returns 0 if any of the keys already exist', function () {
+    storage._store('foo', 'bar');
+    expect(storage.msetnx('foo', 'bar', 'bar', 'foo')).toBe(0);
+  });
+
+  it('does not set any of the keys if one already exists', function () {
+    storage._store('foo', 'bar');
+    storage.msetnx('foo', 'bar', 'bar', 'foo');
+    expect(storage._retrieve('bar')).toBe(null);
+  });
+
+  it('returns 1 if the keys were set to the values', function () {
+    expect(storage.msetnx('foo', 'bar', 'bar', 'foo')).toBe(1);
+  });
+});

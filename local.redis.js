@@ -464,6 +464,45 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return this;
   };
 
+  // Sets the given keys to their respective values.
+  // MSETNX will not perform any operation at all even
+  // if just a single key already exists.
+  // Returns:   1 if the all the keys were set.
+  //            0 if no key was set (at least one key already existed).
+  // Notes:     Accepts the same types of params as mset
+  proto.msetnx = function (keysVals) {
+    var isArray = keysVals instanceof Array,
+        isObject = keysVals instanceof Object,
+        i, l,
+        keys = [];
+
+    // Grab all of the keys
+    if (isObject && ! isArray) {
+      keys = Object.keys(keysVals);
+    } else {
+      keysVals = isArray ? keysVals : arguments;
+      for (i = 0, l = keysVals.length; i < l; i += 2) {
+        keys.push(keysVals[i]);
+      }
+    }
+
+    // Check for the existence of every key
+    // FIXME: Make _exists accept a list and scrap this code
+    for (i = 0, l = keys.length; i < l; i++) {
+      if (this._exists(keys[i])) {
+        return 0;
+      }
+    }
+
+    // We don't call mset because splat arguments
+    // are passed in as an object, when it should be
+    // processed like an array
+    for (i = 0, l = keysVals.length; i < l; i += 2) {
+      this._store(keysVals[i], keysVals[i + 1]);
+    }
+    return 1;
+  };
+
   // Sets key to value and returns the old value stored at key
   // Throws:  Error when key exists but does not hold a string value
   // Usage:   getset(key, value)
