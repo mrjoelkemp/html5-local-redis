@@ -76,8 +76,8 @@ describe('LocalRedis Lib Spec', function () {
         });
       });
 
-      it('returns null if the key doesn\'t have an expiration', function () {
-        expect(exp.getExpirationTTL('foo', storage)).toBe(null);
+      it('returns undefined if the key doesn\'t have an expiration', function () {
+        expect(exp.getExpirationTTL('foo', storage)).toBeFalsy();
       });
     });
 

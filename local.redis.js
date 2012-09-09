@@ -221,11 +221,40 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return keys;
   };
 
+  // getset
+  // Sets key to value and returns the old value stored at key
+  // Throws:  Error when key exists but does not hold a string value
+  // Usage:   getset(key, value)
+  // Notes:   Removes an existing expiration for key
+  // Returns: the old value stored at key or null when the key does not exist
+  proto.getset = function (key, value) {
+    if (arguments.length !== 2) {
+      throw new TypeError('getset: wrong number of arguments');
+    }
+
+    // Grab the existing value or null if the key doesn't exist
+    var oldVal = this._retrieve(key);
+
+    // Throw an exception if the value isn't a string
+    if (typeof oldVal !== 'string' && oldVal !== null) {
+      throw new Error('getset: not a string value');
+    }
+
+    // Use set to refresh an existing expiration
+    this.set(key, value);
+    return oldVal;
+  };
+
+  // expire
   // Expires the passed key after the passed seconds
   // Precond: delay in seconds
   // Returns: 1 if the timeout was set
   //          0 if the key does not exist or the timeout couldn't be set
   proto.expire = function (key, delay) {
+    if (arguments.length !== 2) {
+      throw new TypeError('expire: wrong number of arguments');
+    }
+
     var expKey = exp.createExpirationKey(key),
         that   = this,
         tid;
@@ -266,6 +295,10 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Expiry in milliseconds
   // Returns: the same output as expire
   proto.pexpire = function (key, delay) {
+    if (arguments.length !== 2) {
+      throw new TypeError('pexpire: wrong number of arguments');
+    }
+
     // Check if the delay is/contains a number
     delay = parseFloat(delay, 10);
     if (! delay) {
@@ -281,6 +314,10 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Returns:   0 if the key does not exist or does not have an expiration
   //            1 if the expiration was removed
   proto.persist = function (key) {
+    if (arguments.length !== 1) {
+      throw new TypeError('persist: wrong number of arguments');
+    }
+
     if (! (this._exists(key) && exp.hasExpiration(key, this))) {
       return 0;
     } else {
@@ -296,6 +333,10 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //          firing and the callback execution, this ttl only reflects
   //          the TTL for the timeout firing
   proto.ttl = function (key) {
+    if (arguments.length !== 1) {
+      throw new TypeError('ttl: wrong number of arguments');
+    }
+
     if(! (this._exists(key) && exp.hasExpiration(key, this))) {
       return -1;
     }
@@ -308,6 +349,10 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //          -1 when key does not exist or does not have an expiration
   // Note:    this command is just like ttl with ms units
   proto.pttl = function (key) {
+    if (arguments.length !== 1) {
+      throw new TypeError('pttl: wrong number of arguments');
+    }
+
     return this.ttl(key) * 1000;
   };
 

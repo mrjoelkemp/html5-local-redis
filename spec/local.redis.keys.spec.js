@@ -248,7 +248,7 @@ describe('renamenx', function () {
 
     storage.renamenx('foo', 'car');
     // The new key shouldn't have the ttl
-    expect(exp.getExpirationTTL('car', storage)).toBe(null);
+    expect(exp.getExpirationTTL('car', storage)).toBeFalsy();
   });
 });
 
