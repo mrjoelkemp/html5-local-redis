@@ -695,5 +695,26 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     }
   };
 
+  // Set key to hold the string value and set key to
+  // timeout after a given number of seconds.
+  proto.setex = function (key, value, delay) {
+    if (arguments.length !== 3) {
+      throw new TypeError('setex: wrong number of arguments');
+    }
+
+    this._store(key, value);
+    this.expire(key, delay);
+  };
+
+  // Set key to hold the string value and set key to
+  // timeout after a given number of milliseconds.
+  proto.psetex = function (key, value, delay) {
+    if (arguments.length !== 3) {
+      throw new TypeError('psetex: wrong number of arguments');
+    }
+
+    this._store(key, value);
+    this.pexpire(key, delay);
+  };
 
 })(window, LocalRedis.Utils.Expiration);

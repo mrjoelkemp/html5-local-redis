@@ -297,3 +297,11 @@ describe('msetnx', function () {
     expect(storage.msetnx('foo', 'bar', 'bar', 'foo')).toBe(1);
   });
 });
+
+describe('setex', function () {
+
+});
+
+describe('psetex', function () {
+
+});
