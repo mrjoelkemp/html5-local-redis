@@ -299,9 +299,40 @@ describe('msetnx', function () {
 });
 
 describe('setex', function () {
+  it('sets a key to a value and expires that key with a delay', function () {
+    storage.setex('foo', 'bar', 1 / 1000);
+    expect(storage._retrieve('foo')).toBe('bar');
+    expect(exp.hasExpiration('foo', storage)).toBeTruthy();
+    storage.persist('foo');
+  });
 
+  it('throws for anything but 3 arguments', function () {
+    expect(function () { storage.setex('foo', 'bar', 6, 'car'); }).toThrow();
+    expect(function () { storage.setex('foo', 'bar'); }).toThrow();
+    expect(function () { storage.setex(); }).toThrow();
+  });
+
+  it('throws if the delay is not a number', function () {
+    expect(function () { storage.setex('foo', 'bar', 'car'); }).toThrow();
+  });
 });
 
 describe('psetex', function () {
+  it('sets a key to a value and expires that key after delay milliseconds', function () {
+    storage.psetex('foo', 'bar', 5);
+    waits(6);
+    runs(function () {
+      expect(storage._exists('foo')).toBeFalsy();
+    });
+  });
 
+   it('throws for anything but 3 arguments', function () {
+    expect(function () { storage.psetex('foo', 'bar', 6, 'car')}).toThrow();
+    expect(function () { storage.psetex('foo', 'bar')}).toThrow();
+    expect(function () { storage.psetex()}).toThrow();
+  });
+
+  it('throws if the delay is not a number', function () {
+    expect(function () { storage.psetex('foo', 'bar', 'car'); }).toThrow();
+  });
 });
