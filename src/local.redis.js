@@ -295,6 +295,45 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return this.expire(key, delay / 1000);
   };
 
+  // Expires a key at the supplied, second-based UNIX timestamp
+  // Returns:   1 if the timeout was set.
+  //            0 if key does not exist or the timeout could not be set
+  // Usage:     expireat('foo', 1293840000)
+  proto.expireat = function (key, timestamp) {
+
+    if (arguments.length !== 2) {
+      throw new TypeError('expireat: wrong number of arguments');
+    }
+
+    // Compute the delay (in seconds)
+    var nowSeconds  = new Date().getTime() / 1000,
+        delay       = timestamp - nowSeconds;
+
+    if (delay < 0) {
+      throw new Error('expireat: timestamp already passed');
+    }
+
+    return this.expire(key, delay);
+  };
+
+  // Expires a key a the supplied, millisecond-based UNIX timestamp
+  // Returns:   1 if the timeout was set.
+  //            0 if key does not exist or the timeout could not be set
+  proto.pexpireat = function (key, timestamp) {
+    if (arguments.length !== 2) {
+      throw new Error('pexpireat: wrong number of arguments');
+    }
+
+    // Delay in milliseconds
+    var delay = timestamp - new Date().getTime();
+
+    if(delay < 0) {
+      throw new Error('pexpireat: timestamp already passed');
+    }
+
+    return this.pexpire(key, delay);
+  };
+
   // Removes the expiration associated with the key
   // Returns:   0 if the key does not exist or does not have an expiration
   //            1 if the expiration was removed
