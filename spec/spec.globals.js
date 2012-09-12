@@ -1,8 +1,10 @@
 // Use sessionStorage for temporarily storing dummy data
 // and not tainting existing localStorage data
 // Also allows us to avoid worrying about destroying localhost data
-var storage   = window.sessionStorage,
-    stringify = JSON.stringify;
+var LocalRedis = LocalRedis || {},
+    storage   = window.sessionStorage,
+    stringify = JSON.stringify,
+    exp       = LocalRedis.Utils.Expiration;
 
 afterEach(function () {
   // It's not enough to rely on sessionStorage to
