@@ -8,7 +8,7 @@
 var LocalRedis    = LocalRedis || {};
 LocalRedis.Utils  = LocalRedis.Utils || {};
 
-(function (window, exp) {
+(function (window, utils) {
   "use strict";
 
   // TODO: Fallback to some other means of storage - polyfills exist
@@ -20,7 +20,9 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   }
 
   // Using the prototype grants both localStorage and sessionStorage the redis methods
-  var proto = window.localStorage.constructor.prototype;
+  var proto = window.localStorage.constructor.prototype,
+      exp   = utils.Expiration,
+      err   = utils.Error;
 
   ///////////////////////////
   // Storage Internals
@@ -122,7 +124,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Throws:  TypeError if more than one argument is supplied
   proto.exists = function (key) {
     if (arguments.length > 1) {
-      throw new TypeError('exists: wrong number of arguments');
+      throw new err.generateError(0, 'exists');
     }
 
     return (this._exists(key)) ? 1 : 0;
@@ -134,12 +136,13 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Usage:   rename(key, newkey)
   // Notes:   Transfers the key's TTL to the newKey
   proto.rename = function (key, newKey) {
+    var name = 'rename';
     if (arguments.length !== 2) {
-      throw new TypeError('rename: wrong number of arguments');
+      throw new err.generateError(0, name);
     } else if (key === newKey) {
-      throw new TypeError('rename: source and destination objects are the same');
+      throw new err.generateError(6, name);
     } else if (! this._exists(key)) {
-      throw new ReferenceError('rename: no such key');
+      throw new err.generateError(7, name);
     }
 
     // Remove newKey's existing expiration
@@ -174,12 +177,13 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //          ReferenceError if key does not exist
   //          Fails under the same conditions as rename
   proto.renamenx = function (key, newKey) {
+    var name = 'renamenx';
     if (arguments.length !== 2) {
-      throw new TypeError('renamenx: wrong number of arguments');
+      throw new err.generateError(0, name);
     } else if (key === newKey) {
-      throw new TypeError('renamenx: source and destination objects are the same');
+      throw new err.generateError(6, name);
     } else if (! this._exists(key)) {
-      throw new ReferenceError('renamenx: no such key');
+      throw new err.generateError(7, name);
     }
 
     if(this._exists(newKey)) {
@@ -200,7 +204,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Notes:     Custom, non-redis method
   proto.getkey = function (val) {
     if (arguments.length > 2) {
-      throw new TypeError('getkey: wrong number of arguments');
+      throw new err.generateError(0, 'getkey');
     }
 
     var i, l, k, v, keys = [], all;
@@ -237,7 +241,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //          0 if the key does not exist or the timeout couldn't be set
   proto.expire = function (key, delay) {
     if (arguments.length !== 2) {
-      throw new TypeError('expire: wrong number of arguments');
+      throw new err.generateError(0, 'expire');
     }
 
     var expKey = exp.createExpirationKey(key),
@@ -247,7 +251,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // Check if the delay is/contains a number
     delay = parseFloat(delay, 10);
     if (! delay) {
-      throw new TypeError('expire: delay should be convertible to a number');
+      throw new err.generateError(5, 'expire');
     } else if(! this._exists(key)) {
       return 0;
     }
@@ -280,14 +284,15 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Expiry in milliseconds
   // Returns: the same output as expire
   proto.pexpire = function (key, delay) {
+    var name = 'pexpire';
     if (arguments.length !== 2) {
-      throw new TypeError('pexpire: wrong number of arguments');
+      throw err.generateError(0, name);
     }
 
     // Check if the delay is/contains a number
     delay = parseFloat(delay, 10);
     if (! delay) {
-      throw new TypeError('pexpire: delay should be convertible to a number');
+      throw err.generateError(5, name);
     }
 
     // Expire will convert the delay to seconds,
@@ -300,9 +305,9 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //            0 if key does not exist or the timeout could not be set
   // Usage:     expireat('foo', 1293840000)
   proto.expireat = function (key, timestamp) {
-
+    var name = 'expireat';
     if (arguments.length !== 2) {
-      throw new TypeError('expireat: wrong number of arguments');
+      throw err.generateError(0, name);
     }
 
     // Compute the delay (in seconds)
@@ -310,7 +315,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
         delay       = timestamp - nowSeconds;
 
     if (delay < 0) {
-      throw new Error('expireat: timestamp already passed');
+      throw err.generateError(4, name);
     }
 
     return this.expire(key, delay);
@@ -320,15 +325,17 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Returns:   1 if the timeout was set.
   //            0 if key does not exist or the timeout could not be set
   proto.pexpireat = function (key, timestamp) {
+    var name = 'pexpireat';
+
     if (arguments.length !== 2) {
-      throw new Error('pexpireat: wrong number of arguments');
+      throw err.generateError(0, name);
     }
 
     // Delay in milliseconds
     var delay = timestamp - new Date().getTime();
 
     if(delay < 0) {
-      throw new Error('pexpireat: timestamp already passed');
+      throw err.generateError(4, name);
     }
 
     return this.pexpire(key, delay);
@@ -339,7 +346,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //            1 if the expiration was removed
   proto.persist = function (key) {
     if (arguments.length !== 1) {
-      throw new TypeError('persist: wrong number of arguments');
+      throw err.generateError(0, 'persist');
     }
 
     if (! (this._exists(key) && exp.hasExpiration(key, this))) {
@@ -358,7 +365,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //          the TTL for the timeout firing
   proto.ttl = function (key) {
     if (arguments.length !== 1) {
-      throw new TypeError('ttl: wrong number of arguments');
+      throw err.generateError(0, 'ttl');
     }
 
     if(! (this._exists(key) && exp.hasExpiration(key, this))) {
@@ -374,7 +381,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Note:    this command is just like ttl with ms units
   proto.pttl = function (key) {
     if (arguments.length !== 1) {
-      throw new TypeError('pttl: wrong number of arguments');
+      throw err.generateError(0, 'pttl');
     }
 
     return this.ttl(key) * 1000;
@@ -450,8 +457,9 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Notes:   Removes an existing expiration for key
   // Returns: the old value stored at key or null when the key does not exist
   proto.getset = function (key, value) {
+    var name = 'getset';
     if (arguments.length !== 2) {
-      throw new TypeError('getset: wrong number of arguments');
+      throw err.generateError(0, name);
     }
 
     // Grab the existing value or null if the key doesn't exist
@@ -459,7 +467,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
 
     // Throw an exception if the value isn't a string
     if (typeof oldVal !== 'string' && oldVal !== null) {
-      throw new Error('getset: not a string value');
+      throw err.generateError(1, name);
     }
 
     // Use set to refresh an existing expiration
@@ -522,7 +530,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Note:      When key already holds a value, no operation is performed.
   proto.setnx = function (key, value) {
     if(arguments.length !== 2) {
-      throw new TypeError('setnx: wrong number of arguments');
+      throw err.generateError(0, 'setnx');
     }
 
     if (this._exists(key)) return 0;
@@ -569,29 +577,10 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     return 1;
   };
 
-  // Sets key to value and returns the old value stored at key
-  // Throws:  Error when key exists but does not hold a string value
-  // Usage:   getset(key, value)
-  // Notes:   Removes an existing expiration for key
-  // Returns: the old value stored at key or null when the key does not exist
-  proto.getset = function (key, value) {
-    // Grab the existing value or null if the key doesn't exist
-    var oldVal = this._retrieve(key);
-
-    // Throw an exception if the value isn't a string
-    if (typeof oldVal !== 'string' && oldVal !== null) {
-      throw new Error('getset: not a string value');
-    }
-
-    // Use set to refresh an existing expiration
-    this.set(key, value);
-    return oldVal;
-  };
-
   // If the key does not exist, incr sets it to 1
   proto.incr = function (key) {
     if (arguments.length !== 1) {
-      throw new TypeError('incr: wrong number of arguments');
+      throw err.generateError(0, 'incr');
     }
     var value          = this._retrieve(key),
         keyType        = typeof key,
@@ -618,7 +607,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
 
     if ((!isValNumber && isNotNumberStr) || valOutOfRange || (valueIsNaN && this.hasOwnProperty(key))) {
       // If the key exists and is set to null, an increment should throw an error
-      throw new TypeError('incr: value is not an integer or out of range');
+      throw err.generateError(2, 'incr');
     } else if (isValNumber || isNumberStr) {
       value = parsedValue + 1;
     } else {
@@ -630,7 +619,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // If the key does not exist, incrby sets it to amount
   proto.incrby = function (key, amount) {
     if (arguments.length !== 2) {
-      throw new TypeError('incrby: wrong number of arguments');
+      throw err.generateError(0, 'incrby');
     }
     var value                = this._retrieve(key),
         valType              = typeof value,
@@ -654,7 +643,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     if ((!isValNumber && isValNotNumberStr || (valueIsNaN && this.hasOwnProperty(key)) || amountIsNaN)
        || (!isAmountNumber && isAmountNotNumberStr)
        || anyOutOfRange) {
-      throw new TypeError('incrby: value is not an integer or out of range');
+      throw err.generateError(2, 'incrby');
     } else if ((isValNumber || isValNumberStr) && (isAmountNumber || isAmountNumberStr)) {
       value = parsedValue + parsedAmount;
     } else if (isAmountNumber || isAmountNumberStr) {
@@ -683,7 +672,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
       keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
       // Need to make sure an even number of arguments is passed in
       if ((keysAmounts.length & 0x1) !== 0) {
-        throw new TypeError('mincrby: wrong number of arguments');
+        throw err.generateError(0, 'mincrby');
       }
       for (i = 0, l = keysAmounts.length; i < l; i += 2) {
         this.incrby(keysAmounts[i], keysAmounts[i + 1]);
@@ -730,7 +719,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     if (typeof val === 'string') {
       return val.length;
     } else {
-      throw new Error('strlen: non-string value');
+      throw err.generateError(1, 'strlen');
     }
   };
 
@@ -738,7 +727,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // timeout after a given number of seconds.
   proto.setex = function (key, value, delay) {
     if (arguments.length !== 3) {
-      throw new TypeError('setex: wrong number of arguments');
+      throw err.generateError(0, 'setex');
     }
 
     this._store(key, value);
@@ -749,11 +738,11 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // timeout after a given number of milliseconds.
   proto.psetex = function (key, value, delay) {
     if (arguments.length !== 3) {
-      throw new TypeError('psetex: wrong number of arguments');
+      throw err.generateError(0, 'psetex');
     }
 
     this._store(key, value);
     this.pexpire(key, delay);
   };
 
-})(window, LocalRedis.Utils.Expiration);
+})(window, LocalRedis.Utils);

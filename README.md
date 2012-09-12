@@ -25,8 +25,8 @@ See our progress on the [development Trello board](http://bit.ly/NYgW7c).
 
 Simply add the following to your main HTML file:
 
-    <script type="text/javascript" src="local.redis.js"></script>
-    <script type="text/javascript" src="lib/local.redis.lib.js"></script>
+    <script type="text/javascript" src="path/to/local.redis.js"></script>
+    <script type="text/javascript" src="path/to/local.redis.lib.js"></script>
 
 The library extends the functionality of the `window.localStorage`
 and `window.sessionStorage` objects, or polyfills for older browsers.
@@ -36,15 +36,15 @@ and `window.sessionStorage` objects, or polyfills for older browsers.
 In Redis:
 
 ```
-SET 'foo' 'bar' 
+SET 'foo' 'bar'
 GET 'foo'        => 'bar'
-GETSET 'foo' 4   => 'bar' 
+GETSET 'foo' 4   => 'bar'
 GET 'foo'        => 4
 INCRBY 'foo' 3   => 7
 EXPIRE 'foo' 3
 ```
 
-Local Redis: 
+Local Redis:
 
 ```
 localStorage.set('foo', 'bar');

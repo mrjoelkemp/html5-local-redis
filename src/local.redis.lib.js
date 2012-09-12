@@ -30,6 +30,31 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     }
   };
 
+  Utils.Error = {
+    errors: [
+      'wrong number of arguments',
+      'non-string value',
+      'value is not an integer or out of range',
+      'not a string value',
+      'timestamp already passed',
+      'delay not convertible to a number',
+      'source and destination objects are the same',
+      'no such key',
+      'missing storage context'
+    ],
+    generateError: function (type, functionName /*, errorType */) {
+      var error,
+          message;
+
+      if (typeof type !== 'number' || typeof functionName !== 'string') {
+        throw new TypeError('generateError');
+      }
+      message = functionName + ": " + this.errors[type];
+      error = new Error(message);
+      return error;
+    }
+  };
+
   ///////////////////////////
   // Expiration Helpers
   ///////////////////////////
@@ -64,7 +89,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     getExpirationValue: function (storageKey, storageContext) {
 
       if (! storageContext) {
-        throw new TypeError('getExpirationValue: expected storage context');
+        throw new Utils.Error.generateError(8, 'getExpirationValue');
       }
 
       var expKey = this.createExpirationKey(storageKey),
@@ -77,7 +102,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // Returns:   the timeout id or null
     getExpirationID: function (storageKey, storageContext) {
       if (! storageContext) {
-        throw new TypeError('getExpirationID: expected storage context');
+        throw new Utils.Error.generateError(8, 'getExpirationID');
       }
 
       var expVal = this.getExpirationValue(storageKey, storageContext);
@@ -88,7 +113,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // Returns:   the timeout delay or null
     getExpirationDelay: function (storageKey, storageContext) {
       if (! storageContext) {
-        throw new TypeError('getExpirationDelay: expected storage context');
+        throw new Utils.Error.generateError(8, 'getExpirationDelay');
       }
 
       var expVal = this.getExpirationValue(storageKey, storageContext);
@@ -98,7 +123,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // Returns the expiration's creation time in ms
     getExpirationCreationTime: function (storageKey, storageContext) {
       if (! storageContext) {
-        throw new TypeError('getExpirationCreationTime: expected storage context');
+        throw new Utils.Error.generateError(8, 'getExpirationCreationTime');
       }
 
       var expVal = this.getExpirationValue(storageKey, storageContext);
@@ -110,7 +135,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     //        logic for the expiration value object
     getExpirationTTL: function (storageKey, storageContext) {
       if (! storageContext) {
-        throw new TypeError('getExpirationTTL: expected storage context');
+        throw new Utils.Error.generateError(8, 'getExpirationTTL');
       }
 
       var expVal  = this.getExpirationValue(storageKey, storageContext),
@@ -127,7 +152,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // expiration event's data
     setExpirationOf: function (storageKey, timeoutID, delay, currentTime, storageContext) {
       if (! storageContext) {
-        throw new TypeError('setExpirationOf: expected storage context');
+        throw new Utils.Error.generateError(8, 'setExpirationOf');
       }
 
       var expKey = this.createExpirationKey(storageKey),
@@ -139,7 +164,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // Removes/Cancels an existing expiration of the passed key
     removeExpirationOf: function (storageKey, storageContext) {
       if (! storageContext) {
-        throw new TypeError('removeExpirationOf: expected storage context');
+        throw new Utils.Error.generateError(8, 'removeExpirationOf');
       }
 
       var expKey = this.createExpirationKey(storageKey),
@@ -158,7 +183,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // Returns:   true if expiry data exists, false otherwise
     hasExpiration: function (storageKey, storageContext) {
       if (! storageContext) {
-        throw new TypeError('hasExpiration: expected storage context');
+        throw new Utils.Error.generateError(8, 'hasExpiration');
       }
 
       return !! this.getExpirationValue(storageKey, storageContext);
