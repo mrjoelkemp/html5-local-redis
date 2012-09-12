@@ -68,7 +68,7 @@ describe('LocalRedis Lib Spec', function () {
         // Fake a 100ms expiration
         exp.setExpirationOf('foo', 1, 100, new Date().getTime(), storage);
 
-        waits(10);
+        waits(5);
         runs(function () {
           var ttl = exp.getExpirationTTL('foo', storage);
           // Expect the ttl to be smaller than the delay
