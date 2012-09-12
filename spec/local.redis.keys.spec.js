@@ -477,3 +477,49 @@ describe('keys', function () {
     expect(storage.keys()).toEqual([]);
   });
 });
+
+describe('expireat', function () {
+  it('expires a key at the specified second-based UNIX timestamp', function () {
+    var nowSeconds  = new Date().getTime() / 1000,
+        timestamp   = nowSeconds + 1;
+
+    storage._store('foo', 'bar');
+    storage.expireat('foo', timestamp);
+
+    expect(exp.hasExpiration('foo', storage)).toBeTruthy();
+    expect(storage.ttl('foo')).toBeGreaterThan(0);
+    storage.persist('foo');
+  });
+
+  it('throws if given an old timestamp', function () {
+    var nowSeconds  = new Date().getTime() / 1000,
+        timestamp   = nowSeconds - 1;
+
+    storage._store('foo', 'bar');
+    expect(function () { storage.expireat('foo', timestamp); }).toThrow();
+    storage.persist('foo');
+  });
+});
+
+describe('pexpireat', function () {
+  it('expires a key at the specified millisecond-based UNIX timestamp', function () {
+    var nowms     = new Date().getTime(),
+        timestamp = nowms + 10;
+
+    storage._store('foo', 'bar');
+    storage.pexpireat('foo', timestamp);
+
+    expect(exp.hasExpiration('foo', storage)).toBeTruthy();
+    expect(storage.ttl('foo')).toBeGreaterThan(0);
+    storage.persist('foo');
+  });
+
+  it('throws if given an old timestamp', function () {
+    var nowms       = new Date().getTime(),
+        timestamp   = nowms - 10;
+
+    storage._store('foo', 'bar');
+    expect(function () { storage.pexpireat('foo', timestamp); }).toThrow();
+    storage.persist('foo');
+  });
+});
