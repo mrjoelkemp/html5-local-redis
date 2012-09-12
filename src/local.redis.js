@@ -124,7 +124,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Throws:  TypeError if more than one argument is supplied
   proto.exists = function (key) {
     if (arguments.length > 1) {
-      throw new err.generateError(0, 'exists');
+      throw new err.generateError(0);
     }
 
     return (this._exists(key)) ? 1 : 0;
@@ -177,13 +177,12 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //          ReferenceError if key does not exist
   //          Fails under the same conditions as rename
   proto.renamenx = function (key, newKey) {
-    var name = 'renamenx';
     if (arguments.length !== 2) {
-      throw new err.generateError(0, name);
+      throw new err.generateError(0);
     } else if (key === newKey) {
-      throw new err.generateError(6, name);
+      throw new err.generateError(6);
     } else if (! this._exists(key)) {
-      throw new err.generateError(7, name);
+      throw new err.generateError(7);
     }
 
     if(this._exists(newKey)) {
@@ -204,7 +203,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Notes:     Custom, non-redis method
   proto.getkey = function (val) {
     if (arguments.length > 2) {
-      throw new err.generateError(0, 'getkey');
+      throw new err.generateError(0);
     }
 
     var i, l, k, v, keys = [], all;
@@ -241,7 +240,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //          0 if the key does not exist or the timeout couldn't be set
   proto.expire = function (key, delay) {
     if (arguments.length !== 2) {
-      throw new err.generateError(0, 'expire');
+      throw new err.generateError(0);
     }
 
     var expKey = exp.createExpirationKey(key),
@@ -251,7 +250,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // Check if the delay is/contains a number
     delay = parseFloat(delay, 10);
     if (! delay) {
-      throw new err.generateError(5, 'expire');
+      throw new err.generateError(5);
     } else if(! this._exists(key)) {
       return 0;
     }
@@ -284,15 +283,14 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Expiry in milliseconds
   // Returns: the same output as expire
   proto.pexpire = function (key, delay) {
-    var name = 'pexpire';
     if (arguments.length !== 2) {
-      throw err.generateError(0, name);
+      throw err.generateError(0);
     }
 
     // Check if the delay is/contains a number
     delay = parseFloat(delay, 10);
     if (! delay) {
-      throw err.generateError(5, name);
+      throw err.generateError(5);
     }
 
     // Expire will convert the delay to seconds,
@@ -305,9 +303,8 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //            0 if key does not exist or the timeout could not be set
   // Usage:     expireat('foo', 1293840000)
   proto.expireat = function (key, timestamp) {
-    var name = 'expireat';
     if (arguments.length !== 2) {
-      throw err.generateError(0, name);
+      throw err.generateError(0);
     }
 
     // Compute the delay (in seconds)
@@ -315,7 +312,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
         delay       = timestamp - nowSeconds;
 
     if (delay < 0) {
-      throw err.generateError(4, name);
+      throw err.generateError(4);
     }
 
     return this.expire(key, delay);
@@ -325,17 +322,15 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Returns:   1 if the timeout was set.
   //            0 if key does not exist or the timeout could not be set
   proto.pexpireat = function (key, timestamp) {
-    var name = 'pexpireat';
-
     if (arguments.length !== 2) {
-      throw err.generateError(0, name);
+      throw err.generateError(0);
     }
 
     // Delay in milliseconds
     var delay = timestamp - new Date().getTime();
 
     if(delay < 0) {
-      throw err.generateError(4, name);
+      throw err.generateError(4);
     }
 
     return this.pexpire(key, delay);
@@ -346,7 +341,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //            1 if the expiration was removed
   proto.persist = function (key) {
     if (arguments.length !== 1) {
-      throw err.generateError(0, 'persist');
+      throw err.generateError(0);
     }
 
     if (! (this._exists(key) && exp.hasExpiration(key, this))) {
@@ -365,7 +360,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   //          the TTL for the timeout firing
   proto.ttl = function (key) {
     if (arguments.length !== 1) {
-      throw err.generateError(0, 'ttl');
+      throw err.generateError(0);
     }
 
     if(! (this._exists(key) && exp.hasExpiration(key, this))) {
@@ -381,7 +376,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Note:    this command is just like ttl with ms units
   proto.pttl = function (key) {
     if (arguments.length !== 1) {
-      throw err.generateError(0, 'pttl');
+      throw err.generateError(0);
     }
 
     return this.ttl(key) * 1000;
@@ -457,9 +452,8 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Notes:   Removes an existing expiration for key
   // Returns: the old value stored at key or null when the key does not exist
   proto.getset = function (key, value) {
-    var name = 'getset';
     if (arguments.length !== 2) {
-      throw err.generateError(0, name);
+      throw err.generateError(0);
     }
 
     // Grab the existing value or null if the key doesn't exist
@@ -467,7 +461,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
 
     // Throw an exception if the value isn't a string
     if (typeof oldVal !== 'string' && oldVal !== null) {
-      throw err.generateError(1, name);
+      throw err.generateError(1);
     }
 
     // Use set to refresh an existing expiration
@@ -530,7 +524,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Note:      When key already holds a value, no operation is performed.
   proto.setnx = function (key, value) {
     if(arguments.length !== 2) {
-      throw err.generateError(0, 'setnx');
+      throw err.generateError(0);
     }
 
     if (this._exists(key)) return 0;
@@ -580,7 +574,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // If the key does not exist, incr sets it to 1
   proto.incr = function (key) {
     if (arguments.length !== 1) {
-      throw err.generateError(0, 'incr');
+      throw err.generateError(0);
     }
     var value          = this._retrieve(key),
         keyType        = typeof key,
@@ -607,7 +601,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
 
     if ((!isValNumber && isNotNumberStr) || valOutOfRange || (valueIsNaN && this.hasOwnProperty(key))) {
       // If the key exists and is set to null, an increment should throw an error
-      throw err.generateError(2, 'incr');
+      throw err.generateError(2);
     } else if (isValNumber || isNumberStr) {
       value = parsedValue + 1;
     } else {
@@ -619,7 +613,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // If the key does not exist, incrby sets it to amount
   proto.incrby = function (key, amount) {
     if (arguments.length !== 2) {
-      throw err.generateError(0, 'incrby');
+      throw err.generateError(0);
     }
     var value                = this._retrieve(key),
         valType              = typeof value,
@@ -643,7 +637,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     if ((!isValNumber && isValNotNumberStr || (valueIsNaN && this.hasOwnProperty(key)) || amountIsNaN)
        || (!isAmountNumber && isAmountNotNumberStr)
        || anyOutOfRange) {
-      throw err.generateError(2, 'incrby');
+      throw err.generateError(2);
     } else if ((isValNumber || isValNumberStr) && (isAmountNumber || isAmountNumberStr)) {
       value = parsedValue + parsedAmount;
     } else if (isAmountNumber || isAmountNumberStr) {
@@ -672,7 +666,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
       keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
       // Need to make sure an even number of arguments is passed in
       if ((keysAmounts.length & 0x1) !== 0) {
-        throw err.generateError(0, 'mincrby');
+        throw err.generateError(0);
       }
       for (i = 0, l = keysAmounts.length; i < l; i += 2) {
         this.incrby(keysAmounts[i], keysAmounts[i + 1]);
@@ -719,7 +713,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     if (typeof val === 'string') {
       return val.length;
     } else {
-      throw err.generateError(1, 'strlen');
+      throw err.generateError(1);
     }
   };
 
@@ -727,7 +721,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // timeout after a given number of seconds.
   proto.setex = function (key, value, delay) {
     if (arguments.length !== 3) {
-      throw err.generateError(0, 'setex');
+      throw err.generateError(0);
     }
 
     this._store(key, value);
@@ -738,7 +732,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // timeout after a given number of milliseconds.
   proto.psetex = function (key, value, delay) {
     if (arguments.length !== 3) {
-      throw err.generateError(0, 'psetex');
+      throw err.generateError(0);
     }
 
     this._store(key, value);
