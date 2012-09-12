@@ -30,6 +30,29 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     }
   };
 
+  Utils.Error = {
+    errors: [
+      'wrong number of arguments',
+      'non-string value',
+      'value is not an integer or out of range',
+      'not a string value',
+      'timestamp already passed',
+      'delay not convertible to a number',
+      'source and destination objects are the same',
+      'no such key'
+    ],
+    generateError: function (type, functionName /*, errorType */) {
+      var error;
+
+      if (typeof type !== 'number' || typeof functionName !== 'string') {
+        throw new TypeError('generateError: incorrect types');
+      }
+
+      error = new Error(functionName + ": " + this.errors[type]);
+      return error;
+    }
+  };
+
   ///////////////////////////
   // Expiration Helpers
   ///////////////////////////

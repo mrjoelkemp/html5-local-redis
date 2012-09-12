@@ -8,7 +8,7 @@
 var LocalRedis    = LocalRedis || {};
 LocalRedis.Utils  = LocalRedis.Utils || {};
 
-(function (window, exp) {
+(function (window, utils) {
   "use strict";
 
   // TODO: Fallback to some other means of storage - polyfills exist
@@ -20,7 +20,9 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   }
 
   // Using the prototype grants both localStorage and sessionStorage the redis methods
-  var proto = window.localStorage.constructor.prototype;
+  var proto = window.localStorage.constructor.prototype,
+      exp   = utils.Expiration,
+      err   = utils.Error;
 
   ///////////////////////////
   // Storage Internals
@@ -756,4 +758,4 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     this.pexpire(key, delay);
   };
 
-})(window, LocalRedis.Utils.Expiration);
+})(window, LocalRedis.Utils);
