@@ -326,7 +326,7 @@ describe('expire', function () {
 });
 
 describe('pexpire', function () {
-  it('should expire a key with based on a supplied millisecond delay', function () {
+  it('expires a key with based on a supplied millisecond delay', function () {
     storage._store('foo', 'bar');
     storage.pexpire('foo', 15);
 
