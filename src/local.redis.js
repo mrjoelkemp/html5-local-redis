@@ -732,7 +732,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     if (typeof val === 'string') {
       return val.length;
     } else {
-      throw new Error('strlen: non-string value');
+      throw err.generateError(1, 'strlen');
     }
   };
 
@@ -740,7 +740,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // timeout after a given number of seconds.
   proto.setex = function (key, value, delay) {
     if (arguments.length !== 3) {
-      throw new TypeError('setex: wrong number of arguments');
+      throw err.generateError(0, 'setex');
     }
 
     this._store(key, value);
@@ -751,7 +751,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // timeout after a given number of milliseconds.
   proto.psetex = function (key, value, delay) {
     if (arguments.length !== 3) {
-      throw new TypeError('psetex: wrong number of arguments');
+      throw err.generateError(0, 'psetex');
     }
 
     this._store(key, value);
