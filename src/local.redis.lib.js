@@ -4,32 +4,6 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
 (function (Utils) {
   "use strict";
 
-  ///////////////////////////
-  // Profiling Helpers
-  ///////////////////////////
-
-  // Call tic() before and toc() after the code you
-  // want profiled. The elapsed seconds will then
-  // be printed to the console.
-  Utils.Tictoc = {
-    start: 0,
-
-    tic: function () {
-      this.start = new Date().getTime();
-    },
-
-    toc: function () {
-      var elapsedSeconds = (new Date().getTime() - this.start) / 1000,
-          output  = elapsedSeconds + "s";
-
-      if(typeof console === "undefined") {
-        alert(output);
-      } else {
-        console.log(output);
-      }
-    }
-  };
-
   Utils.Error = {
     errors: [
       'wrong number of arguments',
@@ -44,14 +18,24 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     ],
     generateError: function (type /*, functionName, errorType */) {
       var error,
-          message;
+          message,
+          functionName  = arguments[1],
+          errorType     = arguments[2];
 
-      if (typeof type !== 'number' || typeof functionName !== 'string') {
-        throw new TypeError('generateError');
+      if (typeof type !== 'number' || (functionName && typeof functionName !== 'string')) {
+        throw new TypeError('wrong arg types');
       }
-      // message = functionName + ": " + this.errors[type];
+
       message = this.errors[type];
-      error = new Error(message);
+      if (errorType) {
+        errorType = errorType.toLowerCase();
+        if (errorType === 'typeerror') {
+          error = new TypeError(message);
+        }
+      } else {
+        error = new Error(message);
+      }
+
       return error;
     }
   };
@@ -59,6 +43,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   ///////////////////////////
   // Expiration Helpers
   ///////////////////////////
+
   Utils.Expiration = {
     expDelimiter: ":",
     expKeyPrefix: "e",
