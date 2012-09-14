@@ -45,7 +45,7 @@ localStorage.incrby('foo', 3);     // 'foo' => 7
 localStorage.expire('foo', 2);     // Expire 'foo' in 2s
 ```
 
-**We'll have supported command documentation and a merged and minified version soon!**
+**More supported command documentation soon!**
 
 ***
 
