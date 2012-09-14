@@ -9,9 +9,23 @@ module.exports = function(grunt) {
         dest: 'src/local.redis.min.js'
       }
     },
-    uglify: {}
+    uglify: {},
+    jasmine_node: {
+    spec: "./spec",
+    projectRoot: ".",
+    requirejs: false,
+    forceExit: true,
+    jUnit: {
+      report: false,
+      savePath : "./build/reports/jasmine/",
+      useDotNotation: true,
+      consolidate: true
+    }
+  }
   });
+  grunt.loadNpmTasks('grunt-jasmine-node-task');
+  grunt.loadNpmTasks('grunt-jasmine-node');
 
   // Default task.
-  grunt.registerTask('default', 'min');
+  grunt.registerTask('default', 'min jasmine_node');
 };
