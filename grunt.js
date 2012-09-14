@@ -3,9 +3,6 @@ module.exports = function(grunt) {
 
   // Project configuration.
   grunt.initConfig({
-    test: {
-      files: ['spec/**/*.js']
-    },
     min: {
       dist: {
         src: ['src/local.redis.js'],
@@ -16,5 +13,5 @@ module.exports = function(grunt) {
   });
 
   // Default task.
-  grunt.registerTask('default', 'test min');
+  grunt.registerTask('default', 'min');
 };
