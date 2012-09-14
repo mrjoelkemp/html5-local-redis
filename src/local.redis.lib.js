@@ -4,35 +4,46 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
 (function (Utils) {
   "use strict";
 
-  ///////////////////////////
-  // Profiling Helpers
-  ///////////////////////////
+  Utils.Error = {
+    errors: [
+      'wrong number of arguments',
+      'non-string value',
+      'value is not an integer or out of range',
+      'not a string value',
+      'timestamp already passed',
+      'delay not convertible to a number',
+      'source and destination objects are the same',
+      'no such key',
+      'missing storage context'
+    ],
+    generateError: function (type /*, functionName, errorType */) {
+      var error,
+          message,
+          functionName  = arguments[1],
+          errorType     = arguments[2];
 
-  // Call tic() before and toc() after the code you
-  // want profiled. The elapsed seconds will then
-  // be printed to the console.
-  Utils.Tictoc = {
-    start: 0,
-
-    tic: function () {
-      this.start = new Date().getTime();
-    },
-
-    toc: function () {
-      var elapsedSeconds = (new Date().getTime() - this.start) / 1000,
-          output  = elapsedSeconds + "s";
-
-      if(typeof console === "undefined") {
-        alert(output);
-      } else {
-        console.log(output);
+      if (typeof type !== 'number' || (functionName && typeof functionName !== 'string')) {
+        throw new TypeError('wrong arg types');
       }
+
+      message = this.errors[type];
+      if (errorType) {
+        errorType = errorType.toLowerCase();
+        if (errorType === 'typeerror') {
+          error = new TypeError(message);
+        }
+      } else {
+        error = new Error(message);
+      }
+
+      return error;
     }
   };
 
   ///////////////////////////
   // Expiration Helpers
   ///////////////////////////
+
   Utils.Expiration = {
     expDelimiter: ":",
     expKeyPrefix: "e",
@@ -64,7 +75,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     getExpirationValue: function (storageKey, storageContext) {
 
       if (! storageContext) {
-        throw new TypeError('getExpirationValue: expected storage context');
+        throw new Utils.Error.generateError(8);
       }
 
       var expKey = this.createExpirationKey(storageKey),
@@ -77,7 +88,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // Returns:   the timeout id or null
     getExpirationID: function (storageKey, storageContext) {
       if (! storageContext) {
-        throw new TypeError('getExpirationID: expected storage context');
+        throw new Utils.Error.generateError(8);
       }
 
       var expVal = this.getExpirationValue(storageKey, storageContext);
@@ -88,7 +99,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // Returns:   the timeout delay or null
     getExpirationDelay: function (storageKey, storageContext) {
       if (! storageContext) {
-        throw new TypeError('getExpirationDelay: expected storage context');
+        throw new Utils.Error.generateError(8);
       }
 
       var expVal = this.getExpirationValue(storageKey, storageContext);
@@ -98,7 +109,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // Returns the expiration's creation time in ms
     getExpirationCreationTime: function (storageKey, storageContext) {
       if (! storageContext) {
-        throw new TypeError('getExpirationCreationTime: expected storage context');
+        throw new Utils.Error.generateError(8);
       }
 
       var expVal = this.getExpirationValue(storageKey, storageContext);
@@ -110,7 +121,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     //        logic for the expiration value object
     getExpirationTTL: function (storageKey, storageContext) {
       if (! storageContext) {
-        throw new TypeError('getExpirationTTL: expected storage context');
+        throw new Utils.Error.generateError(8);
       }
 
       var expVal  = this.getExpirationValue(storageKey, storageContext),
@@ -127,7 +138,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // expiration event's data
     setExpirationOf: function (storageKey, timeoutID, delay, currentTime, storageContext) {
       if (! storageContext) {
-        throw new TypeError('setExpirationOf: expected storage context');
+        throw new Utils.Error.generateError(8);
       }
 
       var expKey = this.createExpirationKey(storageKey),
@@ -139,7 +150,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // Removes/Cancels an existing expiration of the passed key
     removeExpirationOf: function (storageKey, storageContext) {
       if (! storageContext) {
-        throw new TypeError('removeExpirationOf: expected storage context');
+        throw new Utils.Error.generateError(8);
       }
 
       var expKey = this.createExpirationKey(storageKey),
@@ -158,7 +169,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     // Returns:   true if expiry data exists, false otherwise
     hasExpiration: function (storageKey, storageContext) {
       if (! storageContext) {
-        throw new TypeError('hasExpiration: expected storage context');
+        throw new Utils.Error.generateError(8);
       }
 
       return !! this.getExpirationValue(storageKey, storageContext);
