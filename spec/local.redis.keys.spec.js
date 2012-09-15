@@ -129,7 +129,7 @@ describe('del', function () {
     storage.setItem('foo', 'bar');
 
     // Fake an expiration event
-    exp.setExpirationOf('foo', 1, 100, 100, storage);
+    exp.setExpirationOf('foo', 100, 100, storage);
     storage.del('foo');
     expect(storage.getItem(expKey)).toBe(null);
   });
@@ -160,6 +160,7 @@ describe('rename', function () {
   });
 
   it('renames a key to a given name', function () {
+    debugger
     storage.setItem('foo', 'bar');
     storage.rename('foo', 'foobar');
     expect(storage.getItem('foo')).toBe(null);
@@ -230,7 +231,7 @@ describe('renamenx', function () {
 
   it('doesn\'t transfer the TTL of a key\'s existing expiration', function () {
     storage._store('foo', 'bar');
-    exp.setExpirationOf('foo', 1, 100, new Date().getTime(), storage);
+    exp.setExpirationOf('foo', 100, new Date().getTime(), storage);
 
     storage.renamenx('foo', 'car');
     // The new key shouldn't have the ttl
@@ -275,11 +276,11 @@ describe('expire', function () {
 
     // Wait until the key expired or time out
     waitsFor(function () {
-      return ! storage.getItem('foo');
+      return ! storage._retrieve('foo');
     }, 'key did not expire', 15 / 1000);
 
     runs(function () {
-      expect(storage.getItem('foo')).toBe(null);
+      expect(storage._retrieve('foo')).toBe(null);
     });
   });
 
@@ -370,7 +371,7 @@ describe('ttl', function () {
   it('returns the time to live for a key\'s expiration', function () {
     storage.setItem('foobar', 'bar');
     // Fake an expiration of 100ms
-    exp.setExpirationOf('foobar', 1, 100, new Date().getTime(), storage);
+    exp.setExpirationOf('foobar', 100, new Date().getTime(), storage);
 
     waits(10);
     runs(function () {
@@ -392,7 +393,7 @@ describe('ttl', function () {
 describe('pttl', function () {
   it('returns the time to live for a key\'s expiration', function () {
     storage._store('foo', 'bar');
-    exp.setExpirationOf('foo', 1, 100, new Date().getTime(), storage);
+    exp.setExpirationOf('foo', 100, new Date().getTime(), storage);
     waits(10);
     runs(function () {
       var ttl = storage.ttl('foo');

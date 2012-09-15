@@ -5,8 +5,8 @@
 //          supported redis-like commands. window.sessionStorage can also be used.
 
 // Fetch the utils
-var LocalRedis    = LocalRedis || {};
-LocalRedis.Utils  = LocalRedis.Utils || {};
+window.LocalRedis         = window.LocalRedis || {};
+window.LocalRedis.Utils   = window.LocalRedis.Utils || {};
 
 (function (window, utils) {
   "use strict";
@@ -106,10 +106,19 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   };
 
   // Returns the (parsed) value associated with the given key
+  // Note:  to ensure that expired keys are removed,
+  //        we have to do it in core retrieval that all
+  //        other commands use
   proto._retrieve = function (key) {
     key = (typeof key !== 'string') ? JSON.stringify(key) : key;
 
     var res = this.getItem(key);
+
+    // Remove a key if it should be expired
+    if (exp.hasExpiration(key, this) && exp.getExpirationTTL(key, this) < 0) {
+      exp.removeExpirationOf(key, this);
+      this._remove(key);
+    }
 
     try {
       // If it's a literal string, parsing will fail
@@ -192,13 +201,12 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   // Usage:   rename(key, newkey)
   // Notes:   Transfers the key's TTL to the newKey
   proto.rename = function (key, newKey) {
-    var name = 'rename';
     if (arguments.length !== 2) {
-      throw new err.generateError(0, name);
+      throw new err.generateError(0);
     } else if (key === newKey) {
-      throw new err.generateError(6, name);
+      throw new err.generateError(6);
     } else if (! this._exists(key)) {
-      throw new err.generateError(7, name);
+      throw new err.generateError(7);
     }
 
     // Remove newKey's existing expiration
@@ -297,33 +305,21 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
   proto.expire = function (key, delay) {
     if (arguments.length !== 2) {
       throw new err.generateError(0);
+    } else if (! this._exists(key)) {
+      return 0;
     }
 
-    var expKey = exp.createExpirationKey(key),
-        that   = this,
-        tid;
+    var expKey = exp.createExpirationKey(key);
 
     // Check if the delay is/contains a number
     delay = parseFloat(delay, 10);
+
     if (! delay) {
       throw new err.generateError(5);
-    } else if(! this._exists(key)) {
-      return 0;
     }
 
     // Convert the delay to ms (1000ms in 1s)
     delay *= 1000;
-
-    // Create an async task to delete the key
-    // If the key doesn't exist, then the deletions do nothing
-    tid = setTimeout(function () {
-      // Avoid calling del() for side effects
-      that._remove(key);
-      that._remove(expKey);
-    }, delay);
-
-    // If then timeout couldn't be set
-    if (! tid) return 0;
 
     // Subsequent calls to expire on the same key
     // will refresh the expiration with the new delay
@@ -332,7 +328,7 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     }
 
     // Create the key's new expiration data
-    exp.setExpirationOf(key, tid, delay, new Date().getTime(), this);
+    exp.setExpirationOf(key, delay, new Date().getTime(), this);
     return 1;
   };
 
@@ -403,7 +399,6 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     if (! (this._exists(key) && exp.hasExpiration(key, this))) {
       return 0;
     } else {
-      clearTimeout(exp.getExpirationID(key, this));
       this._remove(exp.createExpirationKey(key));
       return 1;
     }
@@ -795,4 +790,4 @@ LocalRedis.Utils  = LocalRedis.Utils || {};
     this.pexpire(key, delay);
   };
 
-})(window, LocalRedis.Utils);
+})(window, window.LocalRedis.Utils);
