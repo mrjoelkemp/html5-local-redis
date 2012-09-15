@@ -322,7 +322,7 @@ describe('psetex', function () {
     storage.psetex('foo', 'bar', 5);
     waits(6);
     runs(function () {
-      expect(storage._exists('foo')).toBeFalsy();
+      expect(storage._retrieve('foo')).toBe(null);
     });
   });
 
