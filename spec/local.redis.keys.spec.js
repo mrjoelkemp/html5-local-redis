@@ -160,7 +160,6 @@ describe('rename', function () {
   });
 
   it('renames a key to a given name', function () {
-    debugger
     storage.setItem('foo', 'bar');
     storage.rename('foo', 'foobar');
     expect(storage.getItem('foo')).toBe(null);
@@ -176,17 +175,17 @@ describe('rename', function () {
     storage.setItem('foo', 'bar');
     storage.pexpire('foo', 15);
 
-    waits(5);
-    runs(function () {
-      storage.rename('foo', 'foobar');
-      // Make sure the new key has an expiration
-      expect(exp.hasExpiration('foobar', storage)).toBeTruthy();
-      var ttl = exp.getExpirationTTL('foobar', storage);
-      // Make sure the new key's ttl is <= the elapsed time
-      expect(ttl).toBeLessThan(11);
-      // Make sure the old key's expiration was removed
-      expect(exp.hasExpiration('foo', storage)).toBeFalsy();
-    });
+    storage.rename('foo', 'foobar');
+
+    // Make sure the new key has an expiration
+    expect(exp.hasExpiration('foobar', storage)).toBeTruthy();
+
+    var ttl = exp.getExpirationTTL('foobar', storage);
+
+    // Make sure the new key's ttl is <= the elapsed time
+    expect(ttl).toBeLessThan(15);
+    // Make sure the old key's expiration was removed
+    expect(exp.hasExpiration('foo', storage)).toBeFalsy();
   });
 
   it('removes the newkey\'s existing expiration', function () {

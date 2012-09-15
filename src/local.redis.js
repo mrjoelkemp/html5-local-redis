@@ -112,13 +112,14 @@ window.LocalRedis.Utils   = window.LocalRedis.Utils || {};
   proto._retrieve = function (key) {
     key = (typeof key !== 'string') ? JSON.stringify(key) : key;
 
-    var res = this.getItem(key);
-
     // Remove a key if it should be expired
     if (exp.hasExpiration(key, this) && exp.getExpirationTTL(key, this) < 0) {
       exp.removeExpirationOf(key, this);
       this._remove(key);
+      return null;
     }
+
+    var res = this.getItem(key);
 
     try {
       // If it's a literal string, parsing will fail
