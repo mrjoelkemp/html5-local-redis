@@ -149,7 +149,7 @@ describe('mset', function () {
 
   it('does not reset a key\'s existing expiration', function () {
     storage._store('foo', 'bar');
-    storage.expire('foo', 15 / 1000);
+    storage.pexpire('foo', 15);
 
     waits(10);
     runs(function () {
@@ -160,7 +160,7 @@ describe('mset', function () {
     waits(10);
     runs(function () {
       // 'foo' should have expired
-      expect(storage._exists('foo')).toBeFalsy();
+      expect(storage._retrieve('foo')).toBe(null);
     });
   });
 }); // end mset
