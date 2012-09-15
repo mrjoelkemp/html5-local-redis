@@ -332,7 +332,7 @@ describe('pexpire', function () {
 
     // Wait until the key expires or fail after 20ms
     waitsFor(function () {
-      return !exp.hasExpiration('foo', storage);
+      return ! storage._retrieve('foo');
     }, 'key did not expire', 20);
 
     runs(function () {
