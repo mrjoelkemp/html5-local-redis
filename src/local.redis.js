@@ -87,27 +87,68 @@
   // storage context like sessionStorage. Otherwise, it default
   // to localStorage.
   var storage    = window.localStorage || {},
-      localRedis = {},
-      proto      = localRedis.prototype;
-
-  // Expose the native storage methods for convenience
-  proto.setItem = function (key, value) {
-    storage.setItem(key, value);
-  };
-  proto.getItem = function (key) {
-    return storage.getItem(key);
-  };
-  proto.key = function (index) {
-    return storage.key(index);
-  };
-  proto.clear = function () {
-    storage.clear();
-  };
-  proto.removeItem = function (key) {
-    storage.removeItem();
-  };
+      localRedis = {
+        // Expose the native storage methods for convenience
+        setItem: function (key, value) {
+          storage.setItem(key, value);
+        },
+        getItem: function (key) {
+          return storage.getItem(key);
+        },
+        key: function (index) {
+          return storage.key(index);
+        },
+        clear: function () {
+          storage.clear();
+        },
+        removeItem: function (key) {
+          storage.removeItem(key);
+        }
+      };
 
   window.localRedis = localRedis;
+
+  ///////////////////////////
+  // Error Helper
+  // TODO: MOVE TO EXTERNAL PLUGIN
+  ///////////////////////////
+
+  var err = {
+        errors: [
+          'wrong number of arguments',
+          'non-string value',
+          'value is not an integer or out of range',
+          'not a string value',
+          'timestamp already passed',
+          'delay not convertible to a number',
+          'source and destination objects are the same',
+          'no such key',
+          'missing storage context'
+        ],
+        generateError: function (type /*, functionName, errorType */) {
+          var error,
+              message,
+              functionName  = arguments[1],
+              errorType     = arguments[2];
+
+          if (typeof type !== 'number' || (functionName && typeof functionName !== 'string')) {
+            throw new TypeError('wrong arg types');
+          }
+
+          message = this.errors[type];
+          if (errorType) {
+            errorType = errorType.toLowerCase();
+
+            if (errorType === 'typeerror') {
+              error = new TypeError(message);
+            }
+          } else {
+            error = new Error(message);
+          }
+
+          return error;
+        }
+      };
 
   ///////////////////////////
   // Expiration Internals
@@ -186,7 +227,23 @@
       // Returns:   true if expiry data exists, false otherwise
       hasExpiration = function (key) {
         var expKey = createExpirationKey(key);
-        return !! this.getItem(expKey);
+        return !! localRedis.getItem(expKey);
+      },
+
+      // Whether or not the key's ttl indicates that it should be removed
+      shouldExpire = function (key) {
+        var ttl = getExpirationTTL(key),
+            shouldExpire = ttl < 0;
+        return shouldExpire;
+      },
+
+      // Removes a key and its expiration data if the key should expire
+      // Note: Each process is responsible for cleaning out expired keys
+      cleanIfExpired = function (key) {
+        if (shouldExpire(key)) {
+          localRedis._remove(key);
+          localRedis._remove(createExpirationKey(key));
+        }
       };
 
   ///////////////////////////
@@ -209,7 +266,7 @@
   // Stores the key/value pair
   // Note:    Auto-stringifies non-strings
   // Throws:  Exception on reaching the storage quota
-  proto._store = function (key, value) {
+  localRedis._store = function (key, value) {
     key   = stringified(key);
     value = stringified(value);
 
@@ -225,15 +282,10 @@
   // Note:  to ensure that expired keys are removed,
   //        we have to do it in core retrieval that all
   //        other commands use
-  proto._retrieve = function (key) {
+  localRedis._retrieve = function (key) {
     key = stringified(key);
 
-    // Remove a key if it should be expired
-    if (this.ttl(key) < 0) {
-      this._remove(key);
-      this._remove(createExpirationKey(key));
-      return null;
-    }
+    cleanIfExpired(key);
 
     var res = this.getItem(key);
 
@@ -259,21 +311,20 @@
   // Notes:   A key with a set value of null still exists.
   // Usage:   _exists('foo') or _exists(['foo', 'bar'])
   localRedis._exists = function (key) {
-    if (exp.removeKeyIfExpired(key, this)) {
-      return false;
-    }
+    cleanIfExpired(key);
 
     var allExist = true,
     i, l;
 
     if (key instanceof Array) {
       for (i = 0, l = key.length; i < l; i++) {
-        if (! this.hasOwnProperty(key[i])) {
+        if (! storage.hasOwnProperty(key[i])) {
           allExist = false;
         }
       }
     } else {
-      allExist = !! this.hasOwnProperty(key);
+      // localRedis object doesn't hold key/value pairs
+      allExist = !! storage.hasOwnProperty(key);
     }
 
     return allExist;

@@ -5,7 +5,7 @@ var localRedis  = localRedis || {},
     storage     = localRedis,  // Alias for specs
     stringify   = JSON.stringify;
 
-afterEach(function () {
+window.afterEach(function () {
   // It's not enough to rely on sessionStorage to
   // flush since it only flushes on a crash
   storage.clear();
