@@ -1,5 +1,5 @@
-window.LocalRedis         = window.LocalRedis || {};
-window.LocalRedis.Utils   = window.LocalRedis.Utils || {};
+window.localRedis         = window.localRedis || {};
+window.localRedis.Utils   = window.localRedis.Utils || {};
 
 (function (Utils) {
   "use strict";
@@ -117,7 +117,7 @@ window.LocalRedis.Utils   = window.LocalRedis.Utils || {};
 
       if (expVal && expVal.d && expVal.c) {
         // TTL is the difference between the creation time w/ delay and now
-        ttl = (expVal.c + expVal.d) - new Date().getTime();
+        ttl = (expVal.c + expVal.d) - new Date();
       }
       return ttl;
     },
@@ -156,7 +156,22 @@ window.LocalRedis.Utils   = window.LocalRedis.Utils || {};
       }
       var expKey = Utils.Expiration.createExpirationKey(storageKey);
       return !! storageContext.getItem(expKey);
+    },
+
+    // Removes the key and its expiration data if its ttl < 0
+    // Returns: whether or not the removal took place
+    removeKeyIfExpired: function (storageKey, storageContext) {
+      var ttl           = this.getExpirationTTL(storageKey, storageContext),
+          shouldExpire  = ttl < 0;
+
+      if (shouldExpire) {
+        this.removeExpirationOf(storageKey, storageContext);
+        storageContext.removeItem(storageKey);
+        return true;
+      }
+
+      return false;
     }
   };
 
-})(window.LocalRedis.Utils);
+})(window.localRedis.Utils);

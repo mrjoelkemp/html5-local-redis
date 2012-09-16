@@ -5,8 +5,8 @@
 //          supported redis-like commands. window.sessionStorage can also be used.
 
 // Fetch the utils
-window.LocalRedis         = window.LocalRedis || {};
-window.LocalRedis.Utils   = window.LocalRedis.Utils || {};
+window.localRedis         = window.localRedis || {};
+window.localRedis.Utils   = window.localRedis.Utils || {};
 
 (function (window, utils) {
   "use strict";
@@ -75,10 +75,18 @@ window.LocalRedis.Utils   = window.LocalRedis.Utils || {};
     return;
   }
 
+
+
   // Using the prototype grants both localStorage and sessionStorage the redis methods
   var proto = window.localStorage.constructor.prototype,
       exp   = utils.Expiration,
       err   = utils.Error;
+
+  ///////////////////////////
+  // Expiration Internals
+  ///////////////////////////
+
+
 
   ///////////////////////////
   // Storage Internals
@@ -113,9 +121,9 @@ window.LocalRedis.Utils   = window.LocalRedis.Utils || {};
     key = (typeof key !== 'string') ? JSON.stringify(key) : key;
 
     // Remove a key if it should be expired
-    if (exp.hasExpiration(key, this) && exp.getExpirationTTL(key, this) < 0) {
-      exp.removeExpirationOf(key, this);
+    if (this.ttl(key) < 0) {
       this._remove(key);
+      this._remove(exp.createExpirationKey(key));
       return null;
     }
 
@@ -143,6 +151,10 @@ window.LocalRedis.Utils   = window.LocalRedis.Utils || {};
   // Notes:   A key with a set value of null still exists.
   // Usage:   _exists('foo') or _exists(['foo', 'bar'])
   proto._exists = function (key) {
+    if (exp.removeKeyIfExpired(key, this)) {
+      return false;
+    }
+
     var allExist = true,
     i, l;
 
@@ -791,4 +803,4 @@ window.LocalRedis.Utils   = window.LocalRedis.Utils || {};
     this.pexpire(key, delay);
   };
 
-})(window, window.LocalRedis.Utils);
+})(window, window.localRedis.Utils);
