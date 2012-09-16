@@ -86,27 +86,25 @@
   // Constructor that allows the caller to pass in a particular
   // storage context like sessionStorage. Otherwise, it default
   // to localStorage.
-  var localRedis = function (/* storageContext */) {
-    var storage = arguments[0] || window.localStorage || {};
+  var storage    = window.localStorage || {},
+      localRedis = {},
+      proto      = localRedis.prototype;
 
-    // Expose the native storage methods for convenience
-    return {
-      setItem: function (key, value) {
-        storage.setItem(key, value);
-      },
-      getItem: function (key) {
-        return storage.getItem(key);
-      },
-      key: function (index) {
-        return storage.key(index);
-      },
-      clear: function () {
-        storage.clear();
-      },
-      removeItem: function (key) {
-        storage.removeItem();
-      }
-    };
+  // Expose the native storage methods for convenience
+  proto.setItem = function (key, value) {
+    storage.setItem(key, value);
+  };
+  proto.getItem = function (key) {
+    return storage.getItem(key);
+  };
+  proto.key = function (index) {
+    return storage.key(index);
+  };
+  proto.clear = function () {
+    storage.clear();
+  };
+  proto.removeItem = function (key) {
+    storage.removeItem();
   };
 
   window.localRedis = localRedis;
@@ -211,7 +209,7 @@
   // Stores the key/value pair
   // Note:    Auto-stringifies non-strings
   // Throws:  Exception on reaching the storage quota
-  localRedis._store = function (key, value) {
+  proto._store = function (key, value) {
     key   = stringified(key);
     value = stringified(value);
 
@@ -227,7 +225,7 @@
   // Note:  to ensure that expired keys are removed,
   //        we have to do it in core retrieval that all
   //        other commands use
-  localRedis._retrieve = function (key) {
+  proto._retrieve = function (key) {
     key = stringified(key);
 
     // Remove a key if it should be expired

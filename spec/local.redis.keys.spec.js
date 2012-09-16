@@ -1,6 +1,7 @@
 describe('Internal Helpers', function () {
   describe('_store', function () {
     it('sets the key to the given value', function () {
+      debugger
       storage._store('foo', 'bar');
       expect(storage.getItem('foo')).toBe('bar');
     });
