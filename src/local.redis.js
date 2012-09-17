@@ -82,27 +82,35 @@
     throw new Error('No JSON support found');
   }
 
-  var storage    = window.localStorage || {},
-      localRedis = {
-        // Expose the native storage methods for convenience
-        setItem: function (key, value) {
-          storage.setItem(key, value);
-        },
-        getItem: function (key) {
-          return storage.getItem(key);
-        },
-        key: function (index) {
-          return storage.key(index);
-        },
-        clear: function () {
-          storage.clear();
-        },
-        removeItem: function (key) {
-          storage.removeItem(key);
+  // Generic storage to be set as a reference to
+  // a Web Storage object. Since localRedis and
+  // sessionRedis both set the proper storage reference,
+  // simply use storage for basic web storage I/O
+  var storage,
+      Redis = function (store) {
+        if (store !== window.localStorage &&
+            store !== window.sessionStorage) {
+          throw new Error('unsupported storage context');
         }
-      };
 
-  window.localRedis = localRedis;
+        storage = store;
+      },
+      proto = Redis.prototype;
+
+  window.localRedis   = new Redis(window.localStorage);
+  window.sessionRedis = new Redis(window.sessionStorage);
+
+  ///////////////////////////
+  // Utilities
+  ///////////////////////////
+
+  var
+    isString = function (element) {
+      return typeof element === 'string';
+    },
+    stringified = function (element) {
+      return isString(element) ? element : JSON.stringify(element);
+    };
 
   ///////////////////////////
   // Error Helper
@@ -156,7 +164,7 @@
         var delimiter = ":",
             prefix    = "e";
 
-        key = isString(key) ? key : JSON.stringify(key);
+        key = stringified(key);
         return prefix + delimiter + key;
       },
 
@@ -174,7 +182,7 @@
       // Retrieves the parsed expiration data for the storage key
       getExpirationValue = function (key) {
         var expKey = createExpirationKey(key),
-            expVal = localRedis.getItem(expKey);
+            expVal = storage.getItem(expKey);
 
         return JSON.parse(expVal);
       },
@@ -208,7 +216,7 @@
         var expKey = createExpirationKey(key),
             expVal = createExpirationValue(delay, currentTime);
 
-        localRedis.setItem(expKey, expVal);
+        storage.setItem(expKey, expVal);
       },
 
       // Removes/Cancels the key's expiration
@@ -216,14 +224,14 @@
         var expKey = createExpirationKey(key),
             expVal = getExpirationValue(key);
 
-        localRedis.removeItem(expKey);
+        storage.removeItem(expKey);
       },
 
       // Whether or not the given key has existing expiration data
       // Returns:   true if expiry data exists, false otherwise
       hasExpiration = function (key) {
         var expKey = createExpirationKey(key);
-        return !! localRedis.getItem(expKey);
+        return !! storage.getItem(expKey);
       },
 
       // Whether or not the key's ttl indicates that it should be removed
@@ -237,10 +245,33 @@
       // Note: Each process is responsible for cleaning out expired keys
       cleanIfExpired = function (key) {
         if (shouldExpire(key)) {
-          localRedis._remove(key);
-          localRedis._remove(createExpirationKey(key));
+          storage._remove(key);
+          storage._remove(createExpirationKey(key));
         }
       };
+
+  // Expose the hasExpiration helper for expiration testing
+  proto._hasExpiration = hasExpiration;
+
+  ///////////////////////////
+  // Native Storage Methods
+  ///////////////////////////
+
+  proto.setItem =  function (key, value) {
+    storage.setItem(key, value);
+  },
+  proto.getItem = function (key) {
+    return storage.getItem(key);
+  },
+  proto.key = function (index) {
+    return storage.key(index);
+  };
+  proto.clear = function () {
+    storage.clear();
+  };
+  proto.removeItem = function (key) {
+    storage.removeItem(key);
+  };
 
   ///////////////////////////
   // Storage Internals
@@ -250,83 +281,74 @@
   // storage operations with no side effects.
   // These internal functions are safer to use for storage within commands
 
+
   var
-      isString = function (element) {
-        return typeof element === 'string';
-      },
-      stringified = function (element) {
-        return isString(element) ? element : JSON.stringify(element);
-      };
+      // Stores the key/value pair
+      // Note:    Auto-stringifies non-strings
+      // Throws:  Exception on reaching the storage quota
+      _store = function (key, value) {
+        key   = stringified(key);
+        value = stringified(value);
 
-  // Expose the hasExpiration helper for expiration testing
-  localRedis._hasExpiration = hasExpiration;
-
-  // Stores the key/value pair
-  // Note:    Auto-stringifies non-strings
-  // Throws:  Exception on reaching the storage quota
-  localRedis._store = function (key, value) {
-    key   = stringified(key);
-    value = stringified(value);
-
-    try {
-      this.setItem(key, value);
-    } catch (e) {
-      // Quota exception
-      throw e;
-    }
-  };
-
-  // Returns the (parsed) value associated with the given key
-  // Note:  to ensure that expired keys are removed,
-  //        we have to do it in core retrieval that all
-  //        other commands use
-  localRedis._retrieve = function (key) {
-    key = stringified(key);
-
-    cleanIfExpired(key);
-
-    var res = this.getItem(key);
-
-    try {
-      // If it's a literal string, parsing will fail
-      res = JSON.parse(res);
-    } catch (e) {
-      // We couldn't parse the literal string
-      // so just return the literal in the finally block.
-    } finally {
-      return res;
-    }
-  };
-
-  // Remove the key/value pair identified by the passed key
-  // Note:  Auto stringifies non-strings
-  localRedis._remove = function (key) {
-    key = stringified(key);
-    this.removeItem(key);
-  };
-
-  // Returns true if the key(s) exists, false otherwise.
-  // Notes:   A key with a set value of null still exists.
-  // Usage:   _exists('foo') or _exists(['foo', 'bar'])
-  localRedis._exists = function (key) {
-    cleanIfExpired(key);
-
-    var allExist = true,
-    i, l;
-
-    if (key instanceof Array) {
-      for (i = 0, l = key.length; i < l; i++) {
-        if (! storage.hasOwnProperty(key[i])) {
-          allExist = false;
+        try {
+          storage.setItem(key, value);
+        } catch (e) {
+          // Quota exception
+          throw e;
         }
-      }
-    } else {
-      // localRedis object doesn't hold key/value pairs
-      allExist = !! storage.hasOwnProperty(key);
-    }
+      },
 
-    return allExist;
-  };
+      // Returns the (parsed) value associated with the given key
+      // Note:  to ensure that expired keys are removed,
+      //        we have to do it in core retrieval that all
+      //        other commands use
+      _retrieve = function (key) {
+        key = stringified(key);
+
+        cleanIfExpired(key);
+
+        var res = storage.getItem(key);
+
+        try {
+          // If it's a literal string, parsing will fail
+          res = JSON.parse(res);
+        } catch (e) {
+          // We couldn't parse the literal string
+          // so just return the literal in the finally block.
+        } finally {
+          return res;
+        }
+      },
+
+      // Remove the key/value pair identified by the passed key
+      // Note:  Auto stringifies non-strings
+      _remove = function (key) {
+        key = stringified(key);
+        storage.removeItem(key);
+      },
+
+      // Returns true if the key(s) exists, false otherwise.
+      // Notes:   A key with a set value of null still exists.
+      // Usage:   _exists('foo') or _exists(['foo', 'bar'])
+      _exists = function (key) {
+        cleanIfExpired(key);
+
+        var allExist = true,
+        i, l;
+
+        if (key instanceof Array) {
+          for (i = 0, l = key.length; i < l; i++) {
+            if (! storage.hasOwnProperty(key[i])) {
+              allExist = false;
+            }
+          }
+        } else {
+          // localRedis object doesn't hold key/value pairs
+          allExist = !! storage.hasOwnProperty(key);
+        }
+
+        return allExist;
+      };
 
   ///////////////////////////
   // Keys Commands
