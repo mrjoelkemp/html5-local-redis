@@ -82,9 +82,6 @@
     throw new Error('No JSON support found');
   }
 
-  // Constructor that allows the caller to pass in a particular
-  // storage context like sessionStorage. Otherwise, it default
-  // to localStorage.
   var storage    = window.localStorage || {},
       localRedis = {
         // Expose the native storage methods for convenience
