@@ -804,8 +804,8 @@
         parsedValue    = parseInt(value, 10),
         valueIsNaN     = isNaN(parsedValue),
         isValNumber    = valType === 'number',
-        isNumberStr    = valType === 'string' && !valueIsNaN,
-        isNotNumberStr = valType === 'string' && valueIsNaN,
+        isNumberStr    = isString(valType) && !valueIsNaN,
+        isNotNumberStr = isString(valType) && valueIsNaN,
         valOutOfRange  = false;
 
     // Test to see if the value is out of range.
@@ -821,7 +821,7 @@
     // to increment.  In the former case we want to create the key
     // and set it to 1.  This follows the Redis spec.
 
-    if ((!isValNumber && isNotNumberStr) || valOutOfRange || (valueIsNaN && this.hasOwnProperty(key))) {
+    if ((!isValNumber && isNotNumberStr) || valOutOfRange || (valueIsNaN && storage.hasOwnProperty(key))) {
       // If the key exists and is set to null, an increment should throw an error
       throw err.generateError(2);
     } else if (isValNumber || isNumberStr) {
@@ -846,17 +846,17 @@
         valueIsNaN           = isNaN(parsedValue),
         isValNumber          = valType === 'number',
         isAmountNumber       = amountType === 'number',
-        isValNumberStr       = valType === 'string' && !valueIsNaN,
-        isValNotNumberStr    = valType === 'string' && valueIsNaN,
-        isAmountNumberStr    = amountType === 'string' && !amountIsNaN,
-        isAmountNotNumberStr = amountType === 'string' && amountIsNaN,
+        isValNumberStr       = isString(valType) && !valueIsNaN,
+        isValNotNumberStr    = isString(valType) && valueIsNaN,
+        isAmountNumberStr    = isString(amountType) && !amountIsNaN,
+        isAmountNotNumberStr = isString(amountType) && amountIsNaN,
         anyOutOfRange        = false;
 
     // Test to see if value or amount is out of range.
     if (!valueIsNaN && (value >= Number.MAX_VALUE) || !amountIsNaN && (amount >= Number.MAX_VALUE)) {
       anyOutOfRange = true;
     }
-    if ((!isValNumber && isValNotNumberStr || (valueIsNaN && this.hasOwnProperty(key)) || amountIsNaN)
+    if ((!isValNumber && isValNotNumberStr || (valueIsNaN && storage.hasOwnProperty(key)) || amountIsNaN)
        || (!isAmountNumber && isAmountNotNumberStr)
        || anyOutOfRange) {
       throw err.generateError(2);
@@ -884,7 +884,7 @@
   localRedis.mincrby = function (keysAmounts) {
     var i, l, key;
 
-    if (keysAmounts instanceof Array || typeof keysAmounts === 'string') {
+    if (keysAmounts instanceof Array || isString(keysAmounts)) {
       keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
       // Need to make sure an even number of arguments is passed in
       if ((keysAmounts.length & 0x1) !== 0) {

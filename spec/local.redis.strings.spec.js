@@ -85,7 +85,7 @@ describe('set', function () {
     // Expires 'foo' if it hasn't been reset by 'set'
     waits(10);
     runs(function () {
-      expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+      expect(storage._hasExpiration('foo')).toBeFalsy();
     });
   });
 }); // end set
@@ -201,7 +201,7 @@ describe('getset', function () {
     // Expires 'foo' if it hasn't been reset by getset
     waits(10);
     runs(function () {
-      expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+      expect(storage._hasExpiration('foo')).toBeFalsy();
     });
   });
 });
@@ -302,7 +302,7 @@ describe('setex', function () {
   it('sets a key to a value and expires that key with a delay', function () {
     storage.setex('foo', 'bar', 1 / 1000);
     expect(storage._retrieve('foo')).toBe('bar');
-    expect(exp.hasExpiration('foo', storage)).toBeTruthy();
+    expect(storage._hasExpiration('foo')).toBeTruthy();
     storage.persist('foo');
   });
 

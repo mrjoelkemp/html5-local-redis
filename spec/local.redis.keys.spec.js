@@ -506,7 +506,6 @@ describe('pexpireat', function () {
 
     expect(storage._hasExpiration('foo')).toBeTruthy();
     expect(storage.ttl('foo')).toBeGreaterThan(0);
-    storage.persist('foo');
   });
 
   it('throws if given an old timestamp', function () {
@@ -515,6 +514,5 @@ describe('pexpireat', function () {
 
     storage._store('foo', 'bar');
     expect(function () { storage.pexpireat('foo', timestamp); }).toThrow();
-    storage.persist('foo');
   });
 });
