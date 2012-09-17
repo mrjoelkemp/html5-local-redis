@@ -276,17 +276,17 @@
   ///////////////////////////
   // Storage Internals
   ///////////////////////////
+
   // Redis commands typically have side effects and so we should
   // be cautious to include calls to those functions when requiring
   // storage operations with no side effects.
   // These internal functions are safer to use for storage within commands
 
-
   var
       // Stores the key/value pair
       // Note:    Auto-stringifies non-strings
       // Throws:  Exception on reaching the storage quota
-      _store = function (key, value) {
+      store = function (key, value) {
         key   = stringified(key);
         value = stringified(value);
 
@@ -302,7 +302,7 @@
       // Note:  to ensure that expired keys are removed,
       //        we have to do it in core retrieval that all
       //        other commands use
-      _retrieve = function (key) {
+      retrieve = function (key) {
         key = stringified(key);
 
         cleanIfExpired(key);
@@ -322,7 +322,7 @@
 
       // Remove the key/value pair identified by the passed key
       // Note:  Auto stringifies non-strings
-      _remove = function (key) {
+      remove = function (key) {
         key = stringified(key);
         storage.removeItem(key);
       },
@@ -330,7 +330,7 @@
       // Returns true if the key(s) exists, false otherwise.
       // Notes:   A key with a set value of null still exists.
       // Usage:   _exists('foo') or _exists(['foo', 'bar'])
-      _exists = function (key) {
+      exists = function (key) {
         cleanIfExpired(key);
 
         var allExist = true,
@@ -359,7 +359,7 @@
   // Notes:   if the key doesn't exist, it's ignored.
   //          clears existing expirations on the keys
   // Usage:   del('k1') or del('k1', 'k2') or del(['k1', 'k2'])
-  localRedis.del = function (keys) {
+  proto.del = function (keys) {
     var numKeysDeleted = 0,
         i, l;
 
@@ -367,9 +367,9 @@
 
     for (i = 0, l = keys.length; i < l; i++) {
 
-      if (this._exists(keys[i])) {
+      if (exists(keys[i])) {
         removeExpirationOf(keys[i]);
-        this._remove(keys[i]);
+        remove(keys[i]);
         ++numKeysDeleted;
       }
     }
@@ -379,12 +379,10 @@
 
   // Returns: 1 if the key exists, 0 if they key doesn't exist.
   // Throws:  TypeError if more than one argument is supplied
-  localRedis.exists = function (key) {
-    if (arguments.length > 1) {
-      throw generateError(0);
-    }
+  proto.exists = function (key) {
+    if (arguments.length > 1) throw generateError(0);
 
-    return (this._exists(key)) ? 1 : 0;
+    return exists(key) ? 1 : 0;
   };
 
   // Renames key to newkey
@@ -392,27 +390,29 @@
   //          ReferenceError if key does not exist
   // Usage:   rename(key, newkey)
   // Notes:   Transfers the key's TTL to the newKey
-  localRedis.rename = function (key, newKey) {
+  proto.rename = function (key, newKey) {
+    var errorType, ttl;
+
     if (arguments.length !== 2) {
-      throw generateError(0);
+      errorType = 0;
     } else if (key === newKey) {
-      throw generateError(6);
-    } else if (! this._exists(key)) {
-      throw generateError(7);
+      errorType = 6;
+    } else if (! exists(key)) {
+      errorType = 7;
     }
+
+    if (errorType) throw generateError(errorType);
 
     // Remove newKey's existing expiration
     // since newKey inherits all characteristics from key
-    if (hasExpiration(newKey)) {
-      removeExpirationOf(newKey);
-    }
+    if (hasExpiration(newKey)) removeExpirationOf(newKey);
 
-    var val = this._retrieve(key);
-    this._store(newKey, val);
+    // Assign the value of key to newKey
+    store(newKey, retrieve(key));
 
     // Transfer an existing expiration to newKey
     if (hasExpiration(key)) {
-      var ttl = getExpirationTTL(key);
+      ttl = getExpirationTTL(key);
 
       // Transfer the TTL (ms) to the new key
       this.pexpire(newKey, ttl);
@@ -421,7 +421,7 @@
       removeExpirationOf(key);
     }
 
-    this._remove(key);
+    remove(key);
   };
 
   // Renames key to newkey if newkey does not exist
@@ -431,22 +431,24 @@
   // Throws:  TypeError if key == newkey
   //          ReferenceError if key does not exist
   //          Fails under the same conditions as rename
-  localRedis.renamenx = function (key, newKey) {
+  proto.renamenx = function (key, newKey) {
+    var typeError;
+
     if (arguments.length !== 2) {
-      throw generateError(0);
+      typeError = 0;
     } else if (key === newKey) {
-      throw generateError(6);
+      typeError = 6;
     } else if (! this._exists(key)) {
-      throw generateError(7);
+      typeError = 7;
     }
 
-    if(this._exists(newKey)) {
-      return 0;
-    } else {
-      // Rename and transfer expirations
-      this.rename(key, newKey);
-      return 1;
-    }
+    if (typeError) throw generateError(typeError);
+
+    if(exists(newKey)) return 0;
+
+    // Rename and transfer expirations
+    this.rename(key, newKey);
+    return 1;
   };
 
   // Retrieves the first key associated with the passed value
@@ -455,10 +457,8 @@
   //            null if no keys were found
   // Params:    all = whether or not to retrieve all of the keys that match
   // Notes:     Custom, non-redis method
-  localRedis.getkey = function (val) {
-    if (arguments.length > 2) {
-      throw generateError(0);
-    }
+  proto.getkey = function (val) {
+    if (arguments.length > 2) throw generateError(0);
 
     var i, l, k, v, keys = [], all;
 
@@ -467,8 +467,8 @@
 
     // Look for keys with a value that matches val
     for (i = 0, l = storage.length; i < l; i++) {
-      k = this.key(i);
-      v = this.getItem(k);
+      k = storage.key(i);
+      v = storage.getItem(k);
 
       if (val === v) {
         keys.push(k);
@@ -492,30 +492,22 @@
   // Precond: delay in seconds
   // Returns: 1 if the timeout was set
   //          0 if the key does not exist or the timeout couldn't be set
-  localRedis.expire = function (key, delay) {
-    if (arguments.length !== 2) {
-      throw generateError(0);
-    } else if (! this._exists(key)) {
-      return 0;
-    }
+  proto.expire = function (key, delay) {
+    if (arguments.length !== 2) throw generateError(0);
 
-    var expKey = createExpirationKey(key);
+    if (! exists(key)) return 0;
 
     // Check if the delay is/contains a number
     delay = parseFloat(delay, 10);
 
-    if (! delay) {
-      throw generateError(5);
-    }
+    if (! delay) throw generateError(5);
 
     // Convert the delay to ms (1000ms in 1s)
     delay *= 1000;
 
     // Subsequent calls to expire on the same key
     // will refresh the expiration with the new delay
-    if (hasExpiration(key)) {
-      removeExpirationOf(key);
-    }
+    if (hasExpiration(key)) removeExpirationOf(key);
 
     // Create the key's new expiration data
     setExpirationOf(key, delay, new Date().getTime());
@@ -524,16 +516,13 @@
 
   // Expiry in milliseconds
   // Returns: the same output as expire
-  localRedis.pexpire = function (key, delay) {
-    if (arguments.length !== 2) {
-      throw generateError(0);
-    }
+  proto.pexpire = function (key, delay) {
+    if (arguments.length !== 2) throw generateError(0);
 
     // Check if the delay is/contains a number
     delay = parseFloat(delay, 10);
-    if (! delay) {
-      throw generateError(5);
-    }
+
+    if (! delay) throw generateError(5);
 
     // Expire will convert the delay to seconds,
     // so we account for that by canceling out the conversion from ms to s
@@ -544,18 +533,14 @@
   // Returns:   1 if the timeout was set.
   //            0 if key does not exist or the timeout could not be set
   // Usage:     expireat('foo', 1293840000)
-  localRedis.expireat = function (key, timestamp) {
-    if (arguments.length !== 2) {
-      throw generateError(0);
-    }
+  proto.expireat = function (key, timestamp) {
+    if (arguments.length !== 2) throw generateError(0);
 
     // Compute the delay (in seconds)
     var nowSeconds  = new Date().getTime() / 1000,
         delay       = timestamp - nowSeconds;
 
-    if (delay < 0) {
-      throw generateError(4);
-    }
+    if (delay < 0) throw generateError(4);
 
     return this.expire(key, delay);
   };
@@ -563,17 +548,13 @@
   // Expires a key a the supplied, millisecond-based UNIX timestamp
   // Returns:   1 if the timeout was set.
   //            0 if key does not exist or the timeout could not be set
-  localRedis.pexpireat = function (key, timestamp) {
-    if (arguments.length !== 2) {
-      throw generateError(0);
-    }
+  proto.pexpireat = function (key, timestamp) {
+    if (arguments.length !== 2) throw generateError(0);
 
     // Delay in milliseconds
     var delay = timestamp - new Date().getTime();
 
-    if(delay < 0) {
-      throw generateError(4);
-    }
+    if(delay < 0) throw generateError(4);
 
     return this.pexpire(key, delay);
   };
@@ -581,17 +562,13 @@
   // Removes the expiration associated with the key
   // Returns:   0 if the key does not exist or does not have an expiration
   //            1 if the expiration was removed
-  localRedis.persist = function (key) {
-    if (arguments.length !== 1) {
-      throw generateError(0);
-    }
+  proto.persist = function (key) {
+    if (arguments.length !== 1) throw generateError(0);
 
-    if (! (this._exists(key) && hasExpiration(key))) {
-      return 0;
-    } else {
-      this._remove(createExpirationKey(key));
-      return 1;
-    }
+    if (! (exists(key) && hasExpiration(key))) return 0;
+
+    remove(createExpirationKey(key));
+    return 1;
   };
 
   // Returns: the time to live in seconds
@@ -599,14 +576,10 @@
   // Notes:   Due to the possible delay between expiration timeout
   //          firing and the callback execution, this ttl only reflects
   //          the TTL for the timeout firing
-  localRedis.ttl = function (key) {
-    if (arguments.length !== 1) {
-      throw generateError(0);
-    }
+  proto.ttl = function (key) {
+    if (arguments.length !== 1) throw generateError(0);
 
-    if(! (this._exists(key) && hasExpiration(key))) {
-      return -1;
-    }
+    if(! (exists(key) && hasExpiration(key))) return -1;
 
     // 1sec = 1000ms
     return getExpirationTTL(key, this) / 1000;
@@ -615,21 +588,19 @@
   // Returns: the time to live in milliseconds
   //          -1 when key does not exist or does not have an expiration
   // Note:    this command is just like ttl with ms units
-  localRedis.pttl = function (key) {
-    if (arguments.length !== 1) {
-      throw generateError(0);
-    }
+  proto.pttl = function (key) {
+    if (arguments.length !== 1) throw generateError(0);
 
     return this.ttl(key) * 1000;
   };
 
   // Returns:   a random key from the calling storage object.
   //            null when the database is empty
-  localRedis.randomkey = function () {
-    var keys = Object.keys(storage),
-        length = storage.length,
+  proto.randomkey = function () {
+    var keys    = Object.keys(storage),
+        length  = storage.length,
         // Random position within the list of keys
-        rindex = Math.floor(Math.random() * length);
+        rindex  = Math.floor(Math.random() * length);
 
     if (! length) return null;
 
@@ -637,7 +608,7 @@
   };
 
   // Returns:   all keys matching the supplied pattern
-  localRedis.keys = function (pattern) {
+  proto.keys = function (pattern) {
     var regex = new RegExp(pattern),
         i, l,
         results = [],
@@ -657,20 +628,20 @@
   ///////////////////////////
 
   // Returns: The (parsed) value associated with the passed key, if it exists.
-  localRedis.get = function(key) {
-    return this._retrieve(key);
+  proto.get = function(key) {
+    return retrieve(key);
   };
 
   // Stores the passed value indexed by the passed key
   // Notes:   Auto stringifies
   //          resets an existing expiration if set was called directly
   // Usage:   set('foo', 'bar') or set('foo', 'bar').set('bar', 'car')
-  localRedis.set = function(key, value) {
+  proto.set = function(key, value) {
     var hasExp = hasExpiration(key),
         expDelay;
 
     try {
-      this._store(key, value);
+      store(key, value);
 
       // Cancel the expiration of the key
       if (hasExp) {
@@ -691,18 +662,14 @@
   // Usage:   getset(key, value)
   // Notes:   Removes an existing expiration for key
   // Returns: the old value stored at key or null when the key does not exist
-  localRedis.getset = function (key, value) {
-    if (arguments.length !== 2) {
-      throw generateError(0);
-    }
+  proto.getset = function (key, value) {
+    if (arguments.length !== 2) throw generateError(0);
 
     // Grab the existing value or null if the key doesn't exist
-    var oldVal = this._retrieve(key);
+    var oldVal = retrieve(key);
 
     // Throw an exception if the value isn't a string
-    if (! isString(oldVal) && oldVal !== null) {
-      throw generateError(1);
-    }
+    if (! isString(oldVal) && oldVal !== null) throw generateError(1);
 
     // Use set to refresh an existing expiration
     this.set(key, value);
@@ -712,7 +679,7 @@
   // Returns: A list of values for the passed key(s).
   // Note:    Values match keys by index.
   // Usage:   mget('key1', 'key2', 'key3') or mget(['key1', 'key2', 'key3'])
-  localRedis.mget = function(keys) {
+  proto.mget = function(keys) {
     var results = [],
         i, l;
 
@@ -721,7 +688,7 @@
 
     // Retrieve the value for each key
     for (i = 0, l = keys.length; i < l; i++) {
-      results[results.length] = this._retrieve(keys[i]);
+      results[results.length] = retrieve(keys[i]);
     }
 
     return results;
@@ -733,7 +700,7 @@
   //          mset({key1: val1, key2: val2})
   // Notes:   If there's an odd number of elements,
   //          unset values default to undefined.
-  localRedis.mset = function (keysVals) {
+  proto.mset = function (keysVals) {
     var isArray   = keysVals instanceof Array,
         isObject  = keysVals instanceof Object,
         i, l,
@@ -744,14 +711,14 @@
     if (isObject && !isArray) {
       keys = Object.keys(keysVals);
       for (i = 0, l = keys.length; i < l; i++) {
-        this._store(keys[i], keysVals[keys[i]]);
+        store(keys[i], keysVals[keys[i]]);
       }
     } else {
 
       keysVals = isArray ? keysVals : arguments;
 
       for (i = 0, l = keysVals.length; i < l; i += 2) {
-        this._store(keysVals[i], keysVals[i + 1]);
+        store(keysVals[i], keysVals[i + 1]);
       }
     }
 
@@ -762,14 +729,12 @@
   // Returns:   1 if the key was set
   //            0 if the key was not set
   // Note:      When key already holds a value, no operation is performed.
-  localRedis.setnx = function (key, value) {
-    if(arguments.length !== 2) {
-      throw generateError(0);
-    }
+  proto.setnx = function (key, value) {
+    if(arguments.length !== 2) throw generateError(0);
 
-    if (this._exists(key)) return 0;
+    if (exists(key)) return 0;
 
-    this._store(key, value);
+    store(key, value);
     return 1;
   };
 
@@ -779,7 +744,7 @@
   // Notes:     Accepts the same types of params as mset.
   //            If just a single key already exists,
   //            no set operations are performed
-  localRedis.msetnx = function (keysVals) {
+  proto.msetnx = function (keysVals) {
     var isArray = keysVals instanceof Array,
         isObject = keysVals instanceof Object,
         i, l,
@@ -797,7 +762,7 @@
 
     // If any key exists, then don't store anything
     for (i = 0, l = keys.length; i < l; i++) {
-      if (this._exists(keys[i])) {
+      if (exists(keys[i])) {
         return 0;
       }
     }
@@ -806,17 +771,16 @@
     // are passed in as an object, when it should be
     // processed like an array
     for (i = 0, l = keysVals.length; i < l; i += 2) {
-      this._store(keysVals[i], keysVals[i + 1]);
+      store(keysVals[i], keysVals[i + 1]);
     }
     return 1;
   };
 
   // If the key does not exist, incr sets it to 1
-  localRedis.incr = function (key) {
-    if (arguments.length !== 1) {
-      throw generateError(0);
-    }
-    var value          = this._retrieve(key),
+  proto.incr = function (key) {
+    if (arguments.length !== 1) throw generateError(0);
+
+    var value          = retrieve(key),
         keyType        = typeof key,
         valType        = typeof value,
         parsedValue    = parseInt(value, 10),
@@ -839,23 +803,22 @@
     // to increment.  In the former case we want to create the key
     // and set it to 1.  This follows the Redis spec.
 
+    // If the key exists and is set to null, an increment should throw an error
     if ((!isValNumber && isNotNumberStr) || valOutOfRange || (valueIsNaN && storage.hasOwnProperty(key))) {
-      // If the key exists and is set to null, an increment should throw an error
       throw generateError(2);
     } else if (isValNumber || isNumberStr) {
       value = parsedValue + 1;
     } else {
       value = 1;
     }
-    this._store(key, value);
+    store(key, value);
   };
 
   // If the key does not exist, incrby sets it to amount
-  localRedis.incrby = function (key, amount) {
-    if (arguments.length !== 2) {
-      throw generateError(0);
-    }
-    var value                = this._retrieve(key),
+  proto.incrby = function (key, amount) {
+    if (arguments.length !== 2) throw generateError(0);
+
+    var value                = retrieve(key),
         valType              = typeof value,
         amountType           = typeof amount,
         parsedValue          = parseInt(value, 10),
@@ -889,11 +852,11 @@
       value = parsedAmount;
     }
 
-    this._store(key, value);
+    store(key, value);
   };
 
   // Increments multiple keys by 1
-  localRedis.mincr = function (keys) {
+  proto.mincr = function (keys) {
     var i, l;
     keys = (keys instanceof Array) ? keys : arguments;
     for(i = 0, l = keys.length; i < l; i++) {
@@ -905,15 +868,15 @@
   //          mincrby(['key1', 1, 'key2', 2]) or
   //          mincrby({'key1': 1, 'key2': 2})
   // Notes:   Custom, non-redis method
-  localRedis.mincrby = function (keysAmounts) {
+  proto.mincrby = function (keysAmounts) {
     var i, l, key;
 
     if (keysAmounts instanceof Array || isString(keysAmounts)) {
       keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
+
       // Need to make sure an even number of arguments is passed in
-      if ((keysAmounts.length & 0x1) !== 0) {
-        throw generateError(0);
-      }
+      if ((keysAmounts.length & 0x1) !== 0) throw generateError(0);
+
       for (i = 0, l = keysAmounts.length; i < l; i += 2) {
         this.incrby(keysAmounts[i], keysAmounts[i + 1]);
       }
@@ -936,16 +899,15 @@
   // Notes:   Appends if the key exists and is a string
   //          If key does not exist, we initialize it to empty
   //          and perform the append
-  localRedis.append = function (key, value) {
-    if (arguments.length !== 2) {
-      throw generateError(0);
-    }
-    var val = this._exists(key) ? this._retrieve(key) : "",
+  proto.append = function (key, value) {
+    if (arguments.length !== 2) throw generateError(0);
+
+    var val         = exists(key) ? retrieve(key) : "",
         valIsString = isString(val);
 
     if (valIsString) {
       val += value;
-      this._store(key, val);
+      store(key, val);
     }
 
     return valIsString ? val.length : 1;
@@ -954,37 +916,31 @@
   // Returns: the length of the string value stored at key.
   //          0 when key does not exist
   // Throws:  when the key holds a non-string value
-  localRedis.strlen = function (key) {
-    var val = this._retrieve(key);
+  proto.strlen = function (key) {
+    var val = retrieve(key);
 
     if (! val) return 0;
 
-    if (isString(val)) {
-      return val.length;
-    } else {
-      throw generateError(1);
-    }
+    if (! isString(val)) throw generateError(1);
+
+    return val.length;
   };
 
   // Set key to hold the string value and set key to
   // timeout after a given number of seconds.
-  localRedis.setex = function (key, value, delay) {
-    if (arguments.length !== 3) {
-      throw generateError(0);
-    }
+  proto.setex = function (key, value, delay) {
+    if (arguments.length !== 3) throw generateError(0);
 
-    this._store(key, value);
+    store(key, value);
     this.expire(key, delay);
   };
 
   // Set key to hold the string value and set key to
   // timeout after a given number of milliseconds.
-  localRedis.psetex = function (key, value, delay) {
-    if (arguments.length !== 3) {
-      throw generateError(0);
-    }
+  proto.psetex = function (key, value, delay) {
+    if (arguments.length !== 3) throw generateError(0);
 
-    this._store(key, value);
+    store(key, value);
     this.pexpire(key, delay);
   };
 
