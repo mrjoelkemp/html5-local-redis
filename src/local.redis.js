@@ -109,41 +109,41 @@
   // TODO: MOVE TO EXTERNAL PLUGIN
   ///////////////////////////
 
-  var err = {
-        errors: [
-          'wrong number of arguments',
-          'non-string value',
-          'value is not an integer or out of range',
-          'not a string value',
-          'timestamp already passed',
-          'delay not convertible to a number',
-          'source and destination objects are the same',
-          'no such key',
-          'missing storage context'
-        ],
-        generateError: function (type /*, functionName, errorType */) {
-          var error,
-              message,
-              functionName  = arguments[1],
-              errorType     = arguments[2];
+  var
+      errors = [
+        'wrong number of arguments',
+        'non-string value',
+        'value is not an integer or out of range',
+        'not a string value',
+        'timestamp already passed',
+        'delay not convertible to a number',
+        'source and destination objects are the same',
+        'no such key',
+        'missing storage context'
+      ],
 
-          if (typeof type !== 'number' || (functionName && typeof functionName !== 'string')) {
-            throw new TypeError('wrong arg types');
-          }
+      generateError = function (type /*, functionName, errorType */) {
+        var error,
+            message,
+            functionName  = arguments[1],
+            errorType     = arguments[2];
 
-          message = this.errors[type];
-          if (errorType) {
-            errorType = errorType.toLowerCase();
-
-            if (errorType === 'typeerror') {
-              error = new TypeError(message);
-            }
-          } else {
-            error = new Error(message);
-          }
-
-          return error;
+        if (typeof type !== 'number' || (functionName && typeof functionName !== 'string')) {
+          throw new TypeError('wrong arg types');
         }
+
+        message = errors[type];
+        if (errorType) {
+          errorType = errorType.toLowerCase();
+
+          if (errorType === 'typeerror') {
+            error = new TypeError(message);
+          }
+        } else {
+          error = new Error(message);
+        }
+
+        return error;
       };
 
   ///////////////////////////
@@ -359,7 +359,7 @@
   // Throws:  TypeError if more than one argument is supplied
   localRedis.exists = function (key) {
     if (arguments.length > 1) {
-      throw new err.generateError(0);
+      throw new generateError(0);
     }
 
     return (this._exists(key)) ? 1 : 0;
@@ -372,11 +372,11 @@
   // Notes:   Transfers the key's TTL to the newKey
   localRedis.rename = function (key, newKey) {
     if (arguments.length !== 2) {
-      throw new err.generateError(0);
+      throw new generateError(0);
     } else if (key === newKey) {
-      throw new err.generateError(6);
+      throw new generateError(6);
     } else if (! this._exists(key)) {
-      throw new err.generateError(7);
+      throw new generateError(7);
     }
 
     // Remove newKey's existing expiration
@@ -411,11 +411,11 @@
   //          Fails under the same conditions as rename
   localRedis.renamenx = function (key, newKey) {
     if (arguments.length !== 2) {
-      throw new err.generateError(0);
+      throw new generateError(0);
     } else if (key === newKey) {
-      throw new err.generateError(6);
+      throw new generateError(6);
     } else if (! this._exists(key)) {
-      throw new err.generateError(7);
+      throw new generateError(7);
     }
 
     if(this._exists(newKey)) {
@@ -435,7 +435,7 @@
   // Notes:     Custom, non-redis method
   localRedis.getkey = function (val) {
     if (arguments.length > 2) {
-      throw new err.generateError(0);
+      throw new generateError(0);
     }
 
     var i, l, k, v, keys = [], all;
@@ -472,7 +472,7 @@
   //          0 if the key does not exist or the timeout couldn't be set
   localRedis.expire = function (key, delay) {
     if (arguments.length !== 2) {
-      throw new err.generateError(0);
+      throw new generateError(0);
     } else if (! this._exists(key)) {
       return 0;
     }
@@ -483,7 +483,7 @@
     delay = parseFloat(delay, 10);
 
     if (! delay) {
-      throw new err.generateError(5);
+      throw new generateError(5);
     }
 
     // Convert the delay to ms (1000ms in 1s)
@@ -504,13 +504,13 @@
   // Returns: the same output as expire
   localRedis.pexpire = function (key, delay) {
     if (arguments.length !== 2) {
-      throw err.generateError(0);
+      throw generateError(0);
     }
 
     // Check if the delay is/contains a number
     delay = parseFloat(delay, 10);
     if (! delay) {
-      throw err.generateError(5);
+      throw generateError(5);
     }
 
     // Expire will convert the delay to seconds,
@@ -524,7 +524,7 @@
   // Usage:     expireat('foo', 1293840000)
   localRedis.expireat = function (key, timestamp) {
     if (arguments.length !== 2) {
-      throw err.generateError(0);
+      throw generateError(0);
     }
 
     // Compute the delay (in seconds)
@@ -532,7 +532,7 @@
         delay       = timestamp - nowSeconds;
 
     if (delay < 0) {
-      throw err.generateError(4);
+      throw generateError(4);
     }
 
     return this.expire(key, delay);
@@ -543,14 +543,14 @@
   //            0 if key does not exist or the timeout could not be set
   localRedis.pexpireat = function (key, timestamp) {
     if (arguments.length !== 2) {
-      throw err.generateError(0);
+      throw generateError(0);
     }
 
     // Delay in milliseconds
     var delay = timestamp - new Date().getTime();
 
     if(delay < 0) {
-      throw err.generateError(4);
+      throw generateError(4);
     }
 
     return this.pexpire(key, delay);
@@ -561,7 +561,7 @@
   //            1 if the expiration was removed
   localRedis.persist = function (key) {
     if (arguments.length !== 1) {
-      throw err.generateError(0);
+      throw generateError(0);
     }
 
     if (! (this._exists(key) && hasExpiration(key))) {
@@ -579,7 +579,7 @@
   //          the TTL for the timeout firing
   localRedis.ttl = function (key) {
     if (arguments.length !== 1) {
-      throw err.generateError(0);
+      throw generateError(0);
     }
 
     if(! (this._exists(key) && hasExpiration(key))) {
@@ -595,7 +595,7 @@
   // Note:    this command is just like ttl with ms units
   localRedis.pttl = function (key) {
     if (arguments.length !== 1) {
-      throw err.generateError(0);
+      throw generateError(0);
     }
 
     return this.ttl(key) * 1000;
@@ -671,7 +671,7 @@
   // Returns: the old value stored at key or null when the key does not exist
   localRedis.getset = function (key, value) {
     if (arguments.length !== 2) {
-      throw err.generateError(0);
+      throw generateError(0);
     }
 
     // Grab the existing value or null if the key doesn't exist
@@ -679,7 +679,7 @@
 
     // Throw an exception if the value isn't a string
     if (! isString(oldVal) && oldVal !== null) {
-      throw err.generateError(1);
+      throw generateError(1);
     }
 
     // Use set to refresh an existing expiration
@@ -742,7 +742,7 @@
   // Note:      When key already holds a value, no operation is performed.
   localRedis.setnx = function (key, value) {
     if(arguments.length !== 2) {
-      throw err.generateError(0);
+      throw generateError(0);
     }
 
     if (this._exists(key)) return 0;
@@ -792,7 +792,7 @@
   // If the key does not exist, incr sets it to 1
   localRedis.incr = function (key) {
     if (arguments.length !== 1) {
-      throw err.generateError(0);
+      throw generateError(0);
     }
     var value          = this._retrieve(key),
         keyType        = typeof key,
@@ -819,7 +819,7 @@
 
     if ((!isValNumber && isNotNumberStr) || valOutOfRange || (valueIsNaN && storage.hasOwnProperty(key))) {
       // If the key exists and is set to null, an increment should throw an error
-      throw err.generateError(2);
+      throw generateError(2);
     } else if (isValNumber || isNumberStr) {
       value = parsedValue + 1;
     } else {
@@ -831,7 +831,7 @@
   // If the key does not exist, incrby sets it to amount
   localRedis.incrby = function (key, amount) {
     if (arguments.length !== 2) {
-      throw err.generateError(0);
+      throw generateError(0);
     }
     var value                = this._retrieve(key),
         valType              = typeof value,
@@ -856,7 +856,7 @@
     if ((!isValNumber && isValNotNumberStr || (valueIsNaN && this._exists(key)) || amountIsNaN)
        || (!isAmountNumber && isAmountNotNumberStr)
        || anyOutOfRange) {
-      throw err.generateError(2);
+      throw generateError(2);
 
     // The value and incr amount are valid
     } else if ((isValNumber || isValNumberStr) && (isAmountNumber || isAmountNumberStr)) {
@@ -890,7 +890,7 @@
       keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
       // Need to make sure an even number of arguments is passed in
       if ((keysAmounts.length & 0x1) !== 0) {
-        throw err.generateError(0);
+        throw generateError(0);
       }
       for (i = 0, l = keysAmounts.length; i < l; i += 2) {
         this.incrby(keysAmounts[i], keysAmounts[i + 1]);
@@ -937,7 +937,7 @@
     if (isString(val)) {
       return val.length;
     } else {
-      throw err.generateError(1);
+      throw generateError(1);
     }
   };
 
@@ -945,7 +945,7 @@
   // timeout after a given number of seconds.
   localRedis.setex = function (key, value, delay) {
     if (arguments.length !== 3) {
-      throw err.generateError(0);
+      throw generateError(0);
     }
 
     this._store(key, value);
@@ -956,7 +956,7 @@
   // timeout after a given number of milliseconds.
   localRedis.psetex = function (key, value, delay) {
     if (arguments.length !== 3) {
-      throw err.generateError(0);
+      throw generateError(0);
     }
 
     this._store(key, value);
