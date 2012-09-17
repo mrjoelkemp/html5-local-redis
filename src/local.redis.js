@@ -586,7 +586,7 @@
       throw err.generateError(0);
     }
 
-    if(! (this._exists(key) && hasExpiration(this))) {
+    if(! (this._exists(key) && hasExpiration(key))) {
       return -1;
     }
 

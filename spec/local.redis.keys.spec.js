@@ -301,7 +301,7 @@ describe('expire', function () {
 
     // If expire didn't accept seconds (but ms), it would expire instantly 0.0001 ms
     // Expiry data should still be there after 1ms
-    expect(exp.hasExpiration('foo', storage)).toBeTruthy();
+    expect(storage._hasExpiration('foo')).toBeTruthy();
   });
 
   it('refreshes an existing expiration if called again', function () {
@@ -317,7 +317,8 @@ describe('expire', function () {
     // Should expire original if second call didn't refresh
     waits(6);
     runs(function () {
-      expect(exp.hasExpiration('foobar', storage)).toBeTruthy();
+      expect(storage._hasExpiration('foobar')).toBeTruthy();
+      expect(storage._retrieve('foobar')).not.toBe(null);
     });
   });
 });
@@ -343,7 +344,7 @@ describe('persist', function () {
     storage._store('foo', 'bar');
     storage.expire('foo', 10 / 1000);
     storage.persist('foo');
-    expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+    expect(storage._hasExpiration('foo')).toBeFalsy();
   });
 
   it('returns 0 if the key does not exist', function () {
@@ -359,16 +360,14 @@ describe('persist', function () {
     storage._store('foo', 'bar');
     storage.expire('foo', 5 / 1000);
     expect(storage.persist('foo')).toBe(1);
-    expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+    expect(storage._hasExpiration('foo')).toBeFalsy();
   });
 });
 
 describe('ttl', function () {
   it('returns the time to live for a key\'s expiration', function () {
     storage.setItem('foobar', 'bar');
-    // Fake an expiration of 100ms
-    exp.setExpirationOf('foobar', 100, new Date().getTime(), storage);
-
+    storage.pexpire('foobar', 15);
     waits(10);
     runs(function () {
       var ttl = storage.ttl('foobar');
