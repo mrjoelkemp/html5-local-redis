@@ -175,14 +175,14 @@ describe('rename', function () {
     storage.rename('foo', 'foobar');
 
     // Make sure the new key has an expiration
-    expect(exp.hasExpiration('foobar', storage)).toBeTruthy();
+    expect(storage._hasExpiration('foobar', storage)).toBeTruthy();
 
-    var ttl = exp.getExpirationTTL('foobar', storage);
+    var ttl = storage.ttl('foobar');
 
     // Make sure the new key's ttl is <= the elapsed time
     expect(ttl).toBeDefined();
     // Make sure the old key's expiration was removed
-    expect(exp.hasExpiration('foo', storage)).toBeFalsy();
+    expect(storage._hasExpiration('foo')).toBeFalsy();
   });
 
   it('removes the newkey\'s existing expiration', function () {
@@ -193,7 +193,7 @@ describe('rename', function () {
     runs(function () {
       // Should remove the expiration of 'foobar'
       storage.rename('foo', 'foobar');
-      expect(exp.hasExpiration('foobar', storage)).toBeFalsy();
+      expect(storage._hasExpiration('foobar')).toBeFalsy();
     });
   });
 });
@@ -225,13 +225,13 @@ describe('renamenx', function () {
     expect(function () { storage.renamenx('foo'); }).toThrow();
   });
 
-  it('doesn\'t transfer the TTL of a key\'s existing expiration', function () {
+  it('transfers the TTL of the old key\'s existing expiration', function () {
     storage._store('foo', 'bar');
-    exp.setExpirationOf('foo', 100, new Date().getTime(), storage);
+    storage.pexpire('foo', 15);
 
     storage.renamenx('foo', 'car');
     // The new key shouldn't have the ttl
-    expect(exp.getExpirationTTL('car', storage)).toBeFalsy();
+    expect(storage._hasExpiration('car')).toBeTruthy();
   });
 });
 

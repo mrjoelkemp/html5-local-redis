@@ -409,7 +409,7 @@
   // Renames key to newkey if newkey does not exist
   // Returns: 1 if key was renamed; 0 if newkey already exists
   // Usage:   renamenx(key, newkey)
-  // Notes:   Does not affect expiry
+  // Notes:   Affects expiry like rename
   // Throws:  TypeError if key == newkey
   //          ReferenceError if key does not exist
   //          Fails under the same conditions as rename
@@ -425,9 +425,8 @@
     if(this._exists(newKey)) {
       return 0;
     } else {
-      var val = this._retrieve(key);
-      this._store(newKey, val);
-      this._remove(key);
+      // Rename and transfer expirations
+      this.rename(key, newKey);
       return 1;
     }
   };
