@@ -125,13 +125,10 @@ describe('del', function () {
   });
 
   it('removes a key\'s existing expiration information', function () {
-    var expKey = exp.createExpirationKey('foo', storage);
     storage.setItem('foo', 'bar');
-
-    // Fake an expiration event
-    exp.setExpirationOf('foo', 100, 100, storage);
+    storage.pexpire('foo', 15);
     storage.del('foo');
-    expect(storage.getItem(expKey)).toBe(null);
+    expect(storage._hasExpiration('foo')).toBeFalsy();
   });
 });
 

@@ -249,6 +249,10 @@
   ///////////////////////////
   // Storage Internals
   ///////////////////////////
+  // Redis commands typically have side effects and so we should
+  // be cautious to include calls to those functions when requiring
+  // storage operations with no side effects.
+  // These internal functions are safer to use for storage within commands
 
   var
       isString = function (element) {
@@ -258,10 +262,8 @@
         return isString(element) ? element : JSON.stringify(element);
       };
 
-  // Redis commands typically have side effects and so we should
-  // be cautious to include calls to those functions when requiring
-  // storage operations with no side effects.
-  // These internal functions are safer to use for storage within commands
+  // Expose the hasExpiration helper for expiration testing
+  localRedis._hasExpiration = hasExpiration;
 
   // Stores the key/value pair
   // Note:    Auto-stringifies non-strings
