@@ -608,8 +608,8 @@
   // Returns:   a random key from the calling storage object.
   //            null when the database is empty
   localRedis.randomkey = function () {
-    var keys = Object.keys(this),
-        length = this.length,
+    var keys = Object.keys(storage),
+        length = storage.length,
         // Random position within the list of keys
         rindex = Math.floor(Math.random() * length);
 
@@ -623,7 +623,7 @@
     var regex = new RegExp(pattern),
         i, l,
         results = [],
-        keys = Object.keys(this);
+        keys = Object.keys(storage);
 
     for (i = 0, l = keys.length; i < l; i++) {
       if (regex.test(keys[i])) {

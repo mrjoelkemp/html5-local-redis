@@ -388,12 +388,11 @@ describe('ttl', function () {
 describe('pttl', function () {
   it('returns the time to live for a key\'s expiration', function () {
     storage._store('foo', 'bar');
-    exp.setExpirationOf('foo', 100, new Date().getTime(), storage);
+    storage.pexpire('foo', 15);
     waits(10);
     runs(function () {
       var ttl = storage.ttl('foo');
       expect(ttl).toBeGreaterThan(0);
-      expect(ttl).toBeLessThan(100);
     });
   });
 })
@@ -424,8 +423,8 @@ describe('randomkey', function () {
       storage._store('foo' + i, 'bar');
       counts[i] = 0;
     }
-
-    var keys  = Object.keys(storage),
+    // Grab the keys from localStorage since localRedis is a wrapper
+    var keys  = Object.keys(localStorage),
         index;
 
     // Run 100 times and see if every key gets chosen at least once
@@ -458,7 +457,7 @@ describe('keys', function () {
       storage._store('foo' + i, 'bar');
     }
 
-    keys = Object.keys(storage);
+    keys = Object.keys(localStorage);
 
     results = storage.keys(pattern);
 
@@ -482,7 +481,7 @@ describe('expireat', function () {
     storage._store('foo', 'bar');
     storage.expireat('foo', timestamp);
 
-    expect(exp.hasExpiration('foo', storage)).toBeTruthy();
+    expect(storage._hasExpiration('foo')).toBeTruthy();
     expect(storage.ttl('foo')).toBeGreaterThan(0);
     storage.persist('foo');
   });
@@ -505,7 +504,7 @@ describe('pexpireat', function () {
     storage._store('foo', 'bar');
     storage.pexpireat('foo', timestamp);
 
-    expect(exp.hasExpiration('foo', storage)).toBeTruthy();
+    expect(storage._hasExpiration('foo')).toBeTruthy();
     expect(storage.ttl('foo')).toBeGreaterThan(0);
     storage.persist('foo');
   });
