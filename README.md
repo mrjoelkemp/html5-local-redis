@@ -9,7 +9,7 @@ HTML5 Storage is a disk-based, client-side storage medium that has a really simp
 
 Unfortunately, if you want more advanced usage of the storage objects, you would need to roll your own extension to the API. HTML5 Local Redis extends the storage API with popular Redis commands.
 
-We believe that the full possibility of HTML5 Storage hasn't been explored and hopefully this library will serve as a step in that direction.
+We believe that the full possibilities of HTML5 Web Storage hasn't been explored and hopefully this library will serve as a step in that direction.
 
 #### Usage
 
