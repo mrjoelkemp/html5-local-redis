@@ -359,7 +359,7 @@
   // Throws:  TypeError if more than one argument is supplied
   localRedis.exists = function (key) {
     if (arguments.length > 1) {
-      throw new generateError(0);
+      throw generateError(0);
     }
 
     return (this._exists(key)) ? 1 : 0;
@@ -372,11 +372,11 @@
   // Notes:   Transfers the key's TTL to the newKey
   localRedis.rename = function (key, newKey) {
     if (arguments.length !== 2) {
-      throw new generateError(0);
+      throw generateError(0);
     } else if (key === newKey) {
-      throw new generateError(6);
+      throw generateError(6);
     } else if (! this._exists(key)) {
-      throw new generateError(7);
+      throw generateError(7);
     }
 
     // Remove newKey's existing expiration
@@ -411,11 +411,11 @@
   //          Fails under the same conditions as rename
   localRedis.renamenx = function (key, newKey) {
     if (arguments.length !== 2) {
-      throw new generateError(0);
+      throw generateError(0);
     } else if (key === newKey) {
-      throw new generateError(6);
+      throw generateError(6);
     } else if (! this._exists(key)) {
-      throw new generateError(7);
+      throw generateError(7);
     }
 
     if(this._exists(newKey)) {
@@ -435,7 +435,7 @@
   // Notes:     Custom, non-redis method
   localRedis.getkey = function (val) {
     if (arguments.length > 2) {
-      throw new generateError(0);
+      throw generateError(0);
     }
 
     var i, l, k, v, keys = [], all;
@@ -472,7 +472,7 @@
   //          0 if the key does not exist or the timeout couldn't be set
   localRedis.expire = function (key, delay) {
     if (arguments.length !== 2) {
-      throw new generateError(0);
+      throw generateError(0);
     } else if (! this._exists(key)) {
       return 0;
     }
@@ -483,7 +483,7 @@
     delay = parseFloat(delay, 10);
 
     if (! delay) {
-      throw new generateError(5);
+      throw generateError(5);
     }
 
     // Convert the delay to ms (1000ms in 1s)
@@ -915,6 +915,9 @@
   //          If key does not exist, we initialize it to empty
   //          and perform the append
   localRedis.append = function (key, value) {
+    if (arguments.length !== 2) {
+      throw generateError(0);
+    }
     var val = this._exists(key) ? this._retrieve(key) : "",
         valIsString = isString(val);
 
