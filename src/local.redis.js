@@ -448,7 +448,7 @@
     all = !! arguments[1];
 
     // Look for keys with a value that matches val
-    for (i = 0, l = this.length; i < l; i++) {
+    for (i = 0, l = storage.length; i < l; i++) {
       k = this.key(i);
       v = this.getItem(k);
 
