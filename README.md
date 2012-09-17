@@ -3,6 +3,8 @@ HTML5 Local Redis
 
 Redis-like API for HTML5 Storage Objects (localStorage and sessionStorage).
 
+[![Build Status](https://secure.travis-ci.org/mrjoelkemp/html5-local-redis.png)](http://travis-ci.org/mrjoelkemp/html5-local-redis)
+
 #### Motivation
 
 HTML5 Storage is a disk-based, client-side storage medium that has a really simple and user-friendly API – involving only a handful of method calls to cover the full functionality of the technology.
