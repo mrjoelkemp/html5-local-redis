@@ -65,7 +65,6 @@
       this.configurable = false;
       this.enumerable = true;
     })());
-    // Create JSON.stringify if it doesn't exist
     return;
   }
 
@@ -856,15 +855,21 @@
     if (!valueIsNaN && (value >= Number.MAX_VALUE) || !amountIsNaN && (amount >= Number.MAX_VALUE)) {
       anyOutOfRange = true;
     }
-    if ((!isValNumber && isValNotNumberStr || (valueIsNaN && storage.hasOwnProperty(key)) || amountIsNaN)
+
+    if ((!isValNumber && isValNotNumberStr || (valueIsNaN && this._exists(key)) || amountIsNaN)
        || (!isAmountNumber && isAmountNotNumberStr)
        || anyOutOfRange) {
       throw err.generateError(2);
+
+    // The value and incr amount are valid
     } else if ((isValNumber || isValNumberStr) && (isAmountNumber || isAmountNumberStr)) {
       value = parsedValue + parsedAmount;
+
+    // Key didn't exist, so set the value to the amount
     } else if (isAmountNumber || isAmountNumberStr) {
       value = parsedAmount;
     }
+
     this._store(key, value);
   };
 
