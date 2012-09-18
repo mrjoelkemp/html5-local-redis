@@ -790,52 +790,18 @@
   };
 
   // If the key does not exist, incr sets it to 1
+  // Note:  incr does not affect expiry
   proto.incr = function (key) {
     if (arguments.length !== 1) throw generateError(0);
 
-    var value          = retrieve(key),
-        keyType        = typeof key,
-        valType        = typeof value,
-        parsedValue    = parseInt(value, 10),
-
-        // Could be a non-existent key with null value
-        valueIsNaN     = isNaN(parsedValue),
-        isValNumber    = isNumber(valType),
-        isNumberStr    = isString(valType) && !valueIsNaN,
-        isNotNumberStr = isString(valType) && valueIsNaN,
-        isNull         = value === null,
-        // Value should be a number or string representation of a number
-        // Example values: 1 or "1"
-        isNotValidValue= !isValNumber && isNotNumberStr,
-
-        // Key exists with a value of null
-        existsNullVal  = valueIsNaN && storage.hasOwnProperty(key),
-
-        // A valid number that's too large
-        valOutOfRange  = !valueIsNaN && value >= Number.MAX_VALUE;
-
-    // Before we decide whether to throw an error or to increment, we
-    // must distinguish between keys that have a value of null,
-    // and keys that simply do not exist in the local/session
-    // storage.  In the former case, we want to throw an error
-    // if the key exists, has a value of null and there is an attempt
-    // to increment.  In the former case we want to create the key
-    // and set it to 1.  This follows the Redis spec.
-
-    // Null is a valid value if the key does not exist
-    if ((isNotValidValue && !isNull) || valOutOfRange || existsNullVal) {
-      // out of range or not an integer
-      throw generateError(2);
-
-    } else if (isValNumber || isNumberStr) {
-      value = parsedValue + 1;
-    } else {
-      value = 1;
-    }
-    store(key, value);
+    this.incrby(key, 1);
   };
 
   // If the key does not exist, incrby sets it to amount
+  // Notes:   Incrby does not affect key expiry
+  //          keys set with null values cannot be incremented
+  //          amount must be a number or string containing a number
+  // Usage:   incrby('foo', '4') or incrby('foo', 4)
   proto.incrby = function (key, amount) {
     if (arguments.length !== 2) throw generateError(0);
 
@@ -846,22 +812,33 @@
         parsedAmount         = parseInt(amount, 10),
         amountIsNaN          = isNaN(parsedAmount),
         valueIsNaN           = isNaN(parsedValue),
+
+        // Check the value
+        isValNull            = value === null,
         isValNumber          = isNumber(valType),
-        isAmountNumber       = isNumber(amountType),
         isValNumberStr       = isString(valType) && !valueIsNaN,
         isValNotNumberStr    = isString(valType) && valueIsNaN,
+
+        // Value should be a number or string representation of a number
+        // Example values: 1 or "1"
+        isValNotValid        = !isValNumber && isValNotNumberStr,
+
+        // Key exists with a value of null
+        existsNullVal        = valueIsNaN && exists(key),
+
+        // Check the amount
+        isAmountNumber       = isNumber(amountType),
         isAmountNumberStr    = isString(amountType) && !amountIsNaN,
         isAmountNotNumberStr = isString(amountType) && amountIsNaN,
-        anyOutOfRange        = false;
+        isAmountNotValid     = !isAmountNumber && isAmountNotNumberStr,
 
-    // Test to see if value or amount is out of range.
-    if (!valueIsNaN && (value >= Number.MAX_VALUE) || !amountIsNaN && (amount >= Number.MAX_VALUE)) {
-      anyOutOfRange = true;
-    }
+        // Out of range checks
+        valOutOfRange        = !valueIsNaN && (value >= Number.MAX_VALUE),
+        amountOutOfRange     = !amountIsNaN && (amount >= Number.MAX_VALUE),
+        anyOutOfRange        = valOutOfRange || amountOutOfRange;
 
-    if ((!isValNumber && isValNotNumberStr || (valueIsNaN && this._exists(key)) || amountIsNaN)
-       || (!isAmountNumber && isAmountNotNumberStr)
-       || anyOutOfRange) {
+    if ((isValNotValid  && !isValNull) || existsNullVal || amountIsNaN || isAmountNotValid || anyOutOfRange) {
+      // out of range or not an integer
       throw generateError(2);
 
     // The value and incr amount are valid
