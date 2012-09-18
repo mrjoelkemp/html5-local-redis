@@ -24,9 +24,6 @@ describe('Incr Commands - ', function () {
       for (i = 0; i < baseKeys.length; i++) {
         keys.push(baseKeys[i]);
 
-        // DEBUUGGG
-        console.log("Key = " + baseKeys[i], "Val = " + keysValsObj[baseKeys[i]]);
-
         storage.set(baseKeys[i], keysValsObj[baseKeys[i]]);
       }
 
