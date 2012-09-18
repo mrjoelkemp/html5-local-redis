@@ -614,6 +614,8 @@
   };
 
   // Returns:   all keys matching the supplied pattern
+  //            null if no keys were found
+  // Usage:     keys('foo*') for all keys with foo
   proto.keys = function (pattern) {
     var regex = new RegExp(pattern),
         i, l,
@@ -626,7 +628,7 @@
       }
     }
 
-    return results;
+    return results.length ? results : null;
   };
 
   ///////////////////////////

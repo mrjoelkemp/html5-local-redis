@@ -181,11 +181,12 @@ describe('expire', function () {
 
     // Wait until the key expired or time out
     waitsFor(function () {
-      return ! storage._retrieve('foo');
+      // Get expires the key if necessary
+      return ! storage.get('foo');
     }, 'key did not expire', 15 / 1000);
 
     runs(function () {
-      expect(storage._retrieve('foo')).toBe(null);
+      expect(storage.get('foo')).toBe(null);
     });
   });
 
@@ -204,17 +205,17 @@ describe('expire', function () {
   });
 
   it('delays in seconds', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     // Set expiration delay of a tenth of a second (10ms)
     storage.expire('foo', 10 / 1000);
 
     // If expire didn't accept seconds (but ms), it would expire instantly 0.0001 ms
     // Expiry data should still be there after 1ms
-    expect(storage._hasExpiration('foo')).toBeTruthy();
+    expect(storage.expires('foo')).toBeTruthy();
   });
 
   it('refreshes an existing expiration if called again', function () {
-    storage._store('foobar', 'bar');
+    storage.setItem('foobar', 'bar');
     // Expire in 15ms
     storage.expire('foobar', 15 / 1000);
 
@@ -226,24 +227,24 @@ describe('expire', function () {
     // Should expire original if second call didn't refresh
     waits(6);
     runs(function () {
-      expect(storage._hasExpiration('foobar')).toBeTruthy();
-      expect(storage._retrieve('foobar')).not.toBe(null);
+      expect(storage.expires('foobar')).toBeTruthy();
+      expect(storage.get('foobar')).not.toBe(null);
     });
   });
 });
 
 describe('pexpire', function () {
   it('expires a key with based on a supplied millisecond delay', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     storage.pexpire('foo', 15);
 
     // Wait until the key expires or fail after 20ms
     waitsFor(function () {
-      return ! storage._retrieve('foo');
+      return ! storage.get('foo');
     }, 'key did not expire', 20);
 
     runs(function () {
-      expect(storage._exists('foo')).toBeFalsy();
+      expect(storage.exists('foo')).toBeFalsy();
     });
   });
 });
@@ -267,10 +268,10 @@ describe('expires', function () {
 
 describe('persist', function () {
   it('cancels an existing expiration for the key', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     storage.expire('foo', 10 / 1000);
     storage.persist('foo');
-    expect(storage._hasExpiration('foo')).toBeFalsy();
+    expect(storage.expires('foo')).toBeFalsy();
   });
 
   it('returns 0 if the key does not exist', function () {
@@ -278,15 +279,15 @@ describe('persist', function () {
   });
 
   it('returns 0 if the key does not have an expiration', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     expect(storage.persist('foo')).toBe(0);
   });
 
   it('returns 1 if an existing expiration was removed', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     storage.expire('foo', 5 / 1000);
     expect(storage.persist('foo')).toBe(1);
-    expect(storage._hasExpiration('foo')).toBeFalsy();
+    expect(storage.expires('foo')).toBeFalsy();
   });
 });
 
@@ -306,14 +307,14 @@ describe('ttl', function () {
   });
 
   it('returns -1 if the key does not have an expiration', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     expect(storage.ttl('foo')).toBe(-1);
   });
 });
 
 describe('pttl', function () {
   it('returns the time to live for a key\'s expiration', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     storage.pexpire('foo', 15);
     waits(10);
     runs(function () {
@@ -325,9 +326,9 @@ describe('pttl', function () {
 
 describe('randomkey', function () {
   it('returns a random key within the storage object', function () {
-    storage._store('foo', 'bar');
-    storage._store('bar', 'foo');
-    storage._store('foobar', 'foobar');
+    storage.setItem('foo', 'bar');
+    storage.setItem('bar', 'foo');
+    storage.setItem('foobar', 'foobar');
 
     var randKey = storage.randomkey(),
         isValidKey = ['foo', 'bar', 'foobar'].indexOf(randKey) > -1;
@@ -346,11 +347,11 @@ describe('randomkey', function () {
 
     // Store 10 misc key/value pairs
     for (i = 0; i < numKeys; i++) {
-      storage._store('foo' + i, 'bar');
+      storage.setItem('foo' + i, 'bar');
       counts[i] = 0;
     }
-    // Grab the keys from localStorage since localRedis is a wrapper
-    var keys  = Object.keys(localStorage),
+
+    var keys  = storage.keys('foo*'),
         index;
 
     // Run 100 times and see if every key gets chosen at least once
@@ -375,15 +376,14 @@ describe('keys', function () {
         pattern = 'foo*', // All keys that contain foo
         i, l,
         results,
-        keys,
+        keys = [],
         containsKey;
 
     // Store 10 misc key/value pairs
     for (i = 0; i < numKeys; i++) {
-      storage._store('foo' + i, 'bar');
+      keys[i] = 'foo' + i;
+      storage.setItem(keys[i], 'bar');
     }
-
-    keys = Object.keys(localStorage);
 
     results = storage.keys(pattern);
 
@@ -394,8 +394,8 @@ describe('keys', function () {
     }
   });
 
-  it('returns an empty list if no keys match pattern', function () {
-    expect(storage.keys()).toEqual([]);
+  it('returns null if no keys match pattern', function () {
+    expect(storage.keys()).toEqual(null);
   });
 });
 
@@ -404,10 +404,10 @@ describe('expireat', function () {
     var nowSeconds  = new Date().getTime() / 1000,
         timestamp   = nowSeconds + 1;
 
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     storage.expireat('foo', timestamp);
 
-    expect(storage._hasExpiration('foo')).toBeTruthy();
+    expect(storage.expires('foo')).toBeTruthy();
     expect(storage.ttl('foo')).toBeGreaterThan(0);
     storage.persist('foo');
   });
@@ -416,7 +416,7 @@ describe('expireat', function () {
     var nowSeconds  = new Date().getTime() / 1000,
         timestamp   = nowSeconds - 1;
 
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     expect(function () { storage.expireat('foo', timestamp); }).toThrow();
     storage.persist('foo');
   });
@@ -427,10 +427,10 @@ describe('pexpireat', function () {
     var nowms     = new Date().getTime(),
         timestamp = nowms + 10;
 
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     storage.pexpireat('foo', timestamp);
 
-    expect(storage._hasExpiration('foo')).toBeTruthy();
+    expect(storage.expires('foo')).toBeTruthy();
     expect(storage.ttl('foo')).toBeGreaterThan(0);
   });
 
@@ -438,7 +438,7 @@ describe('pexpireat', function () {
     var nowms       = new Date().getTime(),
         timestamp   = nowms - 10;
 
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     expect(function () { storage.pexpireat('foo', timestamp); }).toThrow();
   });
 });
