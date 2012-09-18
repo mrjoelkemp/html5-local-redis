@@ -797,16 +797,22 @@
         keyType        = typeof key,
         valType        = typeof value,
         parsedValue    = parseInt(value, 10),
+
+        // Could be a non-existent key with null value
         valueIsNaN     = isNaN(parsedValue),
         isValNumber    = isNumber(valType),
         isNumberStr    = isString(valType) && !valueIsNaN,
         isNotNumberStr = isString(valType) && valueIsNaN,
-        valOutOfRange  = false;
+        isNull         = value === null,
+        // Value should be a number or string representation of a number
+        // Example values: 1 or "1"
+        isNotValidValue= !isValNumber && isNotNumberStr,
 
-    // Test to see if the value is out of range.
-    if (!valueIsNaN && (value >= Number.MAX_VALUE)) {
-      valOutOfRange = true;
-    }
+        // Key exists with a value of null
+        existsNullVal  = valueIsNaN && storage.hasOwnProperty(key),
+
+        // A valid number that's too large
+        valOutOfRange  = !valueIsNaN && value >= Number.MAX_VALUE;
 
     // Before we decide whether to throw an error or to increment, we
     // must distinguish between keys that have a value of null,
@@ -816,9 +822,11 @@
     // to increment.  In the former case we want to create the key
     // and set it to 1.  This follows the Redis spec.
 
-    // If the key exists and is set to null, an increment should throw an error
-    if ((!isValNumber && isNotNumberStr) || valOutOfRange || (valueIsNaN && storage.hasOwnProperty(key))) {
+    // Null is a valid value if the key does not exist
+    if ((isNotValidValue && !isNull) || valOutOfRange || existsNullVal) {
+      // out of range or not an integer
       throw generateError(2);
+
     } else if (isValNumber || isNumberStr) {
       value = parsedValue + 1;
     } else {
