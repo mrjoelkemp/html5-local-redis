@@ -37,7 +37,7 @@ describe('del', function () {
     storage.setItem('foo', 'bar');
     storage.pexpire('foo', 15);
     storage.del('foo');
-    expect(storage._hasExpiration('foo')).toBeFalsy();
+    expect(storage.expires('foo')).toBeFalsy();
   });
 });
 
@@ -57,11 +57,11 @@ describe('exists', function () {
 });
 
 describe('rename', function () {
-  it('throws a ReferenceError when the key does not exist', function () {
+  it('throws an error when the key does not exist', function () {
     expect(function () { storage.rename('foo', 'foobar'); }).toThrow();
   });
 
-  it('throws a TypeError when the key is the same as the newkey', function () {
+  it('throws an error when the key is the same as the newkey', function () {
     expect(function () { storage.rename('foo', 'foo'); }).toThrow();
   });
 
@@ -72,7 +72,7 @@ describe('rename', function () {
     expect(storage.getItem('foobar')).toBe('bar');
   });
 
-  it('throws a TypeError for anything but 2 inputs', function () {
+  it('throws an error for anything but 2 inputs', function () {
     expect(function () { storage.rename('foo'); }).toThrow();
     expect(function () { storage.rename('foo', 'foobar', 'bar'); }).toThrow();
   });
@@ -84,25 +84,25 @@ describe('rename', function () {
     storage.rename('foo', 'foobar');
 
     // Make sure the new key has an expiration
-    expect(storage._hasExpiration('foobar', storage)).toBeTruthy();
+    expect(storage.expires('foobar')).toBeTruthy();
 
     var ttl = storage.ttl('foobar');
 
     // Make sure the new key's ttl is <= the elapsed time
     expect(ttl).toBeDefined();
     // Make sure the old key's expiration was removed
-    expect(storage._hasExpiration('foo')).toBeFalsy();
+    expect(storage.expires('foo')).toBeFalsy();
   });
 
   it('removes the newkey\'s existing expiration', function () {
-    storage._store('foo', 'bar');
-    storage._store('foobar', 'bar');
+    storage.setItem('foo', 'bar');
+    storage.setItem('foobar', 'bar');
     storage.pexpire('foobar', 15);
     waits(5);
     runs(function () {
       // Should remove the expiration of 'foobar'
       storage.rename('foo', 'foobar');
-      expect(storage._hasExpiration('foobar')).toBeFalsy();
+      expect(storage.expires('foobar')).toBeFalsy();
     });
   });
 });

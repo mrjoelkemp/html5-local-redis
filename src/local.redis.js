@@ -406,8 +406,8 @@
     } else if (! exists(key)) {
       errorType = 7;
     }
-
-    if (errorType) throw generateError(errorType);
+    // errorType could be 0, so don't do if (errorType)
+    if (errorType !== undefined) throw generateError(errorType);
 
     // Remove newKey's existing expiration
     // since newKey inherits all characteristics from key
