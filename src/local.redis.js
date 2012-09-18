@@ -387,15 +387,6 @@
     return exists(key) ? 1 : 0;
   };
 
-  // Whether or not the key is going to expire
-  // Returns: 1 if the key has expiration data
-  //          0 if the key does not have expiration data
-  // Notes:   Custom function
-  proto.expires = function (key) {
-    key = stringified(key);
-    return hasExpiration(key) ? 1 : 0;
-  };
-
   // Renames key to newkey
   // Throws:  Error if key == newkey
   //          Error if key does not exist
@@ -525,6 +516,15 @@
     return 1;
   };
 
+  // Whether or not the key is going to expire
+  // Returns: 1 if the key has expiration data
+  //          0 if the key does not have expiration data
+  // Notes:   Custom function
+  proto.expires = function (key) {
+    key = stringified(key);
+    return hasExpiration(key) ? 1 : 0;
+  };
+
   // Expiry in milliseconds
   // Returns: the same output as expire
   proto.pexpire = function (key, delay) {
@@ -593,7 +593,7 @@
     if(! (exists(key) && hasExpiration(key))) return -1;
 
     // 1sec = 1000ms
-    return getExpirationTTL(key, this) / 1000;
+    return getExpirationTTL(key) / 1000;
   };
 
   // Returns: the time to live in milliseconds

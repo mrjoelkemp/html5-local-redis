@@ -183,14 +183,14 @@ describe('expire', function () {
     waitsFor(function () {
       // Get expires the key if necessary
       return ! storage.get('foo');
-    }, 'key did not expire', 15 / 1000);
+    }, 'key did not expire', 15);
 
     runs(function () {
       expect(storage.get('foo')).toBe(null);
     });
   });
 
-  it('returns 1 if the timeout was set', function () {
+  it('returns 1 if the expiration was set', function () {
     storage.setItem('foo', 'bar');
     expect(storage.expire('foo', 1 / 1000)).toBe(1);
   });
@@ -236,15 +236,10 @@ describe('expire', function () {
 describe('pexpire', function () {
   it('expires a key with based on a supplied millisecond delay', function () {
     storage.setItem('foo', 'bar');
-    storage.pexpire('foo', 15);
-
-    // Wait until the key expires or fail after 20ms
-    waitsFor(function () {
-      return ! storage.get('foo');
-    }, 'key did not expire', 20);
-
+    storage.pexpire('foo', 5);
+    waits(8);
     runs(function () {
-      expect(storage.exists('foo')).toBeFalsy();
+      expect(storage.get('foo')).toBeFalsy();
     });
   });
 });
