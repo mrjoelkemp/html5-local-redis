@@ -179,10 +179,10 @@ describe('Keys API', function () {
     it('removes the key/value pair after the delay', function () {
       runs(function () {
         storage.setItem('foo', 'bar');
-        storage.expire('foo', 5/1000);
+        storage.expire('foo', 15/1000);
       });
 
-      waits(7);
+      waits(25);
       runs(function () {
         expect(storage.get('foo')).toBe(null);
       });
@@ -213,17 +213,16 @@ describe('Keys API', function () {
     it('refreshes an existing expiration with the new delay if called again', function () {
       runs(function () {
         storage.setItem('foobar', 'bar');
-        // Expire in 15ms
-        storage.expire('foobar', 1);
+        storage.expire('foobar', 15/1000);
       });
 
-      waits(5);
+      waits(10);
       runs(function () {
         // Refreshes expiration to 10ms
-        storage.expire('foobar', 1);
+        storage.expire('foobar', 15/1000);
       });
       // Should expire original if second call didn't refresh
-      waits(6);
+      waits(5);
       runs(function () {
         expect(storage.get('foobar')).not.toBe(null);
         expect(storage.expires('foobar')).toBeTruthy();

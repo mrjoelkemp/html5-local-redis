@@ -3,8 +3,6 @@ HTML5 Local Redis
 
 Redis-like API for HTML5 Storage Objects (localStorage and sessionStorage).
 
-[![Build Status](https://secure.travis-ci.org/mrjoelkemp/html5-local-redis.png)](http://travis-ci.org/mrjoelkemp/html5-local-redis)
-
 #### Motivation
 
 HTML5 Storage is a disk-based, client-side storage medium that has a really simple and user-friendly API – involving only a handful of method calls to cover the full functionality of the technology.
@@ -39,12 +37,12 @@ EXPIRE 'foo' 3
 Local Redis:
 
 ```
-localStorage.set('foo', 'bar');
-localStorage.get('foo');           // 'bar'
-localStorage.getset('foo', 4);     // 'bar'
-localStorage.get('foo');           // 4
-localStorage.incrby('foo', 3);     // 'foo' => 7
-localStorage.expire('foo', 2);     // Expire 'foo' in 2s
+localRedis.set('foo', 'bar');
+localRedis.get('foo');           // 'bar'
+localRedis.getset('foo', 4);     // 'bar'
+localRedis.get('foo');           // 4
+localRedis.incrby('foo', 3);     // 'foo' => 7
+localRedis.expire('foo', 2);     // Expire 'foo' in 2s
 ```
 
 **More supported command documentation soon!**
@@ -73,4 +71,4 @@ See our progress on the [development Trello board](http://bit.ly/NYgW7c).
 
 Authors: [@mrjoelkemp](https://twitter.com/mrjoelkemp) and [@eudisduran](https://twitter.com/eudisduran)
 
-License: Feel free to use it for all types of projects (personal and commercial). MIT license.
+License: MIT license.
