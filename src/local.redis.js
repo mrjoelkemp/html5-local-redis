@@ -245,13 +245,10 @@
       // Note: Each process is responsible for cleaning out expired keys
       cleanIfExpired = function (key) {
         if (shouldExpire(key)) {
-          storage._remove(key);
-          storage._remove(createExpirationKey(key));
+          remove(key);
+          remove(createExpirationKey(key));
         }
       };
-
-  // Expose the hasExpiration helper for expiration testing
-  proto._hasExpiration = hasExpiration;
 
   ///////////////////////////
   // Native Storage Methods
@@ -329,7 +326,7 @@
 
       // Returns true if the key(s) exists, false otherwise.
       // Notes:   A key with a set value of null still exists.
-      // Usage:   _exists('foo') or _exists(['foo', 'bar'])
+      // Usage:   exists('foo') or exists(['foo', 'bar'])
       exists = function (key) {
         cleanIfExpired(key);
 

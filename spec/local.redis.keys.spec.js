@@ -1,5 +1,5 @@
 describe('Internal Helpers', function () {
-  describe('_store', function () {
+  xdescribe('store', function () {
     it('sets the key to the given value', function () {
       storage._store('foo', 'bar');
       expect(storage.getItem('foo')).toBe('bar');
@@ -18,7 +18,7 @@ describe('Internal Helpers', function () {
     });
   });
 
-  describe('_retrieve', function () {
+  xdescribe('retrieve', function () {
     it('returns the value associated with the key', function () {
       storage._store('foo', 'bar');
       expect(storage._retrieve('foo')).toBe('bar');
@@ -53,7 +53,7 @@ describe('Internal Helpers', function () {
     });
   });
 
-  describe('_remove', function () {
+  xdescribe('remove', function () {
     it('deletes the key and its value from storage', function () {
       storage._store('foo', 'bar');
       storage._remove('foo');
@@ -61,7 +61,7 @@ describe('Internal Helpers', function () {
     });
   });
 
-  describe('_exists', function () {
+  xdescribe('_exists', function () {
     it('returns true for a key with a set value of null', function () {
       storage._store('foo', null);
       expect(storage._exists('foo')).toBeTruthy();
