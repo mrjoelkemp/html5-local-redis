@@ -382,9 +382,18 @@
     return exists(key) ? 1 : 0;
   };
 
+  // Whether or not the key is going to expire
+  // Returns: 1 if the key has expiration data
+  //          0 if the key does not have expiration data
+  // Notes:   Custom function
+  proto.expires = function (key) {
+    key = stringified(key);
+    return hasExpiration(key) ? 1 : 0;
+  };
+
   // Renames key to newkey
-  // Throws:  TypeError if key == newkey
-  //          ReferenceError if key does not exist
+  // Throws:  Error if key == newkey
+  //          Error if key does not exist
   // Usage:   rename(key, newkey)
   // Notes:   Transfers the key's TTL to the newKey
   proto.rename = function (key, newKey) {

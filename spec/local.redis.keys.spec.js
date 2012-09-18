@@ -248,6 +248,23 @@ describe('pexpire', function () {
   });
 });
 
+describe('expires', function () {
+  it('returns 1 when the key has expiry data', function () {
+    storage.setItem('foo', 'bar');
+    storage.pexpire('foo', 10);
+    expect(storage.expires('foo')).toBe(1);
+  });
+
+  it('returns 0 when the key has no expiry data', function () {
+    storage.setItem('foo', 'bar');
+    expect(storage.expires('foo')).toBe(0);
+  });
+
+  it('returns 0 for a non existent key', function () {
+    expect(storage.expires('foo')).toBe(0);
+  });
+});
+
 describe('persist', function () {
   it('cancels an existing expiration for the key', function () {
     storage._store('foo', 'bar');
