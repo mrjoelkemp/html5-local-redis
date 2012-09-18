@@ -209,11 +209,9 @@ describe('Keys API', function () {
 
     it('delays in seconds', function () {
       storage.setItem('foo', 'bar');
-      // Set expiration delay of a tenth of a second (10ms)
-      storage.expire('foo', 10 / 1000);
+      storage.expire('foo', 1);
 
-      // If expire didn't accept seconds (but ms), it would expire instantly 0.0001 ms
-      // Expiry data should still be there after 1ms
+      // If expire didn't accept seconds (but ms), it would expire instantly
       expect(storage.expires('foo')).toBeTruthy();
     });
 
@@ -221,13 +219,13 @@ describe('Keys API', function () {
       runs(function () {
         storage.setItem('foobar', 'bar');
         // Expire in 15ms
-        storage.expire('foobar', 10 / 1000);
+        storage.expire('foobar', 1);
       });
 
       waits(5);
       runs(function () {
         // Refreshes expiration to 10ms
-        storage.expire('foobar', 10 / 1000);
+        storage.expire('foobar', 1);
       });
       // Should expire original if second call didn't refresh
       waits(6);
@@ -242,12 +240,11 @@ describe('Keys API', function () {
     it('expires a key with based on a supplied millisecond delay', function () {
       runs(function () {
         storage.setItem('foo', 'bar');
-        storage.pexpire('foo', 5);
+        storage.pexpire('foo', 10);
       });
-
-      waits(7);
+      waits(15);
       runs(function () {
-        expect(storage.get('foo')).toBeFalsy();
+        expect(storage.get('foo')).toBe(null);
       });
     });
   });
@@ -272,7 +269,7 @@ describe('Keys API', function () {
   describe('persist', function () {
     it('cancels an existing expiration for the key', function () {
       storage.setItem('foo', 'bar');
-      storage.expire('foo', 10 / 1000);
+      storage.expire('foo', 1);
       storage.persist('foo');
       expect(storage.expires('foo')).toBeFalsy();
     });
@@ -288,7 +285,7 @@ describe('Keys API', function () {
 
     it('returns 1 if an existing expiration was removed', function () {
       storage.setItem('foo', 'bar');
-      storage.expire('foo', 5 / 1000);
+      storage.expire('foo', 1);
       expect(storage.persist('foo')).toBe(1);
       expect(storage.expires('foo')).toBeFalsy();
     });
@@ -298,10 +295,10 @@ describe('Keys API', function () {
     it('returns the time to live for a key\'s expiration', function () {
       runs(function () {
         storage.setItem('foobar', 'bar');
-        storage.pexpire('foobar', 15);
+        storage.pexpire('foobar', 10);
       });
 
-      waits(10);
+      waits(5);
       runs(function () {
         var ttl = storage.ttl('foobar');
         expect(ttl).toBeGreaterThan(0);
