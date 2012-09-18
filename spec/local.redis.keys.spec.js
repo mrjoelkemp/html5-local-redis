@@ -179,14 +179,9 @@ describe('Keys API', function () {
     it('removes the key/value pair after the delay', function () {
       runs(function () {
         storage.setItem('foo', 'bar');
-        // 10 ms
-        storage.expire('foo', 5 / 1000);
+        storage.expire('foo', 5/1000);
       });
-      // // Wait until the key expired or time out
-      // waitsFor(function () {
-      //   // Get expires the key if necessary
-      //   return ! storage.get('foo');
-      // }, 'key did not expire', 15);
+
       waits(7);
       runs(function () {
         expect(storage.get('foo')).toBe(null);
@@ -195,11 +190,11 @@ describe('Keys API', function () {
 
     it('returns 1 if the expiration was set', function () {
       storage.setItem('foo', 'bar');
-      expect(storage.expire('foo', 1 / 1000)).toBe(1);
+      expect(storage.expire('foo', 1)).toBe(1);
     });
 
     it('returns 0 if the key does not exist', function () {
-      expect(storage.expire('foo', 1 / 1000)).toBe(0);
+      expect(storage.expire('foo', 1)).toBe(0);
     });
 
     it('throws an error if a number (or string version of a number) was not supplied', function () {

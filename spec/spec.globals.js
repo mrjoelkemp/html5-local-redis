@@ -4,7 +4,7 @@
 var storage     = window.sessionRedis,  // Alias for specs
     stringify   = JSON.stringify;
 
-window.afterEach(function () {
+window.beforeEach(function () {
   // It's not enough to rely on sessionStorage to
   // flush since it only flushes on a crash
   storage.clear();
