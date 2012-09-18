@@ -444,13 +444,13 @@
       typeError = 0;
     } else if (key === newKey) {
       typeError = 6;
-    } else if (! this._exists(key)) {
+    } else if (! exists(key)) {
       typeError = 7;
     }
 
     if (typeError) throw generateError(typeError);
 
-    if(exists(newKey)) return 0;
+    if (exists(newKey)) return 0;
 
     // Rename and transfer expirations
     this.rename(key, newKey);

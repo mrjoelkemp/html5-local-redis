@@ -135,12 +135,12 @@ describe('renamenx', function () {
   });
 
   it('transfers the TTL of the old key\'s existing expiration', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     storage.pexpire('foo', 15);
 
     storage.renamenx('foo', 'car');
     // The new key shouldn't have the ttl
-    expect(storage._hasExpiration('car')).toBeTruthy();
+    expect(storage.expires('car')).toBeTruthy();
   });
 });
 
