@@ -72,7 +72,7 @@ describe('set', function () {
   });
 
   it('cancels an existing expiration for the key', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     // expire foo after 15ms
     storage.expire('foo', 15 / 1000);
 
@@ -85,15 +85,15 @@ describe('set', function () {
     // Expires 'foo' if it hasn't been reset by 'set'
     waits(10);
     runs(function () {
-      expect(storage._hasExpiration('foo')).toBeFalsy();
+      expect(storage.expires('foo')).toBeFalsy();
     });
   });
 }); // end set
 
 describe('mget', function () {
   it('retrieves the values for multiple keys', function () {
-    storage._store('foo', 'foobar');
-    storage._store('bar', 'foobar');
+    storage.setItem('foo', 'foobar');
+    storage.setItem('bar', 'foobar');
     // Check the mget('key1', 'key2') syntax
     var results = storage.mget('foo', 'bar');
     // Check that the results sets have the proper value
@@ -101,8 +101,8 @@ describe('mget', function () {
   });
 
   it('retrieves the values for each key in a supplied list of keys', function () {
-    storage._store('foo', 'foobar');
-    storage._store('bar', 'foobar');
+    storage.setItem('foo', 'foobar');
+    storage.setItem('bar', 'foobar');
     // Check the mget(['key1', 'key2']) syntax
     var results = storage.mget(['foo', 'bar']);
     expect(results).toEqual(['foobar', 'foobar']);
@@ -148,7 +148,7 @@ describe('mset', function () {
   });
 
   it('does not reset a key\'s existing expiration', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     storage.pexpire('foo', 15);
 
     waits(10);
@@ -160,7 +160,7 @@ describe('mset', function () {
     waits(10);
     runs(function () {
       // 'foo' should have expired
-      expect(storage._retrieve('foo')).toBe(null);
+      expect(storage.get('foo')).toBe(null);
     });
   });
 }); // end mset
@@ -188,7 +188,7 @@ describe('getset', function () {
   });
 
   it('cancels an existing expiration for the key', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     // expire foo after 15ms
     storage.expire('foo', 15 / 1000);
 
@@ -201,43 +201,43 @@ describe('getset', function () {
     // Expires 'foo' if it hasn't been reset by getset
     waits(10);
     runs(function () {
-      expect(storage._hasExpiration('foo')).toBeFalsy();
+      expect(storage.expires('foo')).toBeFalsy();
     });
   });
 });
 
 describe('append', function () {
   it('appends a string to a key\'s string value', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     storage.append('foo', 'car');
-    expect(storage._retrieve('foo')).toBe('barcar');
+    expect(storage.getItem('foo')).toBe('barcar');
   });
 
   it('returns the length of the new (appended) value', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     expect(storage.append('foo', 'car')).toBe('barcar'.length);
   });
 
   it('sets the key\'s value if the key does not exist', function () {
     storage.append('foo', 'bar');
-    expect(storage._retrieve('foo')).toBe('bar');
+    expect(storage.getItem('foo')).toBe('bar');
   });
 
   it('does not append for non-strings, returning the original length', function () {
-    storage._store('foo', 4);
+    storage.set('foo', 4);
     expect(storage.append('foo', 'bar')).toBe(1);
-    expect(storage._retrieve('foo')).toBe(4);
+    expect(storage.get('foo')).toBe(4);
   });
 });
 
 describe('strlen', function () {
   it('throws when the key\'s value is not a string', function () {
-    storage._store('foo', 4);
+    storage.setItem('foo', 4);
     expect(function () { storage.strlen('foo'); }).toThrow();
   });
 
   it('returns the length of the key\'s string value', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     expect(storage.strlen('foo')).toBe('bar'.length);
   });
 
@@ -249,7 +249,7 @@ describe('strlen', function () {
 describe('setnx', function () {
   it('sets a key to the value if the key does not exist', function () {
     storage.setnx('foo', 'bar');
-    expect(storage._retrieve('foo')).toBe('bar');
+    expect(storage.getItem('foo')).toBe('bar');
   });
 
   it('returns 1 if the key was set to the value', function () {
@@ -257,9 +257,9 @@ describe('setnx', function () {
   });
 
   it('returns 0 if the key already exists', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     expect(storage.setnx('foo', 'foobar')).toBe(0);
-    expect(storage._retrieve('foo')).toBe('bar');
+    expect(storage.getItem('foo')).toBe('bar');
   });
 
   it('throws for any number but two arguments', function () {
@@ -272,25 +272,25 @@ describe('setnx', function () {
 describe('msetnx', function () {
   it('sets keys to values if none of the keys exist', function () {
     storage.msetnx('foo', 'bar', 'bar', 'foo');
-    expect(storage._retrieve('foo')).toBe('bar');
-    expect(storage._retrieve('bar')).toBe('foo');
+    expect(storage.getItem('foo')).toBe('bar');
+    expect(storage.getItem('bar')).toBe('foo');
 
     storage.clear();
 
     storage.msetnx(['foo', 'bar', 'bar', 'foo']);
-    expect(storage._retrieve('foo')).toBe('bar');
-    expect(storage._retrieve('bar')).toBe('foo');
+    expect(storage.getItem('foo')).toBe('bar');
+    expect(storage.getItem('bar')).toBe('foo');
   });
 
   it('returns 0 if any of the keys already exist', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     expect(storage.msetnx('foo', 'bar', 'bar', 'foo')).toBe(0);
   });
 
   it('does not set any of the keys if one already exists', function () {
-    storage._store('foo', 'bar');
+    storage.setItem('foo', 'bar');
     storage.msetnx('foo', 'bar', 'bar', 'foo');
-    expect(storage._retrieve('bar')).toBe(null);
+    expect(storage.getItem('bar')).toBe(null);
   });
 
   it('returns 1 if the keys were set to the values', function () {
@@ -301,8 +301,8 @@ describe('msetnx', function () {
 describe('setex', function () {
   it('sets a key to a value and expires that key with a delay', function () {
     storage.setex('foo', 'bar', 1 / 1000);
-    expect(storage._retrieve('foo')).toBe('bar');
-    expect(storage._hasExpiration('foo')).toBeTruthy();
+    expect(storage.getItem('foo')).toBe('bar');
+    expect(storage.expires('foo')).toBeTruthy();
     storage.persist('foo');
   });
 
@@ -322,7 +322,7 @@ describe('psetex', function () {
     storage.psetex('foo', 'bar', 5);
     waits(6);
     runs(function () {
-      expect(storage._retrieve('foo')).toBe(null);
+      expect(storage.get('foo')).toBe(null);
     });
   });
 

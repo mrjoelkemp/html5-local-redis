@@ -108,6 +108,9 @@
     isString = function (element) {
       return typeof element === 'string';
     },
+    isNumber = function (element) {
+      return typeof element === 'number';
+    },
     stringified = function (element) {
       return isString(element) ? element : JSON.stringify(element);
     };
@@ -258,6 +261,8 @@
     storage.setItem(key, value);
   },
   proto.getItem = function (key) {
+    // Have to clean otherwise we have an expiration loophole
+    cleanIfExpired(key);
     return storage.getItem(key);
   },
   proto.key = function (index) {
@@ -793,7 +798,7 @@
         valType        = typeof value,
         parsedValue    = parseInt(value, 10),
         valueIsNaN     = isNaN(parsedValue),
-        isValNumber    = valType === 'number',
+        isValNumber    = isNumber(valType),
         isNumberStr    = isString(valType) && !valueIsNaN,
         isNotNumberStr = isString(valType) && valueIsNaN,
         valOutOfRange  = false;
@@ -833,8 +838,8 @@
         parsedAmount         = parseInt(amount, 10),
         amountIsNaN          = isNaN(parsedAmount),
         valueIsNaN           = isNaN(parsedValue),
-        isValNumber          = valType === 'number',
-        isAmountNumber       = amountType === 'number',
+        isValNumber          = isNumber(valType),
+        isAmountNumber       = isNumber(amountType),
         isValNumberStr       = isString(valType) && !valueIsNaN,
         isValNotNumberStr    = isString(valType) && valueIsNaN,
         isAmountNumberStr    = isString(amountType) && !amountIsNaN,
@@ -910,7 +915,7 @@
   proto.append = function (key, value) {
     if (arguments.length !== 2) throw generateError(0);
 
-    var val         = exists(key) ? retrieve(key) : "",
+    var val         = retrieve(key) || "",
         valIsString = isString(val);
 
     if (valIsString) {
