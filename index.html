@@ -4,6 +4,10 @@
   <title>HTML5 Local Redis</title>
   <meta charset="utf-8">
   <link rel="stylesheet" type="text/css" href="lib/jasmine-1.2.0/jasmine.css">
+  <link rel="stylesheet" type="text/css" href="styles.css">
+  <!-- Only used for document ready -->
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+
   <script type="text/javascript" src="lib/jasmine-1.2.0/jasmine.js"></script>
   <script type="text/javascript" src="lib/jasmine-1.2.0/jasmine-html.js"></script>
 
@@ -43,5 +47,57 @@
       }
     })();
   </script>
+
+  <script type="text/javascript">
+    // Populates the tables with storage data.
+    $(function () {
+      var i, l,
+          key, val,
+          row,
+
+          // Redraws the tables that display data
+          drawTable = function (store, $table) {
+            $table.hide();
+            $table.children().remove();
+
+            for (i = 0, l = store.length; i < l; i++) {
+              key = store.key(i);
+              val = store.getItem(key);
+              row = "<tr><td>" + key + "</td><td>" + val + "</td></tr>";
+              $table.append(row);
+            }
+            $table.show();
+          },
+
+          $storageDataObj = $('#localStorageData'),
+          $sessionDataObj = $('#sessionStorageData');
+
+      // Redraw the tables when the storage objects change
+      var handleStorageChange = function () {
+        drawTable(window.localStorage, $storageDataObj);
+        drawTable(window.sessionStorage, $sessionDataObj);
+      }
+
+      // Library attaches events to the document
+      //$(document).on('storagechange', handleStorageChange);
+      // Draw the tables initially
+      //handleStorageChange();
+    });
+</script>
+
 </head>
+<body>
+  <div id="visuals">
+    <div>
+      <h3>Local Storage Data</h3>
+      <table id="localStorageData"></table>
+    </div>
+    <div>
+      <h3>Session Storage Data</h3>
+      <table id="sessionStorageData"></table>
+    </div>
+  </div>
+ <hr/>
+
+</body>
 </html>
