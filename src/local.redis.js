@@ -82,907 +82,896 @@
     throw new Error('No JSON support found');
   }
 
-  var RedisConstructor = (function () {
 
-    // Generic storage to be set as a reference to
-    // a Web Storage object. Since localRedis and
-    // sessionRedis both set the proper storage reference,
-    // simply use storage for basic web storage I/O
-    var storage,
-        proto,
-        Redis = function (storageInstance) {
-          if (storageInstance !== window.localStorage &&
-              storageInstance !== window.sessionStorage) {
-            throw new Error('unsupported storage context');
+  var storage,
+      Redis = function (storageContext) {
+        if (storageContext !== window.localStorage &&
+            storageContext !== window.sessionStorage) {
+          throw new Error('unsupported storage context');
+        }
+        storage = storageContext;
+      },
+      proto = Redis.prototype;
+
+  window.localRedis = new Redis(window.localStorage);
+
+  ///////////////////////////
+  // Utilities
+  ///////////////////////////
+
+  var
+      isString = function (element) {
+        return typeof element === 'string';
+      },
+      isNumber = function (element) {
+        return typeof element === 'number';
+      },
+      stringified = function (element) {
+        return isString(element) ? element : JSON.stringify(element);
+      },
+
+      // Used to emit cross-browser events
+      // Note: Checks for IE support, then Jquery, then other browsers
+      eventName = 'storagechange',
+      fireEvent = function (element, event){
+        var evt,
+            $ = window.$ || window.jQuery;
+
+        // dispatch for IE
+        if (document.createEventObject){
+            evt = document.createEventObject();
+            return element.fireEvent('on' + event, evt);
+
+        // If jQuery exists, dispatch with jquery
+        } else if($) {
+          $(element).trigger(event);
+
+        // dispatch for firefox + others
+        } else{
+          evt = document.createEvent("HTMLEvents");
+          // event type, bubbling, cancelable
+          evt.initEvent(event, true, true);
+          return !element.dispatchEvent(evt);
+        }
+      },
+
+      // Fired when the storage changes
+      // Attaches events to the document to avoid
+      fireStorageChangedEvent = function () {
+        return fireEvent(document, 'storagechange');
+      };
+
+
+
+  ///////////////////////////
+  // Error Helper
+  // TODO: MOVE TO EXTERNAL PLUGIN
+  ///////////////////////////
+
+  var
+      errors = [
+        'wrong number of arguments',
+        'non-string value',
+        'value is not an integer or out of range',
+        'not a string value',
+        'timestamp already passed',
+        'delay not convertible to a number',
+        'source and destination objects are the same',
+        'no such key',
+        'missing storage context'
+      ],
+
+      generateError = function (type /*, functionName, errorType */) {
+        var error,
+            message,
+            functionName  = arguments[1],
+            errorType     = arguments[2];
+
+        if (typeof type !== 'number' || (functionName && typeof functionName !== 'string')) {
+          throw new TypeError('wrong arg types');
+        }
+
+        message = errors[type];
+        if (errorType) {
+          errorType = errorType.toLowerCase();
+
+          if (errorType === 'typeerror') {
+            error = new TypeError(message);
           }
+        } else {
+          error = new Error(message);
+        }
 
-          storage = storageInstance;
-        };
+        return error;
+      };
 
-    proto = Redis.prototype;
+  ///////////////////////////
+  // Expiration Internals
+  ///////////////////////////
 
-    ///////////////////////////
-    // Utilities
-    ///////////////////////////
+  var
+      // Creates and returns the expiration key format for a given storage key
+      createExpirationKey = function (key) {
+        var delimiter = ":",
+            prefix    = "e";
 
-    var
-        isString = function (element) {
-          return typeof element === 'string';
-        },
-        isNumber = function (element) {
-          return typeof element === 'number';
-        },
-        stringified = function (element) {
-          return isString(element) ? element : JSON.stringify(element);
-        },
+        key = stringified(key);
+        return prefix + delimiter + key;
+      },
 
-        // Used to emit cross-browser events
-        // Note: Checks for IE support, then Jquery, then other browsers
-        eventName = 'storagechange',
-        fireEvent = function (element, event){
-          var evt,
-              $ = window.$ || window.jQuery;
+      // Creates the expiration value/data format for an expiration
+      // event's ID and millisecond delay
+      // Returns: A string representation of an object created from the data
+      // Note:    Keys are as short as possible to save space when stored
+      createExpirationValue = function (delay, currentTime) {
+        return JSON.stringify({
+          c: currentTime,
+          d: delay
+        });
+      },
 
-          // dispatch for IE
-          if (document.createEventObject){
-              evt = document.createEventObject();
-              return element.fireEvent('on' + event, evt);
+      // Retrieves the parsed expiration data for the storage key
+      getExpirationValue = function (key) {
+        var expKey = createExpirationKey(key),
+            expVal = storage.getItem(expKey);
 
-          // If jQuery exists, dispatch with jquery
-          } else if($) {
-            $(element).trigger(event);
+        return JSON.parse(expVal);
+      },
 
-          // dispatch for firefox + others
-          } else{
-            evt = document.createEvent("HTMLEvents");
-            // event type, bubbling, cancelable
-            evt.initEvent(event, true, true);
-            return !element.dispatchEvent(evt);
-          }
-        },
+      // Retrieves the expiration delay of the key
+      getExpirationDelay = function (key) {
+        var expVal = getExpirationValue(key);
+        return (expVal && expVal.d) ? expVal.d : null;
+      },
 
-        // Fired when the storage changes
-        // Attaches events to the document to avoid
-        fireStorageChangedEvent = function () {
-          fireEvent(document, 'storagechange');
-        };
+      // Returns the expiration's creation time in ms
+      getExpirationCreationTime = function (key) {
+        var expVal = getExpirationValue(key);
+        return (expVal && expVal.c) ? expVal.c : null;
+      },
 
+      // Returns the time remaining (in ms) for the expiration
+      getExpirationTTL = function (key) {
+        var expVal = getExpirationValue(key),
+            ttl;
 
+        if (expVal && expVal.d && expVal.c) {
+          // TTL is the difference between the creation time w/ delay and now
+          ttl = (expVal.c + expVal.d) - new Date().getTime();
+        }
+        return ttl;
+      },
 
-    ///////////////////////////
-    // Error Helper
-    // TODO: MOVE TO EXTERNAL PLUGIN
-    ///////////////////////////
+      // Stores expiration data for the passed key
+      setExpirationOf = function (key, delay, currentTime) {
+        var expKey = createExpirationKey(key),
+            expVal = createExpirationValue(delay, currentTime);
 
-    var
-        errors = [
-          'wrong number of arguments',
-          'non-string value',
-          'value is not an integer or out of range',
-          'not a string value',
-          'timestamp already passed',
-          'delay not convertible to a number',
-          'source and destination objects are the same',
-          'no such key',
-          'missing storage context'
-        ],
+        storage.setItem(expKey, expVal);
+      },
 
-        generateError = function (type /*, functionName, errorType */) {
-          var error,
-              message,
-              functionName  = arguments[1],
-              errorType     = arguments[2];
+      // Removes/Cancels the key's expiration
+      removeExpirationOf = function (key) {
+        var expKey = createExpirationKey(key),
+            expVal = getExpirationValue(key);
 
-          if (typeof type !== 'number' || (functionName && typeof functionName !== 'string')) {
-            throw new TypeError('wrong arg types');
-          }
+        storage.removeItem(expKey);
+      },
 
-          message = errors[type];
-          if (errorType) {
-            errorType = errorType.toLowerCase();
+      // Whether or not the given key has existing expiration data
+      // Returns:   true if expiry data exists, false otherwise
+      hasExpiration = function (key) {
+        var expKey = createExpirationKey(key);
+        return !! storage.getItem(expKey);
+      },
 
-            if (errorType === 'typeerror') {
-              error = new TypeError(message);
+      // Whether or not the key's ttl indicates that it should be removed
+      shouldExpire = function (key) {
+        var ttl = getExpirationTTL(key),
+            shouldExpire = ttl < 0;
+        return shouldExpire;
+      },
+
+      // Removes a key and its expiration data if the key should expire
+      // Note: Each process is responsible for cleaning out expired keys
+      cleanIfExpired = function (key) {
+        if (shouldExpire(key)) {
+          remove(key);
+          remove(createExpirationKey(key));
+        }
+      };
+
+  ///////////////////////////
+  // Native Storage Methods
+  ///////////////////////////
+
+  proto.setItem =  function (key, value) {
+    storage.setItem(key, value);
+    fireStorageChangedEvent();
+  },
+  proto.getItem = function (key) {
+    // Have to clean otherwise we have an expiration loophole
+    cleanIfExpired(key);
+    return storage.getItem(key);
+  },
+  proto.key = function (index) {
+    return storage.key(index);
+  };
+  proto.clear = function () {
+    storage.clear();
+    fireStorageChangedEvent();
+  };
+  proto.removeItem = function (key) {
+    storage.removeItem(key);
+    fireStorageChangedEvent();
+  };
+
+  ///////////////////////////
+  // Storage Internals
+  ///////////////////////////
+
+  // Redis commands typically have side effects and so we should
+  // be cautious to include calls to those functions when requiring
+  // storage operations with no side effects.
+  // These internal functions are safer to use for storage within commands
+
+  var
+      // Stores the key/value pair
+      // Note:    Auto-stringifies non-strings
+      // Throws:  Exception on reaching the storage quota
+      store = function (key, value) {
+        key   = stringified(key);
+        value = stringified(value);
+
+        try {
+          storage.setItem(key, value);
+          fireStorageChangedEvent();
+        } catch (e) {
+          // Quota exception
+          throw e;
+        }
+      },
+
+      // Returns the (parsed) value associated with the given key
+      // Note:  to ensure that expired keys are removed,
+      //        we have to do it in core retrieval that all
+      //        other commands use
+      retrieve = function (key) {
+        key = stringified(key);
+
+        cleanIfExpired(key);
+
+        var res = storage.getItem(key);
+
+        try {
+          // If it's a literal string, parsing will fail
+          res = JSON.parse(res);
+        } catch (e) {
+          // We couldn't parse the literal string
+          // so just return the literal in the finally block.
+        } finally {
+          return res;
+        }
+      },
+
+      // Remove the key/value pair identified by the passed key
+      // Note:  Auto stringifies non-strings
+      remove = function (key) {
+        key = stringified(key);
+        storage.removeItem(key);
+      },
+
+      // Returns true if the key(s) exists, false otherwise.
+      // Notes:   A key with a set value of null still exists.
+      // Usage:   exists('foo') or exists(['foo', 'bar'])
+      exists = function (key) {
+        cleanIfExpired(key);
+
+        var allExist = true,
+        i, l;
+
+        if (key instanceof Array) {
+          for (i = 0, l = key.length; i < l; i++) {
+            if (! storage.hasOwnProperty(key[i])) {
+              allExist = false;
             }
-          } else {
-            error = new Error(message);
           }
-
-          return error;
-        };
-
-    ///////////////////////////
-    // Expiration Internals
-    ///////////////////////////
-
-    var
-        // Creates and returns the expiration key format for a given storage key
-        createExpirationKey = function (key) {
-          var delimiter = ":",
-              prefix    = "e";
-
-          key = stringified(key);
-          return prefix + delimiter + key;
-        },
-
-        // Creates the expiration value/data format for an expiration
-        // event's ID and millisecond delay
-        // Returns: A string representation of an object created from the data
-        // Note:    Keys are as short as possible to save space when stored
-        createExpirationValue = function (delay, currentTime) {
-          return JSON.stringify({
-            c: currentTime,
-            d: delay
-          });
-        },
-
-        // Retrieves the parsed expiration data for the storage key
-        getExpirationValue = function (key) {
-          var expKey = createExpirationKey(key),
-              expVal = storage.getItem(expKey);
-
-          return JSON.parse(expVal);
-        },
-
-        // Retrieves the expiration delay of the key
-        getExpirationDelay = function (key) {
-          var expVal = getExpirationValue(key);
-          return (expVal && expVal.d) ? expVal.d : null;
-        },
-
-        // Returns the expiration's creation time in ms
-        getExpirationCreationTime = function (key) {
-          var expVal = getExpirationValue(key);
-          return (expVal && expVal.c) ? expVal.c : null;
-        },
-
-        // Returns the time remaining (in ms) for the expiration
-        getExpirationTTL = function (key) {
-          var expVal = getExpirationValue(key),
-              ttl;
-
-          if (expVal && expVal.d && expVal.c) {
-            // TTL is the difference between the creation time w/ delay and now
-            ttl = (expVal.c + expVal.d) - new Date().getTime();
-          }
-          return ttl;
-        },
-
-        // Stores expiration data for the passed key
-        setExpirationOf = function (key, delay, currentTime) {
-          var expKey = createExpirationKey(key),
-              expVal = createExpirationValue(delay, currentTime);
-
-          storage.setItem(expKey, expVal);
-        },
-
-        // Removes/Cancels the key's expiration
-        removeExpirationOf = function (key) {
-          var expKey = createExpirationKey(key),
-              expVal = getExpirationValue(key);
-
-          storage.removeItem(expKey);
-        },
-
-        // Whether or not the given key has existing expiration data
-        // Returns:   true if expiry data exists, false otherwise
-        hasExpiration = function (key) {
-          var expKey = createExpirationKey(key);
-          return !! storage.getItem(expKey);
-        },
-
-        // Whether or not the key's ttl indicates that it should be removed
-        shouldExpire = function (key) {
-          var ttl = getExpirationTTL(key),
-              shouldExpire = ttl < 0;
-          return shouldExpire;
-        },
-
-        // Removes a key and its expiration data if the key should expire
-        // Note: Each process is responsible for cleaning out expired keys
-        cleanIfExpired = function (key) {
-          if (shouldExpire(key)) {
-            remove(key);
-            remove(createExpirationKey(key));
-          }
-        };
-
-    ///////////////////////////
-    // Native Storage Methods
-    ///////////////////////////
-
-    proto.setItem =  function (key, value) {
-      storage.setItem(key, value);
-      fireStorageChangedEvent();
-    },
-    proto.getItem = function (key) {
-      // Have to clean otherwise we have an expiration loophole
-      cleanIfExpired(key);
-      return storage.getItem(key);
-    },
-    proto.key = function (index) {
-      return storage.key(index);
-    };
-    proto.clear = function () {
-      storage.clear();
-      fireStorageChangedEvent();
-    };
-    proto.removeItem = function (key) {
-      storage.removeItem(key);
-      fireStorageChangedEvent();
-    };
-
-    ///////////////////////////
-    // Storage Internals
-    ///////////////////////////
-
-    // Redis commands typically have side effects and so we should
-    // be cautious to include calls to those functions when requiring
-    // storage operations with no side effects.
-    // These internal functions are safer to use for storage within commands
-
-    var
-        // Stores the key/value pair
-        // Note:    Auto-stringifies non-strings
-        // Throws:  Exception on reaching the storage quota
-        store = function (key, value) {
-          key   = stringified(key);
-          value = stringified(value);
-
-          try {
-            storage.setItem(key, value);
-            fireStorageChangedEvent();
-          } catch (e) {
-            // Quota exception
-            throw e;
-          }
-        },
-
-        // Returns the (parsed) value associated with the given key
-        // Note:  to ensure that expired keys are removed,
-        //        we have to do it in core retrieval that all
-        //        other commands use
-        retrieve = function (key) {
-          key = stringified(key);
-
-          cleanIfExpired(key);
-
-          var res = storage.getItem(key);
-
-          try {
-            // If it's a literal string, parsing will fail
-            res = JSON.parse(res);
-          } catch (e) {
-            // We couldn't parse the literal string
-            // so just return the literal in the finally block.
-          } finally {
-            return res;
-          }
-        },
-
-        // Remove the key/value pair identified by the passed key
-        // Note:  Auto stringifies non-strings
-        remove = function (key) {
-          key = stringified(key);
-          storage.removeItem(key);
-        },
-
-        // Returns true if the key(s) exists, false otherwise.
-        // Notes:   A key with a set value of null still exists.
-        // Usage:   exists('foo') or exists(['foo', 'bar'])
-        exists = function (key) {
-          cleanIfExpired(key);
-
-          var allExist = true,
-          i, l;
-
-          if (key instanceof Array) {
-            for (i = 0, l = key.length; i < l; i++) {
-              if (! storage.hasOwnProperty(key[i])) {
-                allExist = false;
-              }
-            }
-          } else {
-            // localRedis object doesn't hold key/value pairs
-            allExist = !! storage.hasOwnProperty(key);
-          }
-
-          return allExist;
-        };
-
-    ///////////////////////////
-    // Keys Commands
-    ///////////////////////////
-
-    // Removes the specified key(s)
-    // Returns: the number of keys removed.
-    // Notes:   if the key doesn't exist, it's ignored.
-    //          clears existing expirations on the keys
-    // Usage:   del('k1') or del('k1', 'k2') or del(['k1', 'k2'])
-    proto.del = function (keys) {
-      var numKeysDeleted = 0,
-          i, l;
-
-      keys = (keys instanceof Array) ? keys : arguments;
-
-      for (i = 0, l = keys.length; i < l; i++) {
-
-        if (exists(keys[i])) {
-          removeExpirationOf(keys[i]);
-          remove(keys[i]);
-          ++numKeysDeleted;
+        } else {
+          // localRedis object doesn't hold key/value pairs
+          allExist = !! storage.hasOwnProperty(key);
         }
+
+        return allExist;
+      };
+
+  ///////////////////////////
+  // Keys Commands
+  ///////////////////////////
+
+  // Removes the specified key(s)
+  // Returns: the number of keys removed.
+  // Notes:   if the key doesn't exist, it's ignored.
+  //          clears existing expirations on the keys
+  // Usage:   del('k1') or del('k1', 'k2') or del(['k1', 'k2'])
+  proto.del = function (keys) {
+    var numKeysDeleted = 0,
+        i, l;
+
+    keys = (keys instanceof Array) ? keys : arguments;
+
+    for (i = 0, l = keys.length; i < l; i++) {
+
+      if (exists(keys[i])) {
+        removeExpirationOf(keys[i]);
+        remove(keys[i]);
+        ++numKeysDeleted;
       }
+    }
 
-      return numKeysDeleted;
-    };
+    return numKeysDeleted;
+  };
 
-    // Returns: 1 if the key exists, 0 if they key doesn't exist.
-    // Throws:  TypeError if more than one argument is supplied
-    proto.exists = function (key) {
-      if (arguments.length > 1) throw generateError(0);
+  // Returns: 1 if the key exists, 0 if they key doesn't exist.
+  // Throws:  TypeError if more than one argument is supplied
+  proto.exists = function (key) {
+    if (arguments.length > 1) throw generateError(0);
 
-      return exists(key) ? 1 : 0;
-    };
+    return exists(key) ? 1 : 0;
+  };
 
-    // Renames key to newkey
-    // Throws:  Error if key == newkey
-    //          Error if key does not exist
-    // Usage:   rename(key, newkey)
-    // Notes:   Transfers the key's TTL to the newKey
-    proto.rename = function (key, newKey) {
-      var errorType, ttl;
+  // Renames key to newkey
+  // Throws:  Error if key == newkey
+  //          Error if key does not exist
+  // Usage:   rename(key, newkey)
+  // Notes:   Transfers the key's TTL to the newKey
+  proto.rename = function (key, newKey) {
+    var errorType, ttl;
 
-      if (arguments.length !== 2) {
-        errorType = 0;
-      } else if (key === newKey) {
-        errorType = 6;
-      } else if (! exists(key)) {
-        errorType = 7;
+    if (arguments.length !== 2) {
+      errorType = 0;
+    } else if (key === newKey) {
+      errorType = 6;
+    } else if (! exists(key)) {
+      errorType = 7;
+    }
+    // errorType could be 0, so don't do if (errorType)
+    if (errorType !== undefined) throw generateError(errorType);
+
+    // Remove newKey's existing expiration
+    // since newKey inherits all characteristics from key
+    if (hasExpiration(newKey)) removeExpirationOf(newKey);
+
+    // Assign the value of key to newKey
+    store(newKey, retrieve(key));
+
+    // Transfer an existing expiration to newKey
+    if (hasExpiration(key)) {
+      ttl = getExpirationTTL(key);
+
+      // Transfer the TTL (ms) to the new key
+      this.pexpire(newKey, ttl);
+
+      // Remove the old key's expiration
+      removeExpirationOf(key);
+    }
+
+    remove(key);
+  };
+
+  // Renames key to newkey if newkey does not exist
+  // Returns: 1 if key was renamed; 0 if newkey already exists
+  // Usage:   renamenx(key, newkey)
+  // Notes:   Affects expiry like rename
+  // Throws:  TypeError if key == newkey
+  //          ReferenceError if key does not exist
+  //          Fails under the same conditions as rename
+  proto.renamenx = function (key, newKey) {
+    var typeError;
+
+    if (arguments.length !== 2) {
+      typeError = 0;
+    } else if (key === newKey) {
+      typeError = 6;
+    } else if (! exists(key)) {
+      typeError = 7;
+    }
+
+    if (typeError) throw generateError(typeError);
+
+    if (exists(newKey)) return 0;
+
+    // Rename and transfer expirations
+    this.rename(key, newKey);
+    return 1;
+  };
+
+  // Retrieves the first key associated with the passed value
+  // Returns:   a single key or
+  //            a list of keys if true is passed as second param or
+  //            null if no keys were found
+  // Params:    all = whether or not to retrieve all of the keys that match
+  // Notes:     Custom, non-redis method
+  proto.getkey = function (val) {
+    if (arguments.length > 2) throw generateError(0);
+
+    var i, l, k, v, keys = [], all;
+
+    // Get whether or not the all flag was set
+    all = !! arguments[1];
+
+    // Look for keys with a value that matches val
+    for (i = 0, l = storage.length; i < l; i++) {
+      k = storage.key(i);
+      v = storage.getItem(k);
+
+      if (val === v) {
+        keys.push(k);
+        if (! all) break;
       }
-      // errorType could be 0, so don't do if (errorType)
-      if (errorType !== undefined) throw generateError(errorType);
+    }
 
-      // Remove newKey's existing expiration
-      // since newKey inherits all characteristics from key
-      if (hasExpiration(newKey)) removeExpirationOf(newKey);
+    // Return the single element or null if undefined
+    // Otherwise, return the populated array
+    if (keys.length === 1) {
+      keys = keys[0];
+    } else if (! keys.length) {
+      keys = null;
+    }
 
-      // Assign the value of key to newKey
-      store(newKey, retrieve(key));
+    return keys;
+  };
 
-      // Transfer an existing expiration to newKey
-      if (hasExpiration(key)) {
-        ttl = getExpirationTTL(key);
+  // expire
+  // Expires the passed key after the passed seconds
+  // Precond: delay in seconds
+  // Returns: 1 if the timeout was set
+  //          0 if the key does not exist or the timeout couldn't be set
+  proto.expire = function (key, delay) {
+    if (arguments.length !== 2) throw generateError(0);
 
-        // Transfer the TTL (ms) to the new key
-        this.pexpire(newKey, ttl);
+    if (! exists(key)) return 0;
 
-        // Remove the old key's expiration
-        removeExpirationOf(key);
+    // Check if the delay is/contains a number
+    delay = parseFloat(delay, 10);
+
+    if (! delay) throw generateError(5);
+
+    // Convert the delay to ms (1000ms in 1s)
+    delay *= 1000;
+
+    // Subsequent calls to expire on the same key
+    // will refresh the expiration with the new delay
+    if (hasExpiration(key)) removeExpirationOf(key);
+
+    // Create the key's new expiration data
+    setExpirationOf(key, delay, new Date().getTime());
+    return 1;
+  };
+
+  // Whether or not the key is going to expire
+  // Returns: 1 if the key has expiration data
+  //          0 if the key does not have expiration data
+  // Notes:   Custom function
+  proto.expires = function (key) {
+    key = stringified(key);
+    return hasExpiration(key) ? 1 : 0;
+  };
+
+  // Expiry in milliseconds
+  // Returns: the same output as expire
+  proto.pexpire = function (key, delay) {
+    if (arguments.length !== 2) throw generateError(0);
+
+    // Check if the delay is/contains a number
+    delay = parseFloat(delay, 10);
+
+    if (! delay) throw generateError(5);
+
+    // Expire will convert the delay to seconds,
+    // so we account for that by canceling out the conversion from ms to s
+    return this.expire(key, delay / 1000);
+  };
+
+  // Expires a key at the supplied, second-based UNIX timestamp
+  // Returns:   1 if the timeout was set.
+  //            0 if key does not exist or the timeout could not be set
+  // Usage:     expireat('foo', 1293840000)
+  proto.expireat = function (key, timestamp) {
+    if (arguments.length !== 2) throw generateError(0);
+
+    // Compute the delay (in seconds)
+    var nowSeconds  = new Date().getTime() / 1000,
+        delay       = timestamp - nowSeconds;
+
+    if (delay < 0) throw generateError(4);
+
+    return this.expire(key, delay);
+  };
+
+  // Expires a key a the supplied, millisecond-based UNIX timestamp
+  // Returns:   1 if the timeout was set.
+  //            0 if key does not exist or the timeout could not be set
+  proto.pexpireat = function (key, timestamp) {
+    if (arguments.length !== 2) throw generateError(0);
+
+    // Delay in milliseconds
+    var delay = timestamp - new Date().getTime();
+
+    if(delay < 0) throw generateError(4);
+
+    return this.pexpire(key, delay);
+  };
+
+  // Removes the expiration associated with the key
+  // Returns:   0 if the key does not exist or does not have an expiration
+  //            1 if the expiration was removed
+  proto.persist = function (key) {
+    if (arguments.length !== 1) throw generateError(0);
+
+    if (! (exists(key) && hasExpiration(key))) return 0;
+
+    remove(createExpirationKey(key));
+    return 1;
+  };
+
+  // Returns: the time to live in seconds
+  //          -1 when key does not exist or does not have an expiration
+  // Notes:   Due to the possible delay between expiration timeout
+  //          firing and the callback execution, this ttl only reflects
+  //          the TTL for the timeout firing
+  proto.ttl = function (key) {
+    if (arguments.length !== 1) throw generateError(0);
+
+    if(! (exists(key) && hasExpiration(key))) return -1;
+
+    // 1sec = 1000ms
+    return getExpirationTTL(key) / 1000;
+  };
+
+  // Returns: the time to live in milliseconds
+  //          -1 when key does not exist or does not have an expiration
+  // Note:    this command is just like ttl with ms units
+  proto.pttl = function (key) {
+    if (arguments.length !== 1) throw generateError(0);
+
+    return this.ttl(key) * 1000;
+  };
+
+  // Returns:   a random key from the calling storage object.
+  //            null when the database is empty
+  proto.randomkey = function () {
+    var keys    = Object.keys(storage),
+        length  = storage.length,
+        // Random position within the list of keys
+        rindex  = Math.floor(Math.random() * length);
+
+    if (! length) return null;
+
+    return keys[rindex];
+  };
+
+  // Returns:   all keys matching the supplied pattern
+  //            null if no keys were found
+  // Usage:     keys('foo*') for all keys with foo
+  proto.keys = function (pattern) {
+    var regex = new RegExp(pattern),
+        i, l,
+        results = [],
+        keys = Object.keys(storage);
+
+    for (i = 0, l = keys.length; i < l; i++) {
+      if (regex.test(keys[i])) {
+        results.push(keys[i]);
       }
-
-      remove(key);
-    };
-
-    // Renames key to newkey if newkey does not exist
-    // Returns: 1 if key was renamed; 0 if newkey already exists
-    // Usage:   renamenx(key, newkey)
-    // Notes:   Affects expiry like rename
-    // Throws:  TypeError if key == newkey
-    //          ReferenceError if key does not exist
-    //          Fails under the same conditions as rename
-    proto.renamenx = function (key, newKey) {
-      var typeError;
-
-      if (arguments.length !== 2) {
-        typeError = 0;
-      } else if (key === newKey) {
-        typeError = 6;
-      } else if (! exists(key)) {
-        typeError = 7;
-      }
-
-      if (typeError) throw generateError(typeError);
-
-      if (exists(newKey)) return 0;
-
-      // Rename and transfer expirations
-      this.rename(key, newKey);
-      return 1;
-    };
-
-    // Retrieves the first key associated with the passed value
-    // Returns:   a single key or
-    //            a list of keys if true is passed as second param or
-    //            null if no keys were found
-    // Params:    all = whether or not to retrieve all of the keys that match
-    // Notes:     Custom, non-redis method
-    proto.getkey = function (val) {
-      if (arguments.length > 2) throw generateError(0);
-
-      var i, l, k, v, keys = [], all;
-
-      // Get whether or not the all flag was set
-      all = !! arguments[1];
-
-      // Look for keys with a value that matches val
-      for (i = 0, l = storage.length; i < l; i++) {
-        k = storage.key(i);
-        v = storage.getItem(k);
-
-        if (val === v) {
-          keys.push(k);
-          if (! all) break;
-        }
-      }
-
-      // Return the single element or null if undefined
-      // Otherwise, return the populated array
-      if (keys.length === 1) {
-        keys = keys[0];
-      } else if (! keys.length) {
-        keys = null;
-      }
-
-      return keys;
-    };
-
-    // expire
-    // Expires the passed key after the passed seconds
-    // Precond: delay in seconds
-    // Returns: 1 if the timeout was set
-    //          0 if the key does not exist or the timeout couldn't be set
-    proto.expire = function (key, delay) {
-      if (arguments.length !== 2) throw generateError(0);
-
-      if (! exists(key)) return 0;
-
-      // Check if the delay is/contains a number
-      delay = parseFloat(delay, 10);
-
-      if (! delay) throw generateError(5);
-
-      // Convert the delay to ms (1000ms in 1s)
-      delay *= 1000;
-
-      // Subsequent calls to expire on the same key
-      // will refresh the expiration with the new delay
-      if (hasExpiration(key)) removeExpirationOf(key);
-
-      // Create the key's new expiration data
-      setExpirationOf(key, delay, new Date().getTime());
-      return 1;
-    };
-
-    // Whether or not the key is going to expire
-    // Returns: 1 if the key has expiration data
-    //          0 if the key does not have expiration data
-    // Notes:   Custom function
-    proto.expires = function (key) {
-      key = stringified(key);
-      return hasExpiration(key) ? 1 : 0;
-    };
-
-    // Expiry in milliseconds
-    // Returns: the same output as expire
-    proto.pexpire = function (key, delay) {
-      if (arguments.length !== 2) throw generateError(0);
-
-      // Check if the delay is/contains a number
-      delay = parseFloat(delay, 10);
-
-      if (! delay) throw generateError(5);
-
-      // Expire will convert the delay to seconds,
-      // so we account for that by canceling out the conversion from ms to s
-      return this.expire(key, delay / 1000);
-    };
-
-    // Expires a key at the supplied, second-based UNIX timestamp
-    // Returns:   1 if the timeout was set.
-    //            0 if key does not exist or the timeout could not be set
-    // Usage:     expireat('foo', 1293840000)
-    proto.expireat = function (key, timestamp) {
-      if (arguments.length !== 2) throw generateError(0);
-
-      // Compute the delay (in seconds)
-      var nowSeconds  = new Date().getTime() / 1000,
-          delay       = timestamp - nowSeconds;
-
-      if (delay < 0) throw generateError(4);
-
-      return this.expire(key, delay);
-    };
-
-    // Expires a key a the supplied, millisecond-based UNIX timestamp
-    // Returns:   1 if the timeout was set.
-    //            0 if key does not exist or the timeout could not be set
-    proto.pexpireat = function (key, timestamp) {
-      if (arguments.length !== 2) throw generateError(0);
-
-      // Delay in milliseconds
-      var delay = timestamp - new Date().getTime();
-
-      if(delay < 0) throw generateError(4);
-
-      return this.pexpire(key, delay);
-    };
-
-    // Removes the expiration associated with the key
-    // Returns:   0 if the key does not exist or does not have an expiration
-    //            1 if the expiration was removed
-    proto.persist = function (key) {
-      if (arguments.length !== 1) throw generateError(0);
-
-      if (! (exists(key) && hasExpiration(key))) return 0;
-
-      remove(createExpirationKey(key));
-      return 1;
-    };
-
-    // Returns: the time to live in seconds
-    //          -1 when key does not exist or does not have an expiration
-    // Notes:   Due to the possible delay between expiration timeout
-    //          firing and the callback execution, this ttl only reflects
-    //          the TTL for the timeout firing
-    proto.ttl = function (key) {
-      if (arguments.length !== 1) throw generateError(0);
-
-      if(! (exists(key) && hasExpiration(key))) return -1;
-
-      // 1sec = 1000ms
-      return getExpirationTTL(key) / 1000;
-    };
-
-    // Returns: the time to live in milliseconds
-    //          -1 when key does not exist or does not have an expiration
-    // Note:    this command is just like ttl with ms units
-    proto.pttl = function (key) {
-      if (arguments.length !== 1) throw generateError(0);
-
-      return this.ttl(key) * 1000;
-    };
-
-    // Returns:   a random key from the calling storage object.
-    //            null when the database is empty
-    proto.randomkey = function () {
-      var keys    = Object.keys(storage),
-          length  = storage.length,
-          // Random position within the list of keys
-          rindex  = Math.floor(Math.random() * length);
-
-      if (! length) return null;
-
-      return keys[rindex];
-    };
-
-    // Returns:   all keys matching the supplied pattern
-    //            null if no keys were found
-    // Usage:     keys('foo*') for all keys with foo
-    proto.keys = function (pattern) {
-      var regex = new RegExp(pattern),
-          i, l,
-          results = [],
-          keys = Object.keys(storage);
-
-      for (i = 0, l = keys.length; i < l; i++) {
-        if (regex.test(keys[i])) {
-          results.push(keys[i]);
-        }
-      }
-
-      return results.length ? results : null;
-    };
-
-    ///////////////////////////
-    // String Commands
-    ///////////////////////////
-
-    // Returns: The (parsed) value associated with the passed key, if it exists.
-    proto.get = function(key) {
-      return retrieve(key);
-    };
-
-    // Stores the passed value indexed by the passed key
-    // Notes:   Auto stringifies
-    //          resets an existing expiration if set was called directly
-    // Usage:   set('foo', 'bar') or set('foo', 'bar').set('bar', 'car')
-    proto.set = function(key, value) {
-      var hasExp = hasExpiration(key),
-          expDelay;
-
-      try {
-        store(key, value);
-
-        // Cancel the expiration of the key
-        if (hasExp) {
-          expDelay = getExpirationDelay(key);
-
-          this.persist(key);
-        }
-      } catch (e) {
-        throw e;
-      }
-
-      // Makes chainable
-      return this;
-    };
-
-    // Sets key to value and returns the old value stored at key
-    // Throws:  Error when key exists but does not hold a string value
-    // Usage:   getset(key, value)
-    // Notes:   Removes an existing expiration for key
-    // Returns: the old value stored at key or null when the key does not exist
-    proto.getset = function (key, value) {
-      if (arguments.length !== 2) throw generateError(0);
-
-      // Grab the existing value or null if the key doesn't exist
-      var oldVal = retrieve(key);
-
-      // Throw an exception if the value isn't a string
-      if (! isString(oldVal) && oldVal !== null) throw generateError(1);
-
-      // Use set to refresh an existing expiration
-      this.set(key, value);
-      return oldVal;
-    };
-
-    // Returns: A list of values for the passed key(s).
-    // Note:    Values match keys by index.
-    // Usage:   mget('key1', 'key2', 'key3') or mget(['key1', 'key2', 'key3'])
-    proto.mget = function(keys) {
-      var results = [],
-          i, l;
-
-      // Determine the form of the parameters
-      keys = (keys instanceof Array) ? keys : arguments;
-
-      // Retrieve the value for each key
-      for (i = 0, l = keys.length; i < l; i++) {
-        results[results.length] = retrieve(keys[i]);
-      }
-
-      return results;
-    };
-
-    // Allows the setting of multiple key value pairs
-    // Usage:   mset('key1', 'val1', 'key2', 'val2') or
-    //          mset(['key1', 'val1', 'key2', 'val2']) or
-    //          mset({key1: val1, key2: val2})
-    // Notes:   If there's an odd number of elements,
-    //          unset values default to undefined.
-    proto.mset = function (keysVals) {
-      var isArray   = keysVals instanceof Array,
-          isObject  = keysVals instanceof Object,
-          i, l,
-          keys;
-
-      // Arrays are both an array and an object
-      // but an object is solely an object
-      if (isObject && !isArray) {
-        keys = Object.keys(keysVals);
-        for (i = 0, l = keys.length; i < l; i++) {
-          store(keys[i], keysVals[keys[i]]);
-        }
-      } else {
-
-        keysVals = isArray ? keysVals : arguments;
-
-        for (i = 0, l = keysVals.length; i < l; i += 2) {
-          store(keysVals[i], keysVals[i + 1]);
-        }
-      }
-
-      return this;
-    };
-
-    // Set key to hold string value if key does not exist.
-    // Returns:   1 if the key was set
-    //            0 if the key was not set
-    // Note:      When key already holds a value, no operation is performed.
-    proto.setnx = function (key, value) {
-      if(arguments.length !== 2) throw generateError(0);
-
-      if (exists(key)) return 0;
-
+    }
+
+    return results.length ? results : null;
+  };
+
+  ///////////////////////////
+  // String Commands
+  ///////////////////////////
+
+  // Returns: The (parsed) value associated with the passed key, if it exists.
+  proto.get = function(key) {
+    return retrieve(key);
+  };
+
+  // Stores the passed value indexed by the passed key
+  // Notes:   Auto stringifies
+  //          resets an existing expiration if set was called directly
+  // Usage:   set('foo', 'bar') or set('foo', 'bar').set('bar', 'car')
+  proto.set = function(key, value) {
+    var hasExp = hasExpiration(key),
+        expDelay;
+
+    try {
       store(key, value);
-      return 1;
-    };
 
-    // Sets the given keys to their respective values.
-    // Returns:   1 if the all the keys were set.
-    //            0 if no key was set (at least one key already existed).
-    // Notes:     Accepts the same types of params as mset.
-    //            If just a single key already exists,
-    //            no set operations are performed
-    proto.msetnx = function (keysVals) {
-      var isArray = keysVals instanceof Array,
-          isObject = keysVals instanceof Object,
-          i, l,
-          keys = [];
+      // Cancel the expiration of the key
+      if (hasExp) {
+        expDelay = getExpirationDelay(key);
 
-      // Grab all of the keys
-      if (isObject && ! isArray) {
-        keys = Object.keys(keysVals);
-      } else {
-        keysVals = isArray ? keysVals : arguments;
-        for (i = 0, l = keysVals.length; i < l; i += 2) {
-          keys.push(keysVals[i]);
-        }
+        this.persist(key);
       }
+    } catch (e) {
+      throw e;
+    }
 
-      // If any key exists, then don't store anything
+    // Makes chainable
+    return this;
+  };
+
+  // Sets key to value and returns the old value stored at key
+  // Throws:  Error when key exists but does not hold a string value
+  // Usage:   getset(key, value)
+  // Notes:   Removes an existing expiration for key
+  // Returns: the old value stored at key or null when the key does not exist
+  proto.getset = function (key, value) {
+    if (arguments.length !== 2) throw generateError(0);
+
+    // Grab the existing value or null if the key doesn't exist
+    var oldVal = retrieve(key);
+
+    // Throw an exception if the value isn't a string
+    if (! isString(oldVal) && oldVal !== null) throw generateError(1);
+
+    // Use set to refresh an existing expiration
+    this.set(key, value);
+    return oldVal;
+  };
+
+  // Returns: A list of values for the passed key(s).
+  // Note:    Values match keys by index.
+  // Usage:   mget('key1', 'key2', 'key3') or mget(['key1', 'key2', 'key3'])
+  proto.mget = function(keys) {
+    var results = [],
+        i, l;
+
+    // Determine the form of the parameters
+    keys = (keys instanceof Array) ? keys : arguments;
+
+    // Retrieve the value for each key
+    for (i = 0, l = keys.length; i < l; i++) {
+      results[results.length] = retrieve(keys[i]);
+    }
+
+    return results;
+  };
+
+  // Allows the setting of multiple key value pairs
+  // Usage:   mset('key1', 'val1', 'key2', 'val2') or
+  //          mset(['key1', 'val1', 'key2', 'val2']) or
+  //          mset({key1: val1, key2: val2})
+  // Notes:   If there's an odd number of elements,
+  //          unset values default to undefined.
+  proto.mset = function (keysVals) {
+    var isArray   = keysVals instanceof Array,
+        isObject  = keysVals instanceof Object,
+        i, l,
+        keys;
+
+    // Arrays are both an array and an object
+    // but an object is solely an object
+    if (isObject && !isArray) {
+      keys = Object.keys(keysVals);
       for (i = 0, l = keys.length; i < l; i++) {
-        if (exists(keys[i])) {
-          return 0;
-        }
+        store(keys[i], keysVals[keys[i]]);
       }
+    } else {
 
-      // We don't call mset because splat arguments
-      // are passed in as an object, when it should be
-      // processed like an array
+      keysVals = isArray ? keysVals : arguments;
+
       for (i = 0, l = keysVals.length; i < l; i += 2) {
         store(keysVals[i], keysVals[i + 1]);
       }
-      return 1;
-    };
+    }
 
-    // If the key does not exist, incr sets it to 1
-    // Note:  incr does not affect expiry
-    proto.incr = function (key) {
-      if (arguments.length !== 1) throw generateError(0);
+    return this;
+  };
 
-      this.incrby(key, 1);
-    };
+  // Set key to hold string value if key does not exist.
+  // Returns:   1 if the key was set
+  //            0 if the key was not set
+  // Note:      When key already holds a value, no operation is performed.
+  proto.setnx = function (key, value) {
+    if(arguments.length !== 2) throw generateError(0);
 
-    // If the key does not exist, incrby sets it to amount
-    // Notes:   Incrby does not affect key expiry
-    //          keys set with null values cannot be incremented
-    //          amount must be a number or string containing a number
-    // Usage:   incrby('foo', '4') or incrby('foo', 4)
-    proto.incrby = function (key, amount) {
-      if (arguments.length !== 2) throw generateError(0);
+    if (exists(key)) return 0;
 
-      var value                = retrieve(key),
-          valType              = typeof value,
-          amountType           = typeof amount,
-          parsedValue          = parseInt(value, 10),
-          parsedAmount         = parseInt(amount, 10),
-          amountIsNaN          = isNaN(parsedAmount),
-          valueIsNaN           = isNaN(parsedValue),
+    store(key, value);
+    return 1;
+  };
 
-          // Check the value
-          isValNull            = value === null,
-          isValNumber          = isNumber(valType),
-          isValNumberStr       = isString(valType) && !valueIsNaN,
-          isValNotNumberStr    = isString(valType) && valueIsNaN,
+  // Sets the given keys to their respective values.
+  // Returns:   1 if the all the keys were set.
+  //            0 if no key was set (at least one key already existed).
+  // Notes:     Accepts the same types of params as mset.
+  //            If just a single key already exists,
+  //            no set operations are performed
+  proto.msetnx = function (keysVals) {
+    var isArray = keysVals instanceof Array,
+        isObject = keysVals instanceof Object,
+        i, l,
+        keys = [];
 
-          // Value should be a number or string representation of a number
-          // Example values: 1 or "1"
-          isValNotValid        = !isValNumber && isValNotNumberStr,
-
-          // Key exists with a value of null
-          existsNullVal        = valueIsNaN && exists(key),
-
-          // Check the amount
-          isAmountNumber       = isNumber(amountType),
-          isAmountNumberStr    = isString(amountType) && !amountIsNaN,
-          isAmountNotNumberStr = isString(amountType) && amountIsNaN,
-          isAmountNotValid     = !isAmountNumber && isAmountNotNumberStr,
-
-          // Out of range checks
-          valOutOfRange        = !valueIsNaN && (value >= Number.MAX_VALUE),
-          amountOutOfRange     = !amountIsNaN && (amount >= Number.MAX_VALUE),
-          anyOutOfRange        = valOutOfRange || amountOutOfRange;
-
-      if ((isValNotValid  && !isValNull) || existsNullVal || amountIsNaN || isAmountNotValid || anyOutOfRange) {
-        // out of range or not an integer
-        throw generateError(2);
-
-      // The value and incr amount are valid
-      } else if ((isValNumber || isValNumberStr) && (isAmountNumber || isAmountNumberStr)) {
-        value = parsedValue + parsedAmount;
-
-      // Key didn't exist, so set the value to the amount
-      } else if (isAmountNumber || isAmountNumberStr) {
-        value = parsedAmount;
+    // Grab all of the keys
+    if (isObject && ! isArray) {
+      keys = Object.keys(keysVals);
+    } else {
+      keysVals = isArray ? keysVals : arguments;
+      for (i = 0, l = keysVals.length; i < l; i += 2) {
+        keys.push(keysVals[i]);
       }
+    }
 
-      store(key, value);
-    };
-
-    // Increments multiple keys by 1
-    proto.mincr = function (keys) {
-      var i, l;
-      keys = (keys instanceof Array) ? keys : arguments;
-      for(i = 0, l = keys.length; i < l; i++) {
-        this.incr(keys[i]);
+    // If any key exists, then don't store anything
+    for (i = 0, l = keys.length; i < l; i++) {
+      if (exists(keys[i])) {
+        return 0;
       }
-    };
+    }
 
-    // Usage:   mincrby('key1', 1, 'key2', 4) or
-    //          mincrby(['key1', 1, 'key2', 2]) or
-    //          mincrby({'key1': 1, 'key2': 2})
-    // Notes:   Custom, non-redis method
-    proto.mincrby = function (keysAmounts) {
-      var i, l, key;
+    // We don't call mset because splat arguments
+    // are passed in as an object, when it should be
+    // processed like an array
+    for (i = 0, l = keysVals.length; i < l; i += 2) {
+      store(keysVals[i], keysVals[i + 1]);
+    }
+    return 1;
+  };
 
-      if (keysAmounts instanceof Array || isString(keysAmounts)) {
-        keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
+  // If the key does not exist, incr sets it to 1
+  // Note:  incr does not affect expiry
+  proto.incr = function (key) {
+    if (arguments.length !== 1) throw generateError(0);
 
-        // Need to make sure an even number of arguments is passed in
-        if ((keysAmounts.length & 0x1) !== 0) throw generateError(0);
+    this.incrby(key, 1);
+  };
 
-        for (i = 0, l = keysAmounts.length; i < l; i += 2) {
-          this.incrby(keysAmounts[i], keysAmounts[i + 1]);
-        }
-      } else if (keysAmounts instanceof Object) {
-        for (key in keysAmounts) {
-          this.incrby(key, keysAmounts[key]);
-        }
+  // If the key does not exist, incrby sets it to amount
+  // Notes:   Incrby does not affect key expiry
+  //          keys set with null values cannot be incremented
+  //          amount must be a number or string containing a number
+  // Usage:   incrby('foo', '4') or incrby('foo', 4)
+  proto.incrby = function (key, amount) {
+    if (arguments.length !== 2) throw generateError(0);
+
+    var value                = retrieve(key),
+        valType              = typeof value,
+        amountType           = typeof amount,
+        parsedValue          = parseInt(value, 10),
+        parsedAmount         = parseInt(amount, 10),
+        amountIsNaN          = isNaN(parsedAmount),
+        valueIsNaN           = isNaN(parsedValue),
+
+        // Check the value
+        isValNull            = value === null,
+        isValNumber          = isNumber(valType),
+        isValNumberStr       = isString(valType) && !valueIsNaN,
+        isValNotNumberStr    = isString(valType) && valueIsNaN,
+
+        // Value should be a number or string representation of a number
+        // Example values: 1 or "1"
+        isValNotValid        = !isValNumber && isValNotNumberStr,
+
+        // Key exists with a value of null
+        existsNullVal        = valueIsNaN && exists(key),
+
+        // Check the amount
+        isAmountNumber       = isNumber(amountType),
+        isAmountNumberStr    = isString(amountType) && !amountIsNaN,
+        isAmountNotNumberStr = isString(amountType) && amountIsNaN,
+        isAmountNotValid     = !isAmountNumber && isAmountNotNumberStr,
+
+        // Out of range checks
+        valOutOfRange        = !valueIsNaN && (value >= Number.MAX_VALUE),
+        amountOutOfRange     = !amountIsNaN && (amount >= Number.MAX_VALUE),
+        anyOutOfRange        = valOutOfRange || amountOutOfRange;
+
+    if ((isValNotValid  && !isValNull) || existsNullVal || amountIsNaN || isAmountNotValid || anyOutOfRange) {
+      // out of range or not an integer
+      throw generateError(2);
+
+    // The value and incr amount are valid
+    } else if ((isValNumber || isValNumberStr) && (isAmountNumber || isAmountNumberStr)) {
+      value = parsedValue + parsedAmount;
+
+    // Key didn't exist, so set the value to the amount
+    } else if (isAmountNumber || isAmountNumberStr) {
+      value = parsedAmount;
+    }
+
+    store(key, value);
+  };
+
+  // Increments multiple keys by 1
+  proto.mincr = function (keys) {
+    var i, l;
+    keys = (keys instanceof Array) ? keys : arguments;
+    for(i = 0, l = keys.length; i < l; i++) {
+      this.incr(keys[i]);
+    }
+  };
+
+  // Usage:   mincrby('key1', 1, 'key2', 4) or
+  //          mincrby(['key1', 1, 'key2', 2]) or
+  //          mincrby({'key1': 1, 'key2': 2})
+  // Notes:   Custom, non-redis method
+  proto.mincrby = function (keysAmounts) {
+    var i, l, key;
+
+    if (keysAmounts instanceof Array || isString(keysAmounts)) {
+      keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
+
+      // Need to make sure an even number of arguments is passed in
+      if ((keysAmounts.length & 0x1) !== 0) throw generateError(0);
+
+      for (i = 0, l = keysAmounts.length; i < l; i += 2) {
+        this.incrby(keysAmounts[i], keysAmounts[i + 1]);
       }
-    };
-
-    // decr
-
-    // decrby
-
-    // mdecrby
-
-    // Appends the value at the end of the string
-    // Returns: the length of the string after appending
-    //          the original length for non-string values
-    // Notes:   Appends if the key exists and is a string
-    //          If key does not exist, we initialize it to empty
-    //          and perform the append
-    proto.append = function (key, value) {
-      if (arguments.length !== 2) throw generateError(0);
-
-      var val         = retrieve(key) || "",
-          valIsString = isString(val);
-
-      if (valIsString) {
-        val += value;
-        store(key, val);
+    } else if (keysAmounts instanceof Object) {
+      for (key in keysAmounts) {
+        this.incrby(key, keysAmounts[key]);
       }
+    }
+  };
 
-      return valIsString ? val.length : 1;
-    };
+  // decr
 
-    // Returns: the length of the string value stored at key.
-    //          0 when key does not exist
-    // Throws:  when the key holds a non-string value
-    proto.strlen = function (key) {
-      var val = retrieve(key);
+  // decrby
 
-      if (! val) return 0;
+  // mdecrby
 
-      if (! isString(val)) throw generateError(1);
+  // Appends the value at the end of the string
+  // Returns: the length of the string after appending
+  //          the original length for non-string values
+  // Notes:   Appends if the key exists and is a string
+  //          If key does not exist, we initialize it to empty
+  //          and perform the append
+  proto.append = function (key, value) {
+    if (arguments.length !== 2) throw generateError(0);
 
-      return val.length;
-    };
+    var val         = retrieve(key) || "",
+        valIsString = isString(val);
 
-    // Set key to hold the string value and set key to
-    // timeout after a given number of seconds.
-    proto.setex = function (key, value, delay) {
-      if (arguments.length !== 3) throw generateError(0);
+    if (valIsString) {
+      val += value;
+      store(key, val);
+    }
 
-      store(key, value);
-      this.expire(key, delay);
-    };
+    return valIsString ? val.length : 1;
+  };
 
-    // Set key to hold the string value and set key to
-    // timeout after a given number of milliseconds.
-    proto.psetex = function (key, value, delay) {
-      if (arguments.length !== 3) throw generateError(0);
+  // Returns: the length of the string value stored at key.
+  //          0 when key does not exist
+  // Throws:  when the key holds a non-string value
+  proto.strlen = function (key) {
+    var val = retrieve(key);
 
-      store(key, value);
-      this.pexpire(key, delay);
-    };
+    if (! val) return 0;
 
-    return Redis;
-  })(); // close inner closure
+    if (! isString(val)) throw generateError(1);
 
-  window.localRedis   = new RedisConstructor(window.localStorage);
-  window.sessionRedis = new RedisConstructor(window.sessionStorage);
+    return val.length;
+  };
+
+  // Set key to hold the string value and set key to
+  // timeout after a given number of seconds.
+  proto.setex = function (key, value, delay) {
+    if (arguments.length !== 3) throw generateError(0);
+
+    store(key, value);
+    this.expire(key, delay);
+  };
+
+  // Set key to hold the string value and set key to
+  // timeout after a given number of milliseconds.
+  proto.psetex = function (key, value, delay) {
+    if (arguments.length !== 3) throw generateError(0);
+
+    store(key, value);
+    this.pexpire(key, delay);
+  };
+
 })(window, document);

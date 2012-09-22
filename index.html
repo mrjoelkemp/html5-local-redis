@@ -69,19 +69,17 @@
             $table.show();
           },
 
-          $storageDataObj = $('#localStorageData'),
-          $sessionDataObj = $('#sessionStorageData');
+          $storageDataObj = $('#localStorageData');
 
       // Redraw the tables when the storage objects change
       var handleStorageChange = function () {
         drawTable(window.localStorage, $storageDataObj);
-        drawTable(window.sessionStorage, $sessionDataObj);
       }
 
       // Library attaches events to the document
-      //$(document).on('storagechange', handleStorageChange);
+      $(document).on('storagechange', handleStorageChange);
       // Draw the tables initially
-      //handleStorageChange();
+      handleStorageChange();
     });
 </script>
 
@@ -91,10 +89,6 @@
     <div>
       <h3>Local Storage Data</h3>
       <table id="localStorageData"></table>
-    </div>
-    <div>
-      <h3>Session Storage Data</h3>
-      <table id="sessionStorageData"></table>
     </div>
   </div>
  <hr/>
