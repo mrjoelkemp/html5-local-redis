@@ -517,8 +517,8 @@
   // expire
   // Expires the passed key after the passed seconds
   // Precond: delay in seconds
-  // Returns: 1 if the timeout was set
-  //          0 if the key does not exist or the timeout couldn't be set
+  // Returns: 1 if the expiration was set
+  //          0 if the key does not exist or the expiration couldn't be set
   localRedis.expire = function (key, delay) {
     if (arguments.length !== 2) throw generateError(0);
 
@@ -952,7 +952,7 @@
   };
 
   // Set key to hold the string value and set key to
-  // timeout after a given number of seconds.
+  // expire after a given number of seconds.
   localRedis.setex = function (key, value, delay) {
     if (arguments.length !== 3) throw generateError(0);
 
@@ -961,7 +961,7 @@
   };
 
   // Set key to hold the string value and set key to
-  // timeout after a given number of milliseconds.
+  // expire after a given number of milliseconds.
   localRedis.psetex = function (key, value, delay) {
     if (arguments.length !== 3) throw generateError(0);
 

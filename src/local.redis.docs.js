@@ -24,11 +24,17 @@
   // numbers, and literal strings.
   // This is achieved internally via JSON stringify and parse.
 
+  // #### Argument assertions ####
+
+  // The commands will throw an error if they are given an
+  // incorrect number of arguments. Note the *usage* section
+  // of each command to see the accepted number of arguments.
+
   // ***
   // ## Keys API ##
   // ***
 
-  // ### del ###
+  // ## del ##
   // *Usage:* `del(key)` or `del(key1, key2)` or `del([key1, key2])`
 
   // Removes the specified key(s).
@@ -44,7 +50,7 @@
 
 
 
-  // ### exists ###
+  // ## exists ##
   // *Usage:* `exists(key)`
 
   // Determines whether or not the passed key exists in storage.
@@ -53,8 +59,6 @@
   localRedis.exists({foo: 'bar'});
   localRedis.exists('foo');
   localRedis.exists(1234);
-
-  // *Throws* if more than one argument is supplied.
 
 
 
@@ -102,8 +106,100 @@
 
   // Note: This is a *custom*, non-Redis function.
 
+
+
+  // ## expire ##
+  // *Usage:* `expire(key, secondDelay)`
+
+  // Expires the `key` after the supplied *number of seconds*.
+  // *Returns* `1` if the expiration was set, `0` if the
+  // `key` does not exist or the expiration couldn't be set.
+
+  localRedis.expire('foo', 2);
+  localRedis.expire('bar', 1.5);
+
+
+  // [Read more](http://mrjoelkemp.com/2012/09/html5-local-storage-keyvalue-expiry/) about the expiration algorithm.
+
+
+
+  // ## pexpire ##
+
+
+
+
+  // ## expires ##
+
+
+
+
+
+  // ## expireat ##
+
+
+
+
+
+  // ## pexpireat ##
+
+
+
+
+
+  // ## persist ##
+
+
+
+
+  // ## ttl ##
+
+
+
+
+  // ## pttl ##
+
+
+
+
+  // ## randomkey ##
+
+
+
+
+
+  // ## keys ##
+
+
+
+
+
+
   // ***
   // ## Strings API ##
   // ***
+
+  // ## get ##
+  // ## set ##
+  // ## getset ##
+  // ## mget ##
+  // ## mset ##
+  // ## setnx ##
+  // ## msetnx ##
+
+  // ## incr ##
+  // ## incrby ##
+  // ## mincr ##
+  // ## mincrby ##
+  // ## decr ##
+  // ## decrby ##
+  // ## mdecr ##
+  // ## mdecrby ##
+
+  // ## append ##
+  // ## strlen ##
+
+  // ## setex ##
+  // ## psetex ##
+
 
 })(window);
