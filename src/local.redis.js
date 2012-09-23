@@ -484,7 +484,7 @@
   //            null if no keys were found
   // Params:    all = whether or not to retrieve all of the keys that match
   // Notes:     Custom, non-redis method
-  localRedis.getkey = function (val) {
+  localRedis.getkey = function (val /*, all */) {
     if (arguments.length > 2) throw generateError(0);
 
     var i, l, k, v, keys = [], all;

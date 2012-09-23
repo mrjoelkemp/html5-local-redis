@@ -88,6 +88,19 @@
 
 
 
+  // ## getkey ##
+  // *Usage:* `getkey(value)` or `getkey(value, true)`
+
+  // Retrieves the first *key* associated with `value`,
+  // or all keys associated with value if `true` is
+  // passed as the second parameter.
+  // *Returns* a single key or a list of keys if second parameter
+  // is set to `true`.
+
+  /* Assume 'foo' => 'bar' */
+  localRedis.getkey('bar'); // Returns 'foo'
+
+  // Note: This is a *custom*, non-Redis function.
 
   // ***
   // ## Strings API ##
