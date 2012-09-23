@@ -405,17 +405,17 @@
   };
 
   // Returns: 1 if the key exists, 0 if they key doesn't exist.
-  // Throws:  TypeError if more than one argument is supplied
+  // Throws:  Error if more than one argument is supplied
   localRedis.exists = function (key) {
     if (arguments.length > 1) throw generateError(0);
 
     return exists(key) ? 1 : 0;
   };
 
-  // Renames key to newkey
-  // Throws:  Error if key == newkey
+  // Renames key to newKey
+  // Throws:  Error if key == newKey
   //          Error if key does not exist
-  // Usage:   rename(key, newkey)
+  // Usage:   rename(key, newKey)
   // Notes:   Transfers the key's TTL to the newKey
   localRedis.rename = function (key, newKey) {
     var errorType, ttl;
@@ -455,8 +455,8 @@
   // Returns: 1 if key was renamed; 0 if newkey already exists
   // Usage:   renamenx(key, newkey)
   // Notes:   Affects expiry like rename
-  // Throws:  TypeError if key == newkey
-  //          ReferenceError if key does not exist
+  // Throws:  Error if key == newkey
+  //          Error if key does not exist
   //          Fails under the same conditions as rename
   localRedis.renamenx = function (key, newKey) {
     var typeError;
