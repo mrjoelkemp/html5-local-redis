@@ -205,7 +205,7 @@
       // Returns: A string representation of an object created from the data
       // Note:    Keys are as short as possible to save space when stored
       createExpirationValue = function (delay, currentTime) {
-        return JSON.stringify({
+        return stringified({
           c: currentTime,
           d: delay
         });
@@ -216,7 +216,7 @@
         var expKey = createExpirationKey(key),
             expVal = storage.getItem(expKey);
 
-        return JSON.parse(expVal);
+        return parsed(expVal);
       },
 
       // Retrieves the expiration delay of the key
@@ -615,10 +615,12 @@
   localRedis.ttl = function (key) {
     if (arguments.length !== 1) throw generateError(0);
 
-    if(! (exists(key) && hasExpiration(key))) return -1;
+    if(exists(key) && hasExpiration(key)) {
+      // 1sec = 1000ms
+      return getExpirationTTL(key) / 1000;
+    }
 
-    // 1sec = 1000ms
-    return getExpirationTTL(key) / 1000;
+    return -1;
   };
 
   // Returns: the time to live in milliseconds

@@ -316,7 +316,7 @@ describe('Keys API', function () {
         storage.pexpire('foo', 15);
       });
 
-      waits(10);
+      waits(5);
       runs(function () {
         var ttl = storage.ttl('foo');
         expect(ttl).toBeGreaterThan(0);
