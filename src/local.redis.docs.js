@@ -111,7 +111,7 @@
   // ## expire ##
   // *Usage:* `expire(key, secondDelay)`
 
-  // Expires the `key` after the supplied *number of seconds*.
+  // Expires `key` after the supplied *number of seconds*.
   // *Returns* `1` if the expiration was set, `0` if the
   // `key` does not exist or the expiration couldn't be set.
 
@@ -124,30 +124,67 @@
 
 
   // ## pexpire ##
+  // *Usage:* `pexpire(key, msDelay)`
+
+  // Expires `key` in the supplied number of milliseconds.
+  // Similar to `expire` except for the delay's units.
+  // *Returns* the same as `expire`.
+
+  localRedis.pexpire('foo', 500);
+  localRedis.pexpire('bar', 10);
 
 
 
 
   // ## expires ##
+  // *Usage:* `expires(key)`
 
+  // Determines whether or not `key` has expiration data
+  // in the datastore.
+  // *Returns* `1` if there is expiration data for `key`,
+  // `0` otherwise.
+
+  localRedis.expires('foo'); // Returns 1
+
+  // Note: This is a *custom*, non-Redis function.
 
 
 
 
   // ## expireat ##
+  // *Usage:* `expireat(key, secondsTimestamp)`
 
+  // Expires a key at the supplied, second-based UNIX timestamp.
+  // This is useful for expiring the key at a particular date.
+  // *Returns* `1` if the expiration was set, `0` if the key
+  // does not exist or the expiration couldn't be set.
+
+  localRedis.expireat('foo', 1293840000);
 
 
 
 
   // ## pexpireat ##
+  // *Usage:* `pexpireat(key, msTimestamp)`
 
+  // Similar to `expireat` except that the timestamp is in
+  // milliseconds.
+  // *Returns* the same as `expireat`.
+
+  localRedis.pexpireat('foo', 1348190381093280);
 
 
 
 
   // ## persist ##
+  // *Usage:* `persist(key)`
 
+  // Removes the `key`'s expiration.
+  // *Returns* `1` if the expiration was removed/cancelled,
+  // `0` if `key` does not exist or `key` does not have an
+  // existing expiration.
+
+  localRedis.persist('foo');
 
 
 

@@ -567,7 +567,7 @@
 
   // Expires a key at the supplied, second-based UNIX timestamp
   // Returns:   1 if the timeout was set.
-  //            0 if key does not exist or the timeout could not be set
+  //            0 if key does not exist or the expiration could not be set.
   // Usage:     expireat('foo', 1293840000)
   localRedis.expireat = function (key, timestamp) {
     if (arguments.length !== 2) throw generateError(0);
