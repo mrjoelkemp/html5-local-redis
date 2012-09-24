@@ -12,8 +12,8 @@
 // ## Notes ##
 
 // #### Polyfill for IE8
-// Since IE8 does not support HTML5 Local Storage, a cookie-based
-// polyfill is supplied to facilitate the basic web storage API.
+// Since IE8 does not support HTML5 Local Storage, a [cookie-based
+// polyfill](https://developer.mozilla.org/en-US/docs/DOM/Storage) is supplied to facilitate the basic web storage API.
 
 // #### Datatype support ####
 
@@ -21,6 +21,13 @@
 // Hence, it is possible to store and retrieve objects, arrays,
 // numbers, and literal strings.
 // This is achieved internally via JSON stringify and parse.
+
+localRedis.set('foo', 'bar');
+localRedis.set(4, 'bar');
+localRedis.set({username: "Joel Kemp"}, {post: "Hello"});
+localRedis.set(['foo', 3, {username: "Joel Kemp"}], [1, 2, 3]);
+localRedis.set(null, null);
+
 
 // #### Argument assertions ####
 
@@ -169,7 +176,9 @@ localRedis.expireat('foo', 1293840000);
 // milliseconds.
 // *Returns* the same as `expireat`.
 
-localRedis.pexpireat('foo', 1348190381093280);
+localRedis.set('foo', 'bar');
+localRedis.pexpireat('foo', 1348190381093280);  // Returns 1
+localRedis.pexpireat('foobar');                 // Returns 0
 
 
 
@@ -182,28 +191,39 @@ localRedis.pexpireat('foo', 1348190381093280);
 // `0` if `key` does not exist or `key` does not have an
 // existing expiration.
 
-localRedis.persist('foo');
+localRedis.set('foo', 'bar');
+localRedis.expire('foo', 2);
+localRedis.persist('foo');    // Returns 1
+localRedis.persist('foobar'); // Returns 0
 
 
 
 // ## ttl ##
+// *Usage:* `ttl(key)`
 
+// Returns the time-to-live (in seconds) of a key, or `-1`
+// if the key does not have an expiration.
+
+localRedis.set('foo', 'bar');
+localRedis.expire('foo', 2);
+localRedis.ttl('foo');        // Returns 2
+localRedis.ttl('foobar');     // Returns -1
 
 
 
 // ## pttl ##
-
+// *Usage:*
 
 
 
 // ## randomkey ##
-
+// *Usage:*
 
 
 
 
 // ## keys ##
-
+// *Usage:*
 
 
 
@@ -214,7 +234,11 @@ localRedis.persist('foo');
 // ***
 
 // ## get ##
+
 // ## set ##
+// *Usage:* `set(key, value)` or `set(key, value).set(key, value)`
+// Chainable
+
 // ## getset ##
 // ## mget ##
 // ## mset ##

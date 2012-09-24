@@ -17,35 +17,9 @@ Simply add the following to your main HTML file:
 
     <script type="text/javascript" src="path/to/local.redis.min.js"></script>
 
-The library extends the functionality of the `window.localStorage`
-and `window.sessionStorage` objects, or polyfills for older browsers.
+The library extends the functionality of the `window.localStorage` and polyfills a cookie-based alternative for older browsers.
 
-
-##### Example Commands
-
-In Redis:
-
-```
-SET 'foo' 'bar'
-GET 'foo'        => 'bar'
-GETSET 'foo' 4   => 'bar'
-GET 'foo'        => 4
-INCRBY 'foo' 3   => 7
-EXPIRE 'foo' 3
-```
-
-Local Redis:
-
-```
-localRedis.set('foo', 'bar');
-localRedis.get('foo');           // 'bar'
-localRedis.getset('foo', 4);     // 'bar'
-localRedis.get('foo');           // 4
-localRedis.incrby('foo', 3);     // 'foo' => 7
-localRedis.expire('foo', 2);     // Expire 'foo' in 2s
-```
-
-**More supported command documentation soon!**
+#### [Read the documentation](http://html5-local-redis.github.com)
 
 ***
 

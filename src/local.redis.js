@@ -609,9 +609,6 @@
 
   // Returns: the time to live in seconds
   //          -1 when key does not exist or does not have an expiration
-  // Notes:   Due to the possible delay between expiration timeout
-  //          firing and the callback execution, this ttl only reflects
-  //          the TTL for the timeout firing
   localRedis.ttl = function (key) {
     if (arguments.length !== 1) throw generateError(0);
 
