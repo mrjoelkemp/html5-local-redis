@@ -39,7 +39,7 @@ localRedis.set(null, null);
 
 // The library emits a `storagechange` (cross-browser) event that's attached to the
 // `document` object everytime a set/remove/clear like command is invoked.
-// HTML5 Local Storage has a (not completely implemented in all browsers)
+// HTML5 Local Storage *has* a (not completely implemented in all browsers)
 // 'storage' event that gets fired, however, it only gets fired for other
 // tabs/windows that are pointed to the same domain.
 
@@ -331,19 +331,33 @@ localRedis.exists('foo');     // Returns 1; hence, 'foo' does exist but has a nu
 localRedis.set('foo', 'bar');
 localRedis.set(4, 232);
 localRedis.set({foo: 'name'}, 'bar').set('foobar', 'bar');
-
+localRedis.set('bar', [1, 2, 3, 4, 5]);
 
 // Note: This method deviates from the status `'OK'` return value
 // for Redis commands since `set` operations will always succeed unless
 // the browser crashes.
+
+// *Side effects:* Resets/refreshes `key`'s existing expiration.
 
 // *Throws* if the set exceeds the quota for localStorage
 // (i.e., throws if localStorage is full).
 
 
 
-
 // ## getset ##
+// *Usage:* `getset(key, value)`
+
+// Sets the `key`/`value` pair and returns the *old value* stored `key`.
+// *Returns* the old value stored at `key` or `null if `key` does not exist.
+
+localRedis.set('foo', 'bar');
+localRedis.getset('foo', 'foobar'); // Returns 'bar'
+localRedis.get('foo');              // Returns 'foobar'
+
+// *Side effects:* Resets/refreshes `key`'s existing expiration.
+
+
+
 // ## mget ##
 // ## mset ##
 // ## setnx ##
