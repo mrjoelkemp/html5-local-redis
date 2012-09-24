@@ -50,6 +50,22 @@ localRedis.set(null, null);
 // event-firing functionality. Otherwise, we fire events via the
 // (IE-specific) `fireEvent` and (Other browsers) `dispatchEvent` methods.
 
+// ***
+// ## Local Storage API ##
+// ***
+
+// `localRedis` supports the W3C Web Storage API.
+
+localRedis.setItem('foo', 'bar');
+localRedis.getItem('foo');
+localRedis.key(0);
+localRedis.clear();
+localRedis.removeItem('foo');
+
+// Note: Key stringifying and parsing are **not** done on the above methods.
+// Please use `get` and `set` commands to utilize more key and value datatypes.
+
+// These functions also emit the storage events.
 
 
 // ***
