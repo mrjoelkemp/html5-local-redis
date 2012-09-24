@@ -139,7 +139,7 @@
       // Fired when the storage changes
       // Attaches events to the document to avoid
       fireStorageChangedEvent = function () {
-        return fireEvent(document, 'storagechange');
+        return fireEvent(document, eventName);
       };
 
 

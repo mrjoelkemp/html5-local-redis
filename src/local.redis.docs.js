@@ -35,6 +35,23 @@ localRedis.set(null, null);
 // incorrect number of arguments. Note the *usage* section
 // of each command to see the accepted number of arguments.
 
+// #### Event Firing on Storage Update
+
+// The library emits a `storagechange` (cross-browser) event that's attached to the
+// `document` object everytime a set/remove/clear like command is invoked.
+// HTML5 Local Storage has a (not completely implemented in all browsers)
+// 'storage' event that gets fired, however, it only gets fired for other
+// tabs/windows that are pointed to the same domain.
+
+// If you want to visualize the changes being made to the datastore, you
+// can listen for the fired event and act appropriately.
+
+// If your project utilizes jQuery, then the library will use jQuery's
+// event-firing functionality. Otherwise, we fire events via the
+// (IE-specific) `fireEvent` and (Other browsers) `dispatchEvent` methods.
+
+
+
 // ***
 // ## Keys API ##
 // ***
@@ -284,10 +301,33 @@ localRedis.keys('fo*');   // Returns 'foo'
 // ***
 
 // ## get ##
+// *Usage:* `get(key)`
+
+// Retrieves the value associated with `key`.
+// *Returns* the (JSON parsed) value or `null` if the key does not exist.
+
+localRedis.set('foo', 'bar');
+localRedis.set('id', 404);
+
+localRedis.get('foo');    // Returns 'bar'
+localRedis.get('id');     // Returns 404
+
+// *Note:* If the key is set with the value of null, then `get` could be misleading.
+// In this case, you should probably very that the key exists by using `exists`.
+
+localRedis.set('foo', null);
+localRedis.get('foo');        // Returns null which looks like 'foo' does not exist
+localRedis.exists('foo');     // Returns 1; hence, 'foo' does exist but has a null value
+
+
 
 // ## set ##
 // *Usage:* `set(key, value)` or `set(key, value).set(key, value)`
 // Chainable
+
+
+
+
 
 // ## getset ##
 // ## mget ##
