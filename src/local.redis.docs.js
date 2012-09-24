@@ -323,8 +323,22 @@ localRedis.exists('foo');     // Returns 1; hence, 'foo' does exist but has a nu
 
 // ## set ##
 // *Usage:* `set(key, value)` or `set(key, value).set(key, value)`
-// Chainable
 
+// Stores the `key`/`value` pair in localStorage.
+// *Returns* the calling `localRedis` object so that you can chain
+// commands.
+
+localRedis.set('foo', 'bar');
+localRedis.set(4, 232);
+localRedis.set({foo: 'name'}, 'bar').set('foobar', 'bar');
+
+
+// Note: This method deviates from the status `'OK'` return value
+// for Redis commands since `set` operations will always succeed unless
+// the browser crashes.
+
+// *Throws* if the set exceeds the quota for localStorage
+// (i.e., throws if localStorage is full).
 
 
 
