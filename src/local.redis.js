@@ -146,7 +146,6 @@
 
   ///////////////////////////
   // Error Helper
-  // TODO: MOVE TO EXTERNAL PLUGIN
   ///////////////////////////
 
   var
