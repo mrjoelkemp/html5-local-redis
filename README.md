@@ -1,7 +1,7 @@
 HTML5 Local Redis
 =================
 
-Redis-like API for HTML5 Storage Objects (localStorage and sessionStorage).
+Redis-like API for HTML5 Local Storage.
 
 #### Motivation
 
@@ -17,7 +17,7 @@ Simply add the following to your main HTML file:
 
     <script type="text/javascript" src="path/to/local.redis.min.js"></script>
 
-The library extends the functionality of the `window.localStorage` and polyfills a cookie-based alternative for older browsers.
+The library serves as a wrapper for `window.localStorage` and polyfills a cookie-based alternative for older browsers.
 
 #### [Read the documentation](http://html5-local-redis.github.com)
 
@@ -25,7 +25,7 @@ The library extends the functionality of the `window.localStorage` and polyfills
 
 #### Additional Tools Used
 
-[Grunt.js](https://github.com/cowboy/grunt): Used for minification with Uglify.js and potentially multi-source merge and multiple builds of api sections.
+[Grunt.js](https://github.com/cowboy/grunt): Primarily used for minification with Uglify.js.
 
 * To install Grunt: `npm install -g grunt`
 
@@ -37,7 +37,8 @@ HTML5 Storage is not like Redis in many ways. Namely, HTML5 Storage rarely needs
 
 Albeit rare, race conditions *can* occur. We've given close thought to locking solutions, but practical solutions involve an increased number of reads/writes per command. Due to the fact that web storage is disk-based, these I/O operations are blocking.
 
-A more practical solution involves hooking into the `storage` event, but this will be implemented in a later release.
+A practical solution involves either locking a row (by adding lock data with a hardcoded format that each process will recognize) and having a 
+check, set, check behavior for each process. This comes at the expense of two writes, plus the complexity for storing lock data. 
 
 #### Progress
 
