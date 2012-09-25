@@ -375,7 +375,7 @@ localRedis.get('foo');              // Returns 'foobar'
 
 
 // ## mget ##
-// *Usage:* `mget(key1, key2)` or `mget([key1, key2])`
+// *Usage:* `mget(key1, key2, ...)` or `mget([key1, key2, ...])`
 
 // Retrieves the value for each passed key.
 // *Returns* a list of values where the index of each value in the list
@@ -389,9 +389,9 @@ localRedis.mget('foo', 'bar');    // Returns ['bar', 'foobar']
 
 
 // ## mset ##
-// *Usage*: `mset(key1, val1, key2, val2)` or
-//          `mset([key1, val1, key2, val2])` or
-//          `mset({key1: val1, key2: val2})`
+// *Usage*: `mset(key1, val1, key2, val2, ...)` or
+//          `mset([key1, val1, key2, val2, ...])` or
+//          `mset({key1: val1, key2: val2, ...})`
 
 // Sets up multiple `key`/`value` pairs.
 // *Returns* the calling `localRedis` object so that you can chain
@@ -426,9 +426,9 @@ localRedis.get('foo');              // Returns 'bar'
 
 
 // ## msetnx ##
-// *Usage*: `msetnx(key1, val1, key2, val2)` or
-//          `msetnx([key1, val1, key2, val2])` or
-//          `msetnx({key1: val1, key2: val2})`
+// *Usage*: `msetnx(key1, val1, key2, val2, ...)` or
+//          `msetnx([key1, val1, key2, val2, ...])` or
+//          `msetnx({key1: val1, key2: val2, ...})`
 
 // Sets up the `key`/`value` pairs if *all* of the keys **do not exist**.
 // *Returns* `1` if all of the keys were set, `0` if at least one key already existed.
@@ -479,9 +479,37 @@ localRedis.get('foo');        // Returns 4
 
 
 // ## mincr ##
-// *Usage:*
+// *Usage:* `mincr(key1, key2, ...)` or `mincr([key1, key2, ...])`
+
+// Increments multiple keys by 1 or sets a key to 1 if it does not exist.
+
+localRedis.mincr('foo', 'bar');
+localRedis.mget('foo', 'bar');  // Returns [1, 1]
+
+// *Throws* under the same conditions as `incr`.
+
+
+
+
+
 // ## mincrby ##
-// *Usage:*
+// *Usage:* `mincrby(key1, amount1, key2, amount2, ...)` or
+//          `mincrby([key1, amount2, 'key2', amount2, ...])` or
+//          `mincrby({key1: amount1, key2: amount2, ...})`
+
+// Increments multiple keys by amount or sets a key to amount if it
+// does not exist.
+
+localRedis.mincrby('foo', 3, 'bar', 4);
+localRedis.mincrby({id: 4, hits: 1});
+localRedis.mget('foo', 'bar', 'id', 'hits'); // Returns [3, 4, 4, 1]
+
+// Note: This is a *custom*, non-Redis function.
+
+// *Throws* under the same conditions as `incrby`.
+
+
+
 
 // ## decr ##
 // *Usage:*
