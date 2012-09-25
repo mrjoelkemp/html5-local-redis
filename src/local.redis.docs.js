@@ -442,7 +442,7 @@ localRedis.msetnx('foo', 'foobar');               // Returns 0
 // ## incr ##
 // *Usage:* `incr(key)`
 
-// Increments the key by 1.
+// Increments the key by 1 or sets it to 1 if the key does not exist.
 
 localRedis.incr('hits');
 localRedis.get('hits');     // Returns 1
@@ -457,8 +457,23 @@ localRedis.get('hits');     // Returns 1
 // Note: If `key` does not exist, it is given a value of `1`.
 
 
+
 // ## incrby ##
-// *Usage:*
+// *Usage:* `incrby(key, amount)`
+
+// Increments the key by amount or sets the key to amount if it doesn't exist.
+
+localRedis.incrby('foo', 4);
+localRedis.get('foo');        // Returns 4
+
+// *Throws* if the *value* of `key` or `amount` meet **any** of the following conditions:
+
+// * Not an integer or stringified integer (ex: 4 or '4')
+// * The key exists but was set with a value of `null`
+
+// *Side effects:* **None**. `incrby` does not effect key expiry.
+
+// Note: If `key` does not exist, it is given the value of `amount`.
 
 
 
