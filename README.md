@@ -19,7 +19,7 @@ Simply add the following to your main HTML file:
 
 The library serves as a wrapper for `window.localStorage` and polyfills a cookie-based alternative for older browsers.
 
-#### [Read the documentation](http://html5-local-redis.github.com)
+#### [Read the documentation](http://mrjoelkemp.github.com/html5-local-redis)
 
 ***
 
