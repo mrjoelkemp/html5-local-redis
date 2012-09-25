@@ -27,7 +27,7 @@ The library serves as a wrapper for `window.localStorage` and polyfills a cookie
 
 [Grunt.js](https://github.com/cowboy/grunt): Primarily used for minification with Uglify.js.
 
-* `npm install -g grunt`
+* `sudo npm install -g grunt`
 
 [Jasmine](http://pivotal.github.com/jasmine/): Used for unit testing. Navigate to `index.html` to run the test suite.
 
