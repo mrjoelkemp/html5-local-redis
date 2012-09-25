@@ -23,11 +23,11 @@ describe('Incr Commands - ', function () {
                   // it at every function scope.
       for (i = 0; i < baseKeys.length; i++) {
         keys.push(baseKeys[i]);
-        storage._store(baseKeys[i], keysValsObj[baseKeys[i]]);
+
+        storage.set(baseKeys[i], keysValsObj[baseKeys[i]]);
       }
 
       //Attempt to increment
-
       for(i = 0; i < keys.length; i++) {
         // Javascript does late binding, we must call a lambda to bind at the point
         // of iteration.
@@ -44,7 +44,7 @@ describe('Incr Commands - ', function () {
              break;
             default:
               storage.incr(key);
-              expect(storage._retrieve(key)).toBe(parseInt(keysValsObj[key] + 1, 10));
+              expect(storage.get(key)).toBe(parseInt(keysValsObj[key] + 1, 10));
               break;
           }
         })(keys[i]);
@@ -52,15 +52,11 @@ describe('Incr Commands - ', function () {
     });
 
     it('sets the value of a non-existent key to 1', function () {
-      keys = [];
-      for (i = 0; i < baseKeys.length; i++) {
-        keys.push(baseKeys[i]);
-      }
       //Attempt to increment with no value set in storage.
-      for(i = 0; i < keys.length; i++) {
-        storage.incr(keys[i]);
-        expect(storage._retrieve(keys[i])).toBe(parseInt(1, 10));
-      }
+      storage.incr('foo');
+      storage.incr('bar');
+      expect(storage.get('foo')).toBe(parseInt(1, 10));
+      expect(storage.get('bar')).toBe(parseInt(1, 10));
     });
   });
 
@@ -69,7 +65,7 @@ describe('Incr Commands - ', function () {
       keys = [];
       for (i = 0; i < baseKeys.length; i++) {
         keys.push(baseKeys[i]);
-        storage._store(baseKeys[i], keysValsObj[baseKeys[i]]);
+        storage.set(baseKeys[i], keysValsObj[baseKeys[i]]);
       }
 
       amount = Math.ceil(Math.random() * 100);
@@ -86,7 +82,7 @@ describe('Incr Commands - ', function () {
              break;
             default:
               storage.incrby(key, amount);
-              expect(storage._retrieve(key)).toBe( parseInt(keysValsObj[key] + amount, 10) );
+              expect(storage.get(key)).toBe(parseInt(keysValsObj[key] + amount, 10));
               break;
           }
         })(keys[i], amount);
@@ -98,13 +94,13 @@ describe('Incr Commands - ', function () {
       for (i = 0; i < baseKeys.length; i++) {
         keys.push(baseKeys[i]);
       }
-      
+
       amount = Math.ceil(Math.random() * 100);
 
       // Attempt to increment with no value set in storage.
       for(i = 0; i < keys.length; i++) {
         storage.incrby(keys[i], amount);
-        expect(storage._retrieve(keys[i])).toBe(parseInt(amount, 10));
+        expect(storage.get(keys[i])).toBe(parseInt(amount, 10));
       }
     });
 
@@ -117,7 +113,7 @@ describe('Incr Commands - ', function () {
       keysThatDontThrow = [];
       for (i = 0; i < baseKeys.length; i++) {
           keys.push(baseKeys[i]);
-          storage._store(baseKeys[i], keysValsObj[baseKeys[i]]);
+          storage.set(baseKeys[i], keysValsObj[baseKeys[i]]);
           switch(baseKeys[i]) {
             case 'number':
             case 'number1':
@@ -136,7 +132,7 @@ describe('Incr Commands - ', function () {
       // Check that keys that do not throw have the proper values
       for (i in keysThatDontThrow) {
         key = keysThatDontThrow[i];
-        expect(storage._retrieve(key)).toBe(parseInt(keysValsObj[key], 10) + 1);
+        expect(storage.get(key)).toBe(parseInt(keysValsObj[key], 10) + 1);
       }
     });
 
@@ -153,7 +149,7 @@ describe('Incr Commands - ', function () {
       // Check that keys that do not throw have the proper values
       for (i in keys) {
         key = keys[i];
-        expect(storage._retrieve(key)).toBe(1);
+        expect(storage.get(key)).toBe(1);
       }
     });
   });
@@ -165,7 +161,7 @@ describe('Incr Commands - ', function () {
       keysThatDontThrow = [];
       amount = Math.ceil(Math.random() * 100);
       for (i = 0; i < baseKeys.length; i++) {
-          storage._store(baseKeys[i], keysValsObj[baseKeys[i]]);
+          storage.set(baseKeys[i], keysValsObj[baseKeys[i]]);
           switch(baseKeys[i]) {
             case 'number':
             case 'number1':
@@ -186,7 +182,7 @@ describe('Incr Commands - ', function () {
       for (i = 0; i < keysThatDontThrow.length; i += 2) {
         key = keysThatDontThrow[i];
         amount = keysThatDontThrow[i + 1];
-        expect(storage._retrieve(key)).toBe(parseInt(keysValsObj[key], 10) + amount);
+        expect(storage.get(key)).toBe(parseInt(keysValsObj[key], 10) + amount);
       }
     });
 
@@ -203,7 +199,7 @@ describe('Incr Commands - ', function () {
       for (i = 0; i < keys.length; i += 2) {
         key = keys[i];
         amount = keys[i + 1];
-        expect(storage._retrieve(key)).toBe(amount);
+        expect(storage.get(key)).toBe(amount);
       }
     });
   });
