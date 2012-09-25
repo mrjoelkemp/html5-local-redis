@@ -375,21 +375,116 @@ localRedis.get('foo');              // Returns 'foobar'
 
 
 // ## mget ##
+// *Usage:* `mget(key1, key2)` or `mget([key1, key2])`
+
+// Retrieves the value for each passed key.
+// *Returns* a list of values where the index of each value in the list
+// corresponds to the index of the key in the parameter list or array.
+
+localRedis.set('foo', 'bar');
+localRedis.set('bar', 'foobar');
+localRedis.mget('foo', 'bar');    // Returns ['bar', 'foobar']
+
+
+
+
 // ## mset ##
+// *Usage*: `mset(key1, val1, key2, val2)` or
+//          `mset([key1, val1, key2, val2])` or
+//          `mset({key1: val1, key2: val2})`
+
+// Sets up multiple `key`/`value` pairs.
+// *Returns* the calling `localRedis` object so that you can chain
+// commands.
+
+localRedis.mset('foo', 'bar', 'bar', 'foobar');
+localRedis.mget('foo', 'bar');  // Returns ['bar', 'foobar']
+
+// Note: a missing value will get the value `undefined`.
+// This is also a *chainable* command.
+
+// *Side effects*: **None**. Unlike `set`, `mset` won't effect the expiry of the keys.
+// This is according to [Redis' expire spec](http://redis.io/commands/expire).
+
+
+
+
 // ## setnx ##
+// *Usage:* `setnx(key, value)`
+
+// Sets up the `key`/`value` pair if `key` **does not exist**.
+// *Returns* `1` if the key was set, `0` if the key already exists.
+
+localRedis.setnx('foo', 'bar');     // Returns 1
+localRedis.setnx('foo', 'foobar');  // Returns 0
+localRedis.get('foo');              // Returns 'bar'
+
+// *Side effects*: **None**, since the key shouldn't exist, and hence, wouldn't
+// have an expiration.
+
+
+
+
 // ## msetnx ##
+// *Usage*: `msetnx(key1, val1, key2, val2)` or
+//          `msetnx([key1, val1, key2, val2])` or
+//          `msetnx({key1: val1, key2: val2})`
+
+// Sets up the `key`/`value` pairs if *all* of the keys **do not exist**.
+// *Returns* `1` if all of the keys were set, `0` if at least one key already existed.
+
+localRedis.msetnx('foo', 'bar', 'bar', 'foobar'); // Returns 1
+localRedis.msetnx('foo', 'foobar');               // Returns 0
+
+
+
 
 // ## incr ##
+// *Usage:* `incr(key)`
+
+// Increments the key by 1.
+
+localRedis.incr('hits');
+localRedis.get('hits');     // Returns 1
+
+// *Throws* if the *value* of `key` meets **any** of the following conditions:
+
+// * Not an integer or stringified integer (ex: 4 or '4')
+// * The key exists but was set with a value of `null`
+
+// *Side effects:* **None**. `incr` does not effect key expiry.
+
+// Note: If `key` does not exist, it is given a value of `1`.
+
+
 // ## incrby ##
+// *Usage:*
+
+
+
+
 // ## mincr ##
+// *Usage:*
 // ## mincrby ##
+// *Usage:*
+
 // ## decr ##
+// *Usage:*
 // ## decrby ##
+// *Usage:*
 // ## mdecr ##
+// *Usage:*
 // ## mdecrby ##
+// *Usage:*
 
 // ## append ##
+// *Usage:*
+
 // ## strlen ##
+// *Usage:*
 
 // ## setex ##
+// *Usage:*
+
 // ## psetex ##
+// *Usage:*
