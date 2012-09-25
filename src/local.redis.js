@@ -285,7 +285,7 @@
   // Native Storage Methods
   ///////////////////////////
 
-  localRedis.setItem =  function (key, value) {
+  localRedis.setItem = function (key, value) {
     storage.setItem(key, value);
     fireStorageChangedEvent();
   },
