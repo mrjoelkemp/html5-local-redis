@@ -9,6 +9,11 @@
 // License: MIT.
 // ***
 
+// ## Downloads ##
+
+// [Download .zip](https://github.com/mrjoelkemp/html5-local-redis/zipball/master) |
+// [Download .tar.gz](https://github.com/mrjoelkemp/html5-local-redis/tarball/master)
+
 // ## Notes ##
 
 // #### Polyfill for IE8
