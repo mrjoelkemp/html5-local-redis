@@ -597,6 +597,12 @@ localRedis.setex('foo', 10, 'bar'); // Expires 'foo' in 10s
 
 
 // ## psetex ##
-// *Usage:*
+// *Usage:* `psetex(key, msDelay, value)`
+
+// Similar to `setex` except the delay is in milliseconds.
+
+localRedis.psetex('foo', 10, 'bar');  // Expires 'foo' in 10 milliseconds
+
+// *Throws* if `msDelay` is not a valid number.
 
 
