@@ -949,19 +949,21 @@
 
   // Set key to hold the string value and set key to
   // expire after a given number of seconds.
-  localRedis.setex = function (key, value, delay) {
+  // Throws if the delay is not valid
+  localRedis.setex = function (key, delay, value) {
     if (arguments.length !== 3) throw generateError(0);
 
-    store(key, value);
+    this.set(key, value);
     this.expire(key, delay);
   };
 
   // Set key to hold the string value and set key to
   // expire after a given number of milliseconds.
-  localRedis.psetex = function (key, value, delay) {
+  // Throws if the delay is not valid
+  localRedis.psetex = function (key, delay, value) {
     if (arguments.length !== 3) throw generateError(0);
 
-    store(key, value);
+    this.set(key, value);
     this.pexpire(key, delay);
   };
 

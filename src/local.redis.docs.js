@@ -9,6 +9,11 @@
 // License: MIT.
 // ***
 
+// ## Downloads ##
+
+// [Download .zip](https://github.com/mrjoelkemp/html5-local-redis/zipball/master) |
+// [Download .tar.gz](https://github.com/mrjoelkemp/html5-local-redis/tarball/master)
+
 // ## Notes ##
 
 // #### Polyfill for IE8
@@ -375,7 +380,7 @@ localRedis.get('foo');              // Returns 'foobar'
 
 
 // ## mget ##
-// *Usage:* `mget(key1, key2)` or `mget([key1, key2])`
+// *Usage:* `mget(key1, key2, ...)` or `mget([key1, key2, ...])`
 
 // Retrieves the value for each passed key.
 // *Returns* a list of values where the index of each value in the list
@@ -389,9 +394,9 @@ localRedis.mget('foo', 'bar');    // Returns ['bar', 'foobar']
 
 
 // ## mset ##
-// *Usage*: `mset(key1, val1, key2, val2)` or
-//          `mset([key1, val1, key2, val2])` or
-//          `mset({key1: val1, key2: val2})`
+// *Usage*: `mset(key1, val1, key2, val2, ...)` or
+//          `mset([key1, val1, key2, val2, ...])` or
+//          `mset({key1: val1, key2: val2, ...})`
 
 // Sets up multiple `key`/`value` pairs.
 // *Returns* the calling `localRedis` object so that you can chain
@@ -426,9 +431,9 @@ localRedis.get('foo');              // Returns 'bar'
 
 
 // ## msetnx ##
-// *Usage*: `msetnx(key1, val1, key2, val2)` or
-//          `msetnx([key1, val1, key2, val2])` or
-//          `msetnx({key1: val1, key2: val2})`
+// *Usage*: `msetnx(key1, val1, key2, val2, ...)` or
+//          `msetnx([key1, val1, key2, val2, ...])` or
+//          `msetnx({key1: val1, key2: val2, ...})`
 
 // Sets up the `key`/`value` pairs if *all* of the keys **do not exist**.
 // *Returns* `1` if all of the keys were set, `0` if at least one key already existed.
@@ -451,6 +456,7 @@ localRedis.get('hits');     // Returns 1
 
 // * Not an integer or stringified integer (ex: 4 or '4')
 // * The key exists but was set with a value of `null`
+// * An increment of the value exceeds the maximum number size for JavaScript.
 
 // *Side effects:* **None**. `incr` does not effect key expiry.
 
@@ -479,27 +485,129 @@ localRedis.get('foo');        // Returns 4
 
 
 // ## mincr ##
-// *Usage:*
+// *Usage:* `mincr(key1, key2, ...)` or `mincr([key1, key2, ...])`
+
+// Increments multiple keys by 1 or sets a key to 1 if it does not exist.
+
+localRedis.mincr('foo', 'bar');
+localRedis.mget('foo', 'bar');  // Returns [1, 1]
+
+// *Throws* under the same conditions as `incr`.
+
+
+
+
+
 // ## mincrby ##
-// *Usage:*
+// *Usage:* `mincrby(key1, amount1, key2, amount2, ...)` or
+//          `mincrby([key1, amount2, 'key2', amount2, ...])` or
+//          `mincrby({key1: amount1, key2: amount2, ...})`
+
+// Increments multiple keys by amount or sets a key to amount if it
+// does not exist.
+
+localRedis.mincrby('foo', 3, 'bar', 4);
+localRedis.mincrby({id: 4, hits: 1});
+localRedis.mget('foo', 'bar', 'id', 'hits'); // Returns [3, 4, 4, 1]
+
+// Note: This is a *custom*, non-Redis function.
+
+// *Throws* under the same conditions as `incrby`.
+
+
+
 
 // ## decr ##
-// *Usage:*
+// *Usage:* `decr(key)`
+
+// Decrements a key by `1` or sets its value to `-1` if the key does not exist.
+// *Returns* the value of the key after the decrement.
+
+localRedis.set('foo', 1);
+localRedis.decr('foo');     // Returns 0
+localRedis.decr('bar');     // Returns -1
+
+
+// *Throws* under the same conditions as `incr`.
+
+
+
 // ## decrby ##
-// *Usage:*
+// *Usage:* `decrby(key, amount)`
+
+// Coming soon.
+
+
 // ## mdecr ##
-// *Usage:*
+// *Usage:* `mdecr(key1, key2, ...)` or `mdecr([key1, key2, ...])`
+
+// Coming soon.
+
+
+
 // ## mdecrby ##
-// *Usage:*
+// *Usage:* `mdecrby(key1, amount1, key2, amount2, ...)` or
+//          `mdecrby([key1, amount1, key2, amount2, ...])` or
+//          `mdecrby({key1: amount1, key2: amount2, ...})`
+
+// Coming soon.
+
+
+
 
 // ## append ##
-// *Usage:*
+// *Usage:* `append(key, value)`
+
+// Appends `value` at the end of the `key`'s string value or sets
+// the key's value to `value` if the key does not exist.
+// *Returns* the length of the string after appending or the original
+// if the key's value was not a string.
+
+localRedis.set('foo', 'bar');
+localRedis.append('foo', 'car');  // Returns 6
+localRedis.get('foo');            // Returns 'barcar'
+localRedis.append('bar', 'car');  // Returns 3
+
+
+
 
 // ## strlen ##
-// *Usage:*
+// *Usage:* `strlen(key)`
+
+// Retrieves the length of `key`'s string value.
+// *Returns* the length of the value or 0 if the key does not exist.
+
+localRedis.set('foo', 'bar');
+localRedis.strlen('foo');     // Returns 3
+localRedis.strlen('bar');     // Returns 0
+
+
+// *Throws* if the value is not a string.
+
+
 
 // ## setex ##
-// *Usage:*
+// *Usage:* `setex(key, secondsDelay, value)`
+
+// Sets the `key` to `value` and expires the key after `secondsDelay`.
+
+localRedis.setex('foo', 10, 'bar'); // Expires 'foo' in 10s
+
+// Note: This is equivalent to running a `set(key, value)` followed by
+// a `expire(key, secondsDelay)`.
+
+// *Throws* if `secondsDelay` is not a valid number.
+
+
+
 
 // ## psetex ##
-// *Usage:*
+// *Usage:* `psetex(key, msDelay, value)`
+
+// Similar to `setex` except the delay is in milliseconds.
+
+localRedis.psetex('foo', 10, 'bar');  // Expires 'foo' in 10 milliseconds
+
+// *Throws* if `msDelay` is not a valid number.
+
+

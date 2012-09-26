@@ -308,14 +308,14 @@ describe('Strings API', function () {
 
   describe('setex', function () {
     it('sets a key to a value and expires that key with a delay', function () {
-      storage.setex('foo', 'bar', 1 / 1000);
+      storage.setex('foo', 1 / 1000, 'bar');
       expect(storage.getItem('foo')).toBe('bar');
       expect(storage.expires('foo')).toBeTruthy();
       storage.persist('foo');
     });
 
     it('throws for anything but 3 arguments', function () {
-      expect(function () { storage.setex('foo', 'bar', 6, 'car'); }).toThrow();
+      expect(function () { storage.setex('foo', 6, 'bar', 'car'); }).toThrow();
       expect(function () { storage.setex('foo', 'bar'); }).toThrow();
       expect(function () { storage.setex(); }).toThrow();
     });
@@ -328,7 +328,7 @@ describe('Strings API', function () {
   describe('psetex', function () {
     it('sets a key to a value and expires that key after delay milliseconds', function () {
       runs(function () {
-        storage.psetex('foo', 'bar', 5);
+        storage.psetex('foo', 5, 'bar');
       });
 
       waits(6);
@@ -338,7 +338,7 @@ describe('Strings API', function () {
     });
 
     it('throws for anything but 3 arguments', function () {
-      expect(function () { storage.psetex('foo', 'bar', 6, 'car')}).toThrow();
+      expect(function () { storage.psetex('foo', 6, 'bar', 'car')}).toThrow();
       expect(function () { storage.psetex('foo', 'bar')}).toThrow();
       expect(function () { storage.psetex()}).toThrow();
     });
