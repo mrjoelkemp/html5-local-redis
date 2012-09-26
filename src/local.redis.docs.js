@@ -451,6 +451,7 @@ localRedis.get('hits');     // Returns 1
 
 // * Not an integer or stringified integer (ex: 4 or '4')
 // * The key exists but was set with a value of `null`
+// * An increment of the value exceeds the maximum number size for JavaScript.
 
 // *Side effects:* **None**. `incr` does not effect key expiry.
 
@@ -512,22 +513,90 @@ localRedis.mget('foo', 'bar', 'id', 'hits'); // Returns [3, 4, 4, 1]
 
 
 // ## decr ##
-// *Usage:*
+// *Usage:* `decr(key)`
+
+// Decrements a key by `1` or sets its value to `-1` if the key does not exist.
+// *Returns* the value of the key after the decrement.
+
+localRedis.set('foo', 1);
+localRedis.decr('foo');     // Returns 0
+localRedis.decr('bar');     // Returns -1
+
+
+// *Throws* under the same conditions as `incr`.
+
+
+
 // ## decrby ##
-// *Usage:*
+// *Usage:* `decrby(key, amount)`
+
+// Coming soon.
+
+
 // ## mdecr ##
-// *Usage:*
+// *Usage:* `mdecr(key1, key2, ...)` or `mdecr([key1, key2, ...])`
+
+// Coming soon.
+
+
+
 // ## mdecrby ##
-// *Usage:*
+// *Usage:* `mdecrby(key1, amount1, key2, amount2, ...)` or
+//          `mdecrby([key1, amount1, key2, amount2, ...])` or
+//          `mdecrby({key1: amount1, key2: amount2, ...})`
+
+// Coming soon.
+
+
+
 
 // ## append ##
-// *Usage:*
+// *Usage:* `append(key, value)`
+
+// Appends `value` at the end of the `key`'s string value or sets
+// the key's value to `value` if the key does not exist.
+// *Returns* the length of the string after appending or the original
+// if the key's value was not a string.
+
+localRedis.set('foo', 'bar');
+localRedis.append('foo', 'car');  // Returns 6
+localRedis.get('foo');            // Returns 'barcar'
+localRedis.append('bar', 'car');  // Returns 3
+
+
+
 
 // ## strlen ##
-// *Usage:*
+// *Usage:* `strlen(key)`
+
+// Retrieves the length of `key`'s string value.
+// *Returns* the length of the value or 0 if the key does not exist.
+
+localRedis.set('foo', 'bar');
+localRedis.strlen('foo');     // Returns 3
+localRedis.strlen('bar');     // Returns 0
+
+
+// *Throws* if the value is not a string.
+
+
 
 // ## setex ##
-// *Usage:*
+// *Usage:* `setex(key, secondsDelay, value)`
+
+// Sets the `key` to `value` and expires the key after `secondsDelay`.
+
+localRedis.setex('foo', 10, 'bar'); // Expires 'foo' in 10s
+
+// Note: This is equivalent to running a `set(key, value)` followed by
+// a `expire(key, secondsDelay)`.
+
+// *Throws* if `secondsDelay` is not a valid number.
+
+
+
 
 // ## psetex ##
 // *Usage:*
+
+
