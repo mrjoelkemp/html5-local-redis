@@ -29,11 +29,15 @@ The library serves as a wrapper for `window.localStorage` and polyfills a cookie
 
 * `sudo npm install -g grunt`
 
-[Jasmine](http://pivotal.github.com/jasmine/): Used for unit testing. Navigate to `index.html` to run the test suite.
+[Jasmine](http://pivotal.github.com/jasmine/):
+
+* Used for unit testing. Navigate to `index.html` to run the test suite.
 
 [Docco](https://github.com/jashkenas/docco): Documentation
 
 * `sudo npm install -g docco`
+
+**Alternatively, you can install all of the tools using `npm install` in the root directory.**
 
 #### Atomicity and Isolation
 
@@ -41,8 +45,8 @@ HTML5 Storage is not like Redis in many ways. Namely, HTML5 Storage rarely needs
 
 Albeit rare, race conditions *can* occur. We've given close thought to locking solutions, but practical solutions involve an increased number of reads/writes per command. Due to the fact that web storage is disk-based, these I/O operations are blocking.
 
-A practical solution involves either locking a row (by adding lock data with a hardcoded format that each process will recognize) and having a 
-check, set, check behavior for each process. This comes at the expense of two writes, plus the complexity for storing lock data. 
+A practical solution involves either locking a row (by adding lock data with a hardcoded format that each process will recognize) and having a
+check, set, check behavior for each process. This comes at the expense of two writes, plus the complexity for storing lock data.
 
 #### Progress
 
