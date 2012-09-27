@@ -619,18 +619,37 @@ localRedis.psetex('foo', 10, 'bar');  // Expires 'foo' in 10 milliseconds
 // ***
 
 
+
 // ## lpush ##
-// *Usage:* `lpush(key, value)` or `lpush(key, val1, val2, ...)` or `lpush(key, [val1, val2, ...])`
+// *Usage:* `lpush(key, val)` or `lpush(key, val1, val2, ...)` or `lpush(key, [val1, val2, ...])`
 
 // Inserts all of the values at the head of the list stored at `key`.
 // An empty array will be assumed as the value at `key` if `key` does not exist.
 // *Returns* the length of the list post insertion.
 
 localRedis.set('foo', [1, 2, 3]);
-localRedis.lpush('foo', 4, 5, 6);
-localRedis.get('foo');    // Returns [6, 5, 4, 1, 2, 3]
+localRedis.lpush('foo', 4, 5, 6); // Returns 6
+localRedis.get('foo');            // Returns [6, 5, 4, 1, 2, 3]
 
 // Note: Adds the values outward in. So the values `a b c` will be inserted as `c b a`.
 
 // *Throws* if the existing value stored at `key` is not a list.
+
+
+
+
+// ## lpushx ##
+// *Usage:* `lpushx(key, val)` or `lpushx(key, val1, val2, ...)` or `lpushx(key, [val1, val2, ...])`
+
+// Inserts value at the head of the list value stored at `key`,
+// *iff* `key` already exists and has a list value.
+// *Returns* the length of the post insertion list, or `0` if the key does not exist or contain a list value.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.lpushx('foo', 4, 5, 6);  // Returns 6
+localRedis.get('foo');              // Returns [6, 5, 4, 1, 2, 3]
+localRedis.lpushx('bar', 3);        // Returns 0
+
+
+
 

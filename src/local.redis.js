@@ -1001,7 +1001,7 @@
 
     // The caller supplied an array as the second param
     } else if (value instanceof Array) {
-      values = value;
+      values = value.reverse();
     } else {
       values = [value];
     }
@@ -1016,5 +1016,22 @@
     return val.length;
   };
 
+  // Inserts value at the head of the list value stored at key,
+  // only if key already exists and holds a list.
+  // Returns:   the length of the post-insertion list
+  //            0 if the key does not contain a value
+  localRedis.lpushx = function (key, value) {
+    var val       = retrieve(key),
+        keyExists = exists(key),
+        isArray   = val instanceof Array,
+        values    = [];
+
+    if (keyExists && isArray) {
+      values = Array.prototype.splice.call(arguments, 1);
+      return this.lpush(key, values);
+    } else {
+      return 0;
+    }
+  };
 
 })(window, document);
