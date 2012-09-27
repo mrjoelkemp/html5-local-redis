@@ -996,9 +996,12 @@
       key = arguments[0];
 
       // Args should be added in LIFO fashion
-
       values = Array.prototype.slice.call(arguments, 1);
       values.reverse();
+
+    // The caller supplied an array as the second param
+    } else if (value instanceof Array) {
+      values = value;
     } else {
       values = [value];
     }
