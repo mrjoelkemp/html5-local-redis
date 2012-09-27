@@ -160,7 +160,8 @@
         'delay not convertible to a number',
         'source and destination objects are the same',
         'no such key',
-        'missing storage context'
+        'missing storage context',
+        'value is not an array'
       ],
 
       generateError = function (type /*, functionName, errorType */) {
@@ -968,5 +969,49 @@
     this.set(key, value);
     this.pexpire(key, delay);
   };
+
+  ///////////////////////////
+  // List Commands
+  ///////////////////////////
+
+  // Insert all the specified values at the head of the list stored at key.
+  // Note:    If key does not exist, it is created as empty list
+  //          before performing the push operations.
+  // Throws:  When key holds a value that is not a list, an error is returned.
+  // Returns: The length of the list after the push
+  // Usage:   lpush(key, val1) or lpush(key, val1, val2, ...)
+  localRedis.lpush = function (key, value) {
+    var val,
+        values = [],
+        i, end;
+
+    if (arguments.length < 2) throw generateError(0);
+
+    val = retrieve(key);
+
+    if (exists(key) && ! (val instanceof Array)) throw generateError(10);
+
+    // The caller supplied splats
+    if (arguments.length > 2) {
+      key = arguments[0];
+
+      // Args should be added in LIFO fashion
+
+      values = Array.prototype.slice.call(arguments, 1);
+      values.reverse();
+    } else {
+      values = [value];
+    }
+
+    val = val || [];
+
+    // Add the supplied values to the front of the key's list value
+    val = values.concat(val);
+
+    store(key, val);
+
+    return val.length;
+  };
+
 
 })(window, document);
