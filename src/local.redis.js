@@ -85,6 +85,8 @@
   var storage = window.localStorage,
       localRedis = {};
 
+  window.localRedis = localRedis;
+
   ///////////////////////////
   // Utilities
   ///////////////////////////
@@ -966,7 +968,5 @@
     this.set(key, value);
     this.pexpire(key, delay);
   };
-
-  window.localRedis = localRedis;
 
 })(window, document);
