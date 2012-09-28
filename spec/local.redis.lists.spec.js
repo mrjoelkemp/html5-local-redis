@@ -55,4 +55,41 @@ describe('Lists API', function () {
     });
   });
 
+  describe('rpush', function () {
+    it('adds the value to the front of the key\'s list', function () {
+      storage.set('foo', [1, 2]);
+      storage.rpush('foo', 3);
+      expect(storage.get('foo')).toEqual([1, 2, 3]);
+    });
+
+    it('adds the values to the back of the list', function () {
+      storage.set('foo', [1, 2]);
+      storage.rpush('foo', 3, 4);
+      expect(storage.get('foo')).toEqual([1, 2, 3, 4]);
+    });
+
+    it('adds the values passed as an array', function () {
+      storage.set('foo', [1, 2]);
+      storage.rpush('foo', [3, 4]);
+      expect(storage.get('foo')).toEqual([1, 2, 3, 4]);
+    });
+  });
+
+  describe('rpushx', function () {
+    it('inserts the values when the key exists and has a list value', function () {
+      storage.set('foo', [1, 2]);
+      expect(storage.rpushx('foo', 3)).toBe(3);
+      expect(storage.get('foo')).toEqual([1, 2, 3]);
+    });
+
+    it('returns 0 if the key does not exist', function () {
+      expect(storage.rpushx('foo', 3)).toBe(0);
+    });
+
+    it('returns 0 if the key does not have a list value', function () {
+      storage.set('foo', 'bar');
+      expect(storage.rpushx('foo', 2)).toBe(0);
+    });
+  });
+
 });

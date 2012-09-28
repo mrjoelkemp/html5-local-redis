@@ -1050,28 +1050,36 @@
         i, l,
         val = retrieve(key);
 
-    if (exists(val) && ! (val instanceof Array)) throw generateError(10);
+    if (exists(key) && ! (val instanceof Array)) throw generateError(10);
 
     if (arguments.length > 2) {
       values = Array.prototype.splice.call(arguments, 1);
 
+    // If value is already an array, pass it along
+    } else if (value instanceof Array) {
+      values = value;
+
     // Convert single values to an array to use concat
-    } else if (! (value instanceof Array)) {
+    } else {
       values = [value];
     }
 
     val = val || [];
-
-    val.concat(values);
+    val = val.concat(values);
     store(key, val);
 
     return val.length;
   };
 
+  // Inserts the value(s) at the tail of the list stored at key,
+  // only if key already exists and holds a list.
+  // Returns:   the length of the post-insertion list
+  //            0 if the key does not contain a value
   localRedis.rpushx = function (key, value) {
     if(arguments.length < 2) throw generateError(0);
-    return pushx(key, false, Array.prototype.splice.call(arguments, 1));
+    return pushx.call(this, key, false, Array.prototype.splice.call(arguments, 1));
   };
+
 
   localRedis.lrange = function (key, start, stop) {
 

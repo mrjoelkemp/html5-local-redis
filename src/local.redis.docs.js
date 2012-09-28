@@ -641,14 +641,45 @@ localRedis.get('foo');            // Returns [6, 5, 4, 1, 2, 3]
 // ## lpushx ##
 // *Usage:* `lpushx(key, val)` or `lpushx(key, val1, val2, ...)` or `lpushx(key, [val1, val2, ...])`
 
-// Inserts value at the head of the list value stored at `key`,
+// Inserts values at the head of the list value stored at `key`,
 // *iff* `key` already exists and has a list value.
-// *Returns* the length of the post insertion list, or `0` if the key does not exist or contain a list value.
+// *Returns* the length of the post insertion list,
+// or `0` if the key does not exist or contain a list value.
 
 localRedis.set('foo', [1, 2, 3]);
 localRedis.lpushx('foo', 4, 5, 6);  // Returns 6
 localRedis.get('foo');              // Returns [6, 5, 4, 1, 2, 3]
 localRedis.lpushx('bar', 3);        // Returns 0
+
+
+// ## rpush ##
+// *Usage:* `rpush(key, val)` or `rpush(key, val1, val2, ...)` or `rpush(key, [val1, val2, ...])`
+
+// Inserts/appends all of the values at the tail of the list stored at `key`.
+// An empty array will be assumed as the value at `key` if `key` does not exist.
+// *Returns* the length of the list post insertion.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.rpush('foo', 4, 5, 6); // Returns 6
+localRedis.get('foo');            // Returns [1, 2, 3, 4, 5, 6]
+
+// *Throws* if the existing value stored at `key` is not a list.
+
+
+
+
+// ## rpushx ##
+// *Usage:* `rpushx(key, val)` or `rpushx(key, val1, val2, ...)` or `rpushx(key, [val1, val2, ...])`
+
+// Inserts values at the tail of the list value stored at `key`,
+// *iff* `key` already exists and has a list value.
+// *Returns* the length of the post insertion list,
+// or `0` if the key does not exist or contain a list value.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.rpushx('foo', 4, 5, 6);  // Returns 6
+localRedis.get('foo');              // Returns [1, 2, 3, 4, 5, 6]
+localRedis.rpushx('bar', 3);        // Returns 0
 
 
 
