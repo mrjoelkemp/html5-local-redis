@@ -981,13 +981,11 @@
   // Returns: The length of the list after the push
   // Usage:   lpush(key, val1) or lpush(key, val1, val2, ...)
   localRedis.lpush = function (key, value) {
-    var val,
-        values = [],
-        i, end;
-
     if (arguments.length < 2) throw generateError(0);
 
-    val = retrieve(key);
+    var val     = retrieve(key),
+        values  = [],
+        i, end;
 
     if (exists(key) && ! (val instanceof Array)) throw generateError(10);
 
@@ -1016,22 +1014,71 @@
     return val.length;
   };
 
-  // Inserts value at the head of the list value stored at key,
+  // Helper for pushx type commands (lpushx and rpushx)
+  var pushx = function (key, left, values) {
+    var val       = retrieve(key),
+        keyExists = exists(key),
+        isArray   = val instanceof Array,
+        length;
+
+    if (keyExists && isArray) {
+      length = left ? this.lpush(key, values) : this.rpush(key, values);
+      return length;
+    }
+
+    return 0;
+  };
+
+  // Inserts the value(s) at the head of the list stored at key,
   // only if key already exists and holds a list.
   // Returns:   the length of the post-insertion list
   //            0 if the key does not contain a value
   localRedis.lpushx = function (key, value) {
-    var val       = retrieve(key),
-        keyExists = exists(key),
-        isArray   = val instanceof Array,
-        values    = [];
+    if (arguments.length < 2) throw generateError(0);
 
-    if (keyExists && isArray) {
+    return pushx.call(this, key, true, Array.prototype.splice.call(arguments, 1));
+  };
+
+  // Inserts the value(s) at the tail of the list stored at key
+  // Returns: the length of the list post-insertion
+  // Note:    defaults the value of a non-existent key to the empty list
+  // Usage:   rpush(key, val) or rpush(key, val1, val2, ...) or rpush(key, [val1, val2, ...])
+  localRedis.rpush = function (key, value) {
+    if (arguments.length < 2) throw generateError(0);
+
+    var values,
+        i, l,
+        val = retrieve(key);
+
+    if (exists(val) && ! (val instanceof Array)) throw generateError(10);
+
+    if (arguments.length > 2) {
       values = Array.prototype.splice.call(arguments, 1);
-      return this.lpush(key, values);
-    } else {
-      return 0;
+
+    // Convert single values to an array to use concat
+    } else if (! (value instanceof Array)) {
+      values = [value];
     }
+
+    val = val || [];
+
+    val.concat(values);
+    store(key, val);
+
+    return val.length;
+  };
+
+  localRedis.rpushx = function (key, value) {
+    if(arguments.length < 2) throw generateError(0);
+    return pushx(key, false, Array.prototype.splice.call(arguments, 1));
+  };
+
+  localRedis.lrange = function (key, start, stop) {
+
+  };
+
+  localRedis.lrem = function (key, count, value) {
+
   };
 
 })(window, document);
