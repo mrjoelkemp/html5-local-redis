@@ -909,10 +909,35 @@
   };
 
   // decr
+  localRedis.decr = function (key) {
+    if (arguments.length !== 1) throw generateError(0);
+    this.incrby(key, -1);
+  };
 
   // decrby
+  localRedis.mdecr = function (keys) {
+    var i, l;
+    keys = (keys instanceof Array) ? keys : arguments;
+    for(i = 0, l = keys.length; i < l; i++) {
+      this.decr(keys[i]);
+    }
+  };
+
+  // decrby
+  localRedis.decrby = function (key, amount) {
+    if (arguments.length !== 2) throw generateError(0);
+    this.incrby(key, -amount);
+  };
 
   // mdecrby
+  localRedis.mdecrby = function (keysAmounts) {
+    // 'arguments' is not a canonical Array. The slice call makes it one.
+    // We should probably do this for all functions that do this type of transformation.
+    keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : Array.prototype.slice.call(arguments);
+    this.mincrby(keysAmounts.map(function (elem, index) { 
+      return (!(index & 0x1))? elem : -elem; 
+    }));
+  };
 
   // Appends the value at the end of the string
   // Returns: the length of the string after appending
