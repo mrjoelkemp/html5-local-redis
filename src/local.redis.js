@@ -1080,6 +1080,19 @@
     return pushx.call(this, key, false, Array.prototype.splice.call(arguments, 1));
   };
 
+  // Returns:   the length of the list value of key
+  //            0 if the key does not exist.
+  // Throws when the value at key is not a list.
+  localRedis.llen = function (key) {
+    if(arguments.length < 1) throw generateError(0);
+    var val = retrieve(key);
+
+    if (! exists(key)) return 0;
+
+    if(! (val instanceof Array)) throw generateError(0);
+
+    return val.length;
+  };
 
   localRedis.lrange = function (key, start, stop) {
 

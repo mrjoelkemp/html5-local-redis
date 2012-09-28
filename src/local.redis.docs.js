@@ -682,5 +682,16 @@ localRedis.get('foo');              // Returns [1, 2, 3, 4, 5, 6]
 localRedis.rpushx('bar', 3);        // Returns 0
 
 
+// ## llen ##
+// *Usage:* `llen(key)`
 
+// Retrieves the length of the list value stored at `key`.
+// *Returns* the number of elements in the list value or `0`
+// if the key does not exist.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.llen('foo');     // Returns 3
+localRedis.llen('bar');     // Returns 0
+
+// *Throws* if the value at `key` is not a list.
 

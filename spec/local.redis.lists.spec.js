@@ -92,4 +92,19 @@ describe('Lists API', function () {
     });
   });
 
+  describe('llen', function () {
+    it('returns the length of the list stored at key', function () {
+      storage.set('foo', [1, 2, 3]);
+      expect(storage.llen('foo')).toBe(3);
+    });
+
+    it('returns 0 if the key doesn\'t exist', function () {
+      expect(storage.llen('foo')).toBe(0);
+    });
+
+    it('throws if the value at key is not a list', function () {
+      storage.set('foo', 'bar');
+      expect(function () { storage.llen('foo'); }).toThrow();
+    });
+  });
 });
