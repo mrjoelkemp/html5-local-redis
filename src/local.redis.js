@@ -931,12 +931,15 @@
 
   // mdecrby
   localRedis.mdecrby = function (keysAmounts) {
+    var oddIndexCallback = function (elem, index) {
+      // Return the negation of odd-index elements on the list
+      // For mdecrby, we expect the input to be ['elem1', value1, 'elem2', value2, ...,]
+      return (! (index & 0x1)) ? elem : -elem;
+    }
     // 'arguments' is not a canonical Array. The slice call makes it one.
     // We should probably do this for all functions that do this type of transformation.
     keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : Array.prototype.slice.call(arguments);
-    this.mincrby(keysAmounts.map(function (elem, index) { 
-      return (!(index & 0x1))? elem : -elem; 
-    }));
+    this.mincrby(keysAmounts.map(oddIndexCallback));
   };
 
   // Appends the value at the end of the string
