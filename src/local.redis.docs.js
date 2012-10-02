@@ -506,7 +506,7 @@ localRedis.mget('foo', 'bar');  // Returns [1, 1]
 // does not exist.
 
 localRedis.mincrby('foo', 3, 'bar', 4);
-localRedis.mincrby(['id': 4, 'hits': 1});
+localRedis.mincrby(['id', 4, 'hits', 1]);
 localRedis.mget('foo', 'bar', 'id', 'hits'); // Returns [3, 4, 4, 1]
 
 // Note: This is a *custom*, non-Redis function.
@@ -530,7 +530,7 @@ localRedis.decr('bar');     // Returns -1
 // *Throws* under the same conditions as `incr`.
 
 
-
+//******************************************************************
 // ## decr ##
 // *Usage:* `decr(key)`
 
@@ -591,14 +591,14 @@ localRedis.mget('foo', 'bar');  // Returns [-1, -1]
 // does not exist.
 
 localRedis.mdecrby('foo', 3, 'bar', 4);
-localRedis.mdecrby(['id': 4, 'hits': 1]);
+localRedis.mdecrby(['id', 4, 'hits', 1]);
 localRedis.mget('foo', 'bar', 'id', 'hits'); // Returns [-3, -4, -4, -1]
 
 // Note: This is a *custom*, non-Redis function.
 
 // *Throws* under the same conditions as `decrby`.
 
-
+// *************************************************************
 
 
 // ## append ##
