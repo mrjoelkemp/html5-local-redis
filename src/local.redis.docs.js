@@ -530,7 +530,8 @@ localRedis.decr('bar');     // Returns -1
 // *Throws* under the same conditions as `incr`.
 
 
-//******************************************************************
+
+
 // ## decr ##
 // *Usage:* `decr(key)`
 
@@ -598,7 +599,7 @@ localRedis.mget('foo', 'bar', 'id', 'hits'); // Returns [-3, -4, -4, -1]
 
 // *Throws* under the same conditions as `decrby`.
 
-// *************************************************************
+
 
 
 // ## append ##
