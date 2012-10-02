@@ -530,7 +530,6 @@ localRedis.decr('bar');     // Returns -1
 // *Throws* under the same conditions as `incr`.
 
 
-// ****************************----------
 
 // ## decr ##
 // *Usage:* `decr(key)`
@@ -538,7 +537,7 @@ localRedis.decr('bar');     // Returns -1
 // Decrements the key by 1 or sets it to -1 if the key does not exist.
 
 localRedis.decr('hits');
-localRedis.get('hits');     // Returns 1
+localRedis.get('hits');     // Returns -1
 
 // *Throws* if the *value* of `key` meets **any** of the following conditions:
 
@@ -548,7 +547,7 @@ localRedis.get('hits');     // Returns 1
 
 // *Side effects:* **None**. `decr` does not effect key expiry.
 
-// Note: If `key` does not exist, it is given a value of `1`.
+// Note: If `key` does not exist, it is given a value of `-1`.
 
 
 
@@ -567,7 +566,7 @@ localRedis.get('foo');        // Returns 4
 
 // *Side effects:* **None**. `decrby` does not effect key expiry.
 
-// Note: If `key` does not exist, it is given the value of `amount`.
+// Note: If `key` does not exist, it is given the value of `-amount`.
 
 
 
@@ -575,27 +574,25 @@ localRedis.get('foo');        // Returns 4
 // ## mdecr ##
 // *Usage:* `mdecr(key1, key2, ...)` or `mdecr([key1, key2, ...])`
 
-// Decrements multiple keys by 1 or sets a key to 1 if it does not exist.
+// Decrements multiple keys by 1 or sets a key to -1 if it does not exist.
 
 localRedis.mdecr('foo', 'bar');
-localRedis.mget('foo', 'bar');  // Returns [1, 1]
+localRedis.mget('foo', 'bar');  // Returns [-1, -1]
 
 // *Throws* under the same conditions as `mdecr`.
 
-
-// ****************************-----------
 
 
 // ## mdecrby ##
 // *Usage:* `mdecrby(key1, amount1, key2, amount2, ...)` or
 //          `mdecrby([key1, amount1, key2, amount2, ...])`
 
-// Decrement multiple keys by amount or sets a key to amount if it
+// Decrement multiple keys by amount or sets a key to `-amount` if it
 // does not exist.
 
 localRedis.mdecrby('foo', 3, 'bar', 4);
 localRedis.mdecrby(['id': 4, 'hits': 1]);
-localRedis.mget('foo', 'bar', 'id', 'hits'); // Returns [3, 4, 4, 1]
+localRedis.mget('foo', 'bar', 'id', 'hits'); // Returns [-3, -4, -4, -1]
 
 // Note: This is a *custom*, non-Redis function.
 
