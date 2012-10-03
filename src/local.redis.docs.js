@@ -742,3 +742,27 @@ localRedis.llen('bar');     // Returns 0
 
 // *Throws* if the value at `key` is not a list.
 
+
+// ## lrem ##
+// *Usage:* `lrem(key, count, value)`
+
+// Removes the first count ocurrences of value in the list
+// stored at key.
+// *Returns* the number of removed elements or `0` when the key does not exist
+
+// * If `count > 0`, `lrem` removes from start to finish.
+localRedis.set('foo', [1, 1, 2, 1]);
+localRedis.lrem('foo', 2, 1);
+localRedis.get('foo');        // Returns [2, 1]
+
+// * If `count < 0`, `lrem` removes from finish to start.
+localRedis.set('foo', [1, 1, 2, 1]);
+localRedis.lrem('foo', -1, 1);
+localRedis.get('foo');        // Returns [1, 1, 2]
+
+// * If `count = 0`, `lrem` removes all elements equal to value
+localRedis.set('foo', [1, 1, 2, 1]);
+localRedis.lrem('foo', 0, 1);
+localRedis.get('foo');        // Returns [2]
+
+// *Throws* when the value at `key` is not a list.
