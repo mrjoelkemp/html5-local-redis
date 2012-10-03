@@ -1076,7 +1076,7 @@
   // Returns:   the length of the post-insertion list
   //            0 if the key does not contain a value
   localRedis.rpushx = function (key, value) {
-    if(arguments.length < 2) throw generateError(0);
+    if (arguments.length < 2) throw generateError(0);
     return pushx.call(this, key, false, Array.prototype.splice.call(arguments, 1));
   };
 
@@ -1089,17 +1089,78 @@
 
     if (! exists(key)) return 0;
 
-    if(! (val instanceof Array)) throw generateError(0);
+    if (! (val instanceof Array)) throw generateError(0);
 
     return val.length;
   };
 
+  // Returns the specified elements (indexed by start and stop)
+  // of the list at key.
   localRedis.lrange = function (key, start, stop) {
 
   };
 
+  // Removes the first count ocurrences of value in the list
+  // stored at key.
+  // Precond:   count > 0 removes from start to finish
+  //            count < 0 removes from finish to start
+  //            count = 0 removes all elements equal to value
+  // Returns:   the number of removed elements
+  //            0 when the key does not exist
+  // Throws when the value at key is not a list.
   localRedis.lrem = function (key, count, value) {
+    if (arguments.length !== 3) throw generateError(0);
 
+    var val = retrieve(key),
+        numRemoved = 0,
+        removeAll  = count === 0,
+        i, end;
+
+    if (! exists(key)) return numRemoved;
+    if (! (val instanceof Array)) throw generateError(10);
+
+    // Remove from the tail
+    if(count < 0) {
+      count = Math.abs(count);
+
+      for (i = val.length - 1; i >= 0; i--) {
+        if (val[i] !== value) continue;
+
+        // Stop if we've removed count instances
+        if(! count) break;
+
+        val.splice(i, 1);
+        numRemoved++;
+        count--;
+      }
+
+    // Remove from the head and check for remove all
+    } else {
+      for (i = 0, end = val.length; i < end; i++) {
+        if (val[i] !== value) continue;
+
+        // If we're to removeAll
+        if (removeAll) {
+          val.splice(i, 1);
+          numRemoved++;
+          // Since the element was removed,
+          // adjust for the elements shifting left
+          i--;
+
+        // Otherwise, count was originally greater than zero
+        } else {
+          val.splice(i, 1);
+          // Counter the in-place removal
+          i--;
+          numRemoved++;
+          count--;
+          if (! count) break;
+        }
+      }
+    }
+
+    store(key, val);
+    return numRemoved;
   };
 
 })(window, document);

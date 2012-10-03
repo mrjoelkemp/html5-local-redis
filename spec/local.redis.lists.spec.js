@@ -107,4 +107,40 @@ describe('Lists API', function () {
       expect(function () { storage.llen('foo'); }).toThrow();
     });
   });
+
+  describe('lrem', function () {
+    it('removes count occurences of value from the head of key\'s list when count is positive', function () {
+      storage.set('foo', [1, 1, 2, 1]);
+      // Remove 2 occurrence of 1 from the start
+      storage.lrem('foo', 2, 1);
+
+      expect(storage.get('foo')).toEqual([2, 1]);
+    });
+
+    it('removes count occurrences of value from the tail of key\'s list when count is negative', function () {
+      storage.set('foo', [1, 1, 2, 1]);
+      // Remove 1 occurrence of 1 from the end
+      storage.lrem('foo', -1, 1);
+
+      expect(storage.get('foo')).toEqual([1, 1, 2]);
+    });
+
+    it('removes all occurrences of value when count is zero', function () {
+      storage.set('foo', [1, 1, 2, 1]);
+      // Remove 2 occurrence of 1 from the start
+      storage.lrem('foo', 0, 1);
+
+      expect(storage.get('foo')).toEqual([2]);
+    });
+
+    it('returns the number of removed occurrences', function () {
+      storage.set('foo', [1, 1, 2, 1]);
+      // Remove 2 occurrence of 1 from the start
+      expect(storage.lrem('foo', 0, 1)).toBe(3);
+    });
+
+    it('returns 0 if the key does not exist', function () {
+      expect(storage.lrem('foo', 0, 1)).toBe(0);
+    });
+  });
 });
