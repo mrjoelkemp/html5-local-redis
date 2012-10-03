@@ -932,7 +932,7 @@
   // mdecrby
   localRedis.mdecrby = function (keysAmounts) {
     var oddIndexCallback = function (elem, index) {
-      // Return the negation of odd-index elements on the list
+      // Return the negation of odd-index elements on the list since we're using mincrby.
       // For mdecrby, we expect the input to be ['elem1', value1, 'elem2', value2, ...,]
       return (! (index & 0x1)) ? elem : -elem;
     }

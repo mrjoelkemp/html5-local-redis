@@ -500,7 +500,7 @@ localRedis.mget('foo', 'bar');  // Returns [1, 1]
 
 // ## mincrby ##
 // *Usage:* `mincrby(key1, amount1, key2, amount2, ...)` or
-//          `mincrby([key1, amount1, 'key2', amount2, ...])`
+//          `mincrby([key1, amount1, key2, amount2, ...])`
 
 // Increments multiple keys by amount or sets a key to amount if it
 // does not exist.
