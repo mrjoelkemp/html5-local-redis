@@ -912,10 +912,38 @@
   };
 
   // decr
+  localRedis.decr = function (key) {
+    if (arguments.length !== 1) throw generateError(0);
+    this.incrby(key, -1);
+  };
 
   // decrby
+  localRedis.mdecr = function (keys) {
+    var i, l;
+    keys = (keys instanceof Array) ? keys : arguments;
+    for(i = 0, l = keys.length; i < l; i++) {
+      this.decr(keys[i]);
+    }
+  };
+
+  // decrby
+  localRedis.decrby = function (key, amount) {
+    if (arguments.length !== 2) throw generateError(0);
+    this.incrby(key, -amount);
+  };
 
   // mdecrby
+  localRedis.mdecrby = function (keysAmounts) {
+    var oddIndexCallback = function (elem, index) {
+      // Return the negation of odd-index elements on the list since we're using mincrby.
+      // For mdecrby, we expect the input to be ['elem1', value1, 'elem2', value2, ...,]
+      return (! (index & 0x1)) ? elem : -elem;
+    }
+    // 'arguments' is not a canonical Array. The slice call makes it one.
+    // We should probably do this for all functions that do this type of transformation.
+    keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : Array.prototype.slice.call(arguments);
+    this.mincrby(keysAmounts.map(oddIndexCallback));
+  };
 
   // Appends the value at the end of the string
   // Returns: the length of the string after appending

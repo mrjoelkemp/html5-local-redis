@@ -500,14 +500,13 @@ localRedis.mget('foo', 'bar');  // Returns [1, 1]
 
 // ## mincrby ##
 // *Usage:* `mincrby(key1, amount1, key2, amount2, ...)` or
-//          `mincrby([key1, amount2, 'key2', amount2, ...])` or
-//          `mincrby({key1: amount1, key2: amount2, ...})`
+//          `mincrby([key1, amount1, key2, amount2, ...])`
 
 // Increments multiple keys by amount or sets a key to amount if it
 // does not exist.
 
 localRedis.mincrby('foo', 3, 'bar', 4);
-localRedis.mincrby({id: 4, hits: 1});
+localRedis.mincrby(['id', 4, 'hits', 1]);
 localRedis.mget('foo', 'bar', 'id', 'hits'); // Returns [3, 4, 4, 1]
 
 // Note: This is a *custom*, non-Redis function.
@@ -532,25 +531,73 @@ localRedis.decr('bar');     // Returns -1
 
 
 
+
+// ## decr ##
+// *Usage:* `decr(key)`
+
+// Decrements the key by 1 or sets it to -1 if the key does not exist.
+
+localRedis.decr('hits');
+localRedis.get('hits');     // Returns -1
+
+// *Throws* if the *value* of `key` meets **any** of the following conditions:
+
+// * Not an integer or stringified integer (ex: 4 or '4')
+// * The key exists but was set with a value of `null`
+// * An decrement of the value exceeds the maximum number size for JavaScript.
+
+// *Side effects:* **None**. `decr` does not effect key expiry.
+
+// Note: If `key` does not exist, it is given a value of `-1`.
+
+
+
 // ## decrby ##
 // *Usage:* `decrby(key, amount)`
 
-// Coming soon.
+// Decrements the key by amount or sets the key to amount if it doesn't exist.
+
+localRedis.decrby('foo', 4);
+localRedis.get('foo');        // Returns 4
+
+// *Throws* if the *value* of `key` or `amount` meet **any** of the following conditions:
+
+// * Not an integer or stringified integer (ex: 4 or '4')
+// * The key exists but was set with a value of `null`
+
+// *Side effects:* **None**. `decrby` does not effect key expiry.
+
+// Note: If `key` does not exist, it is given the value of `-amount`.
+
+
 
 
 // ## mdecr ##
 // *Usage:* `mdecr(key1, key2, ...)` or `mdecr([key1, key2, ...])`
 
-// Coming soon.
+// Decrements multiple keys by 1 or sets a key to -1 if it does not exist.
+
+localRedis.mdecr('foo', 'bar');
+localRedis.mget('foo', 'bar');  // Returns [-1, -1]
+
+// *Throws* under the same conditions as `mdecr`.
 
 
 
 // ## mdecrby ##
 // *Usage:* `mdecrby(key1, amount1, key2, amount2, ...)` or
-//          `mdecrby([key1, amount1, key2, amount2, ...])` or
-//          `mdecrby({key1: amount1, key2: amount2, ...})`
+//          `mdecrby([key1, amount1, key2, amount2, ...])`
 
-// Coming soon.
+// Decrement multiple keys by amount or sets a key to `-amount` if it
+// does not exist.
+
+localRedis.mdecrby('foo', 3, 'bar', 4);
+localRedis.mdecrby(['id', 4, 'hits', 1]);
+localRedis.mget('foo', 'bar', 'id', 'hits'); // Returns [-3, -4, -4, -1]
+
+// Note: This is a *custom*, non-Redis function.
+
+// *Throws* under the same conditions as `decrby`.
 
 
 
