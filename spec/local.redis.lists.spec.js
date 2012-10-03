@@ -108,6 +108,23 @@ describe('Lists API', function () {
     });
   });
 
+  describe('lrange', function () {
+    it('returns a list of elements up to an including start and stop', function () {
+      storage.set('foo', [1, 2, 3]);
+      expect(storage.lrange('foo', 0, 1)).toEqual([1, 2]);
+    });
+
+    it('returns a list of elements from negative start and stop indices', function () {
+      storage.set('foo', [1, 2, 3]);
+      expect(storage.lrange('foo', -3, -1)).toEqual([1, 2, 3]);
+    });
+
+    it('returns an empty array if the start is greater than the stop', function () {
+      storage.set('foo', [1, 2, 3])
+      expect(storage.lrange('foo')).toEqual([]);
+    });
+  });
+
   describe('lrem', function () {
     it('removes count occurences of value from the head of key\'s list when count is positive', function () {
       storage.set('foo', [1, 1, 2, 1]);

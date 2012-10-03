@@ -1117,15 +1117,26 @@
 
     if (! exists(key)) return 0;
 
-    if (! (val instanceof Array)) throw generateError(0);
+    if (! (val instanceof Array)) throw generateError(10);
 
     return val.length;
   };
 
   // Returns the specified elements (indexed by start and stop)
   // of the list at key.
+  // Note: the offsets can also be negative numbers
   localRedis.lrange = function (key, start, stop) {
+    var results = [],
+        val     = retrieve(key),
+        // Add one to go from splice's count to the stop index
+        howMany = (stop + 1) - start;
 
+    if (start > stop || ! exists(key)) return results;
+
+    if (! val instanceof Array) throw generateError(10);
+
+    results = val.splice(start, howMany);
+    return results;
   };
 
   // Removes the first count ocurrences of value in the list

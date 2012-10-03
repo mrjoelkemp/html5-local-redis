@@ -743,6 +743,30 @@ localRedis.llen('bar');     // Returns 0
 // *Throws* if the value at `key` is not a list.
 
 
+
+
+
+// ## lrange ##
+// *Usage:* 'lrange(key, start, stop)'
+
+// Retrieves the specified elements (indexed by start and stop)
+// of the list at key.
+// *Returns* a list of the retrieved elements or the empty list
+// if `start === stop` or `start > stop`.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.lrange('foo', 0, 1);   // Returns [1, 2]
+localRedis.lrange('foo', -3, -1); // Returns [1, 2, 3]
+
+
+
+// Note: The values for start and stop can be negative – indexing
+// from the end of the list.
+
+
+
+
+
 // ## lrem ##
 // *Usage:* `lrem(key, count, value)`
 
