@@ -1144,7 +1144,7 @@
         if (val[i] !== value) continue;
 
         // Stop if we've removed count instances
-        if(! count) break;
+        if (! count) break;
 
         val.splice(i, 1);
         numRemoved++;
