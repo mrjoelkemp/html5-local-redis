@@ -1046,12 +1046,10 @@
   var pushx = function (key, left, values) {
     var val       = retrieve(key),
         keyExists = exists(key),
-        isArray   = val instanceof Array,
-        length;
+        isArray   = val instanceof Array;
 
     if (keyExists && isArray) {
-      length = left ? this.lpush(key, values) : this.rpush(key, values);
-      return length;
+      return left ? this.lpush(key, values) : this.rpush(key, values);
     }
 
     return 0;
