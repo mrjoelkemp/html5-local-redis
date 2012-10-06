@@ -658,3 +658,135 @@ localRedis.psetex('foo', 10, 'bar');  // Expires 'foo' in 10 milliseconds
 // *Throws* if `msDelay` is not a valid number.
 
 
+
+
+
+// ***
+// ## Lists API ##
+// ***
+
+
+
+// ## lpush ##
+// *Usage:* `lpush(key, val)` or `lpush(key, val1, val2, ...)` or `lpush(key, [val1, val2, ...])`
+
+// Inserts all of the values at the head of the list stored at `key`.
+// An empty array will be assumed as the value at `key` if `key` does not exist.
+// *Returns* the length of the list post insertion.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.lpush('foo', 4, 5, 6); // Returns 6
+localRedis.get('foo');            // Returns [6, 5, 4, 1, 2, 3]
+
+// Note: Adds the values outward in. So the values `a b c` will be inserted as `c b a`.
+
+// *Throws* if the existing value stored at `key` is not a list.
+
+
+
+
+// ## lpushx ##
+// *Usage:* `lpushx(key, val)` or `lpushx(key, val1, val2, ...)` or `lpushx(key, [val1, val2, ...])`
+
+// Inserts values at the head of the list value stored at `key`,
+// *iff* `key` already exists and has a list value.
+// *Returns* the length of the post insertion list,
+// or `0` if the key does not exist or contain a list value.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.lpushx('foo', 4, 5, 6);  // Returns 6
+localRedis.get('foo');              // Returns [6, 5, 4, 1, 2, 3]
+localRedis.lpushx('bar', 3);        // Returns 0
+
+
+// ## rpush ##
+// *Usage:* `rpush(key, val)` or `rpush(key, val1, val2, ...)` or `rpush(key, [val1, val2, ...])`
+
+// Inserts/appends all of the values at the tail of the list stored at `key`.
+// An empty array will be assumed as the value at `key` if `key` does not exist.
+// *Returns* the length of the list post insertion.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.rpush('foo', 4, 5, 6); // Returns 6
+localRedis.get('foo');            // Returns [1, 2, 3, 4, 5, 6]
+
+// *Throws* if the existing value stored at `key` is not a list.
+
+
+
+
+// ## rpushx ##
+// *Usage:* `rpushx(key, val)` or `rpushx(key, val1, val2, ...)` or `rpushx(key, [val1, val2, ...])`
+
+// Inserts values at the tail of the list value stored at `key`,
+// *iff* `key` already exists and has a list value.
+// *Returns* the length of the post insertion list,
+// or `0` if the key does not exist or contain a list value.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.rpushx('foo', 4, 5, 6);  // Returns 6
+localRedis.get('foo');              // Returns [1, 2, 3, 4, 5, 6]
+localRedis.rpushx('bar', 3);        // Returns 0
+
+
+// ## llen ##
+// *Usage:* `llen(key)`
+
+// Retrieves the length of the list value stored at `key`.
+// *Returns* the number of elements in the list value or `0`
+// if the key does not exist.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.llen('foo');     // Returns 3
+localRedis.llen('bar');     // Returns 0
+
+// *Throws* if the value at `key` is not a list.
+
+
+
+
+
+// ## lrange ##
+// *Usage:* 'lrange(key, start, stop)'
+
+// Retrieves the specified elements (indexed by start and stop)
+// of the list at key.
+// *Returns* a list of the retrieved elements or the empty list
+// if `start === stop` or `start > stop`.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.lrange('foo', 0, 1);   // Returns [1, 2]
+localRedis.lrange('foo', -3, -1); // Returns [1, 2, 3]
+
+
+
+// Note: The values for start and stop can be negative – indexing
+// from the end of the list.
+
+
+
+
+
+// ## lrem ##
+// *Usage:* `lrem(key, count, value)`
+
+// Removes the first count ocurrences of value in the list
+// stored at key.
+// *Returns* the number of removed elements or `0` when the key does not exist
+
+// * If `count > 0`, `lrem` removes from start to finish.
+localRedis.set('foo', [1, 1, 2, 1]);
+localRedis.lrem('foo', 2, 1);
+localRedis.get('foo');        // Returns [2, 1]
+
+// * If `count < 0`, `lrem` removes from finish to start.
+localRedis.set('foo', [1, 1, 2, 1]);
+localRedis.lrem('foo', -1, 1);
+localRedis.get('foo');        // Returns [1, 1, 2]
+
+// * If `count = 0`, `lrem` removes all elements equal to value
+localRedis.set('foo', [1, 1, 2, 1]);
+localRedis.lrem('foo', 0, 1);
+localRedis.get('foo');        // Returns [2]
+
+// *Throws* when the value at `key` is not a list.

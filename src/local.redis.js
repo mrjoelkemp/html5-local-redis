@@ -85,6 +85,8 @@
   var storage = window.localStorage,
       localRedis = {};
 
+  window.localRedis = localRedis;
+
   ///////////////////////////
   // Utilities
   ///////////////////////////
@@ -149,40 +151,19 @@
   ///////////////////////////
 
   var
-      errors = [
-        'wrong number of arguments',
-        'non-string value',
-        'value is not an integer or out of range',
-        'not a string value',
-        'timestamp already passed',
-        'delay not convertible to a number',
-        'source and destination objects are the same',
-        'no such key',
-        'missing storage context'
-      ],
+      WRONG_ARGUMENTS           = 'wrong number of arguments',
+      NON_STRING_VALUE          = 'non-string value',
+      NOT_INT_VALUE_OR_RANGE    = 'value is not an integer or out of range',
+      NOT_STRING_VALUE          = 'not a string value',
+      TIMESTAMP_PASSED          = 'timestamp already passed',
+      DELAY_NOT_NUMBER          = 'delay not convertible to a number',
+      SOURCE_EQUALS_DESTINATION = 'source and destination objects are the same',
+      NO_SUCH_KEY               = 'no such key',
+      MISSING_CONTEXT           = 'missing storage context',
+      VALUE_NOT_ARRAY           = 'value is not an array',
 
-      generateError = function (type /*, functionName, errorType */) {
-        var error,
-            message,
-            functionName  = arguments[1],
-            errorType     = arguments[2];
-
-        if (typeof type !== 'number' || (functionName && typeof functionName !== 'string')) {
-          throw new TypeError('wrong arg types');
-        }
-
-        message = errors[type];
-        if (errorType) {
-          errorType = errorType.toLowerCase();
-
-          if (errorType === 'typeerror') {
-            error = new TypeError(message);
-          }
-        } else {
-          error = new Error(message);
-        }
-
-        return error;
+      throwError = function (message) {
+        throw new Error(message);;
       };
 
   ///////////////////////////
@@ -406,7 +387,7 @@
   // Returns: 1 if the key exists, 0 if they key doesn't exist.
   // Throws:  Error if more than one argument is supplied
   localRedis.exists = function (key) {
-    if (arguments.length > 1) throw generateError(0);
+    if (arguments.length > 1) throwError(WRONG_ARGUMENTS);
 
     return exists(key) ? 1 : 0;
   };
@@ -420,14 +401,14 @@
     var errorType, ttl;
 
     if (arguments.length !== 2) {
-      errorType = 0;
+      errorType = WRONG_ARGUMENTS;
     } else if (key === newKey) {
-      errorType = 6;
+      errorType = SOURCE_EQUALS_DESTINATION;
     } else if (! exists(key)) {
-      errorType = 7;
+      errorType = NO_SUCH_KEY;
     }
     // errorType could be 0, so don't do if (errorType)
-    if (errorType !== undefined) throw generateError(errorType);
+    if (errorType !== undefined) throwError(errorType);
 
     // Remove newKey's existing expiration
     // since newKey inherits all characteristics from key
@@ -461,14 +442,14 @@
     var typeError;
 
     if (arguments.length !== 2) {
-      typeError = 0;
+      typeError = WRONG_ARGUMENTS;
     } else if (key === newKey) {
-      typeError = 6;
+      typeError = SOURCE_EQUALS_DESTINATION;
     } else if (! exists(key)) {
-      typeError = 7;
+      typeError = NO_SUCH_KEY;
     }
 
-    if (typeError) throw generateError(typeError);
+    if (typeError) throwError(typeError);
 
     if (exists(newKey)) return 0;
 
@@ -484,7 +465,7 @@
   // Params:    all = whether or not to retrieve all of the keys that match
   // Notes:     Custom, non-redis method
   localRedis.getkey = function (val /*, all */) {
-    if (arguments.length > 2) throw generateError(0);
+    if (arguments.length > 2) throwError(WRONG_ARGUMENTS);
 
     var i, l, k, v, keys = [], all;
 
@@ -519,14 +500,14 @@
   // Returns: 1 if the expiration was set
   //          0 if the key does not exist or the expiration couldn't be set
   localRedis.expire = function (key, delay) {
-    if (arguments.length !== 2) throw generateError(0);
+    if (arguments.length !== 2) throwError(WRONG_ARGUMENTS);
 
     if (! exists(key)) return 0;
 
     // Check if the delay is/contains a number
     delay = parseFloat(delay, 10);
 
-    if (! delay) throw generateError(5);
+    if (! delay) throwError(DELAY_NOT_NUMBER);
 
     // Convert the delay to ms (1000ms in 1s)
     delay *= 1000;
@@ -546,18 +527,18 @@
   // Notes:   Custom function
   localRedis.expires = function (key) {
     key = stringified(key);
-    return hasExpiration(key) ? 1 : 0;
+    return Number(hasExpiration(key));
   };
 
   // Expiry in milliseconds
   // Returns: the same output as expire
   localRedis.pexpire = function (key, delay) {
-    if (arguments.length !== 2) throw generateError(0);
+    if (arguments.length !== 2) throwError(WRONG_ARGUMENTS);
 
     // Check if the delay is/contains a number
     delay = parseFloat(delay, 10);
 
-    if (! delay) throw generateError(5);
+    if (! delay) throwError(DELAY_NOT_NUMBER);
 
     // Expire will convert the delay to seconds,
     // so we account for that by canceling out the conversion from ms to s
@@ -568,14 +549,15 @@
   // Returns:   1 if the timeout was set.
   //            0 if key does not exist or the expiration could not be set.
   // Usage:     expireat('foo', 1293840000)
+  // Throws if the timestamp has already expired
   localRedis.expireat = function (key, timestamp) {
-    if (arguments.length !== 2) throw generateError(0);
+    if (arguments.length !== 2) throwError(WRONG_ARGUMENTS);
 
     // Compute the delay (in seconds)
     var nowSeconds  = new Date().getTime() / 1000,
         delay       = timestamp - nowSeconds;
 
-    if (delay < 0) throw generateError(4);
+    if (delay < 0) throwError(TIMESTAMP_PASSED);
 
     return this.expire(key, delay);
   };
@@ -583,13 +565,14 @@
   // Expires a key a the supplied, millisecond-based UNIX timestamp
   // Returns:   1 if the timeout was set.
   //            0 if key does not exist or the timeout could not be set
+  // Throws if the timestamp has already expired
   localRedis.pexpireat = function (key, timestamp) {
-    if (arguments.length !== 2) throw generateError(0);
+    if (arguments.length !== 2) throwError(WRONG_ARGUMENTS);
 
     // Delay in milliseconds
     var delay = timestamp - new Date().getTime();
 
-    if(delay < 0) throw generateError(4);
+    if(delay < 0) throwError(TIMESTAMP_PASSED);
 
     return this.pexpire(key, delay);
   };
@@ -598,7 +581,7 @@
   // Returns:   0 if the key does not exist or does not have an expiration
   //            1 if the expiration was removed
   localRedis.persist = function (key) {
-    if (arguments.length !== 1) throw generateError(0);
+    if (arguments.length !== 1) throwError(WRONG_ARGUMENTS);
 
     if (! (exists(key) && hasExpiration(key))) return 0;
 
@@ -609,7 +592,7 @@
   // Returns: the time to live in seconds
   //          -1 when key does not exist or does not have an expiration
   localRedis.ttl = function (key) {
-    if (arguments.length !== 1) throw generateError(0);
+    if (arguments.length !== 1) throwError(WRONG_ARGUMENTS);
 
     if(exists(key) && hasExpiration(key)) {
       // 1sec = 1000ms
@@ -623,7 +606,7 @@
   //          -1 when key does not exist or does not have an expiration
   // Note:    this command is just like ttl with ms units
   localRedis.pttl = function (key) {
-    if (arguments.length !== 1) throw generateError(0);
+    if (arguments.length !== 1) throwError(WRONG_ARGUMENTS);
 
     return this.ttl(key) * 1000;
   };
@@ -699,13 +682,13 @@
   // Notes:   Removes an existing expiration for key
   // Returns: the old value stored at key or null when the key does not exist
   localRedis.getset = function (key, value) {
-    if (arguments.length !== 2) throw generateError(0);
+    if (arguments.length !== 2) throwError(WRONG_ARGUMENTS);
 
     // Grab the existing value or null if the key doesn't exist
     var oldVal = retrieve(key);
 
     // Throw an exception if the value isn't a string
-    if (! isString(oldVal) && oldVal !== null) throw generateError(1);
+    if (! isString(oldVal) && oldVal !== null) throwError(NON_STRING_VALUE);
 
     // Use set to refresh an existing expiration
     this.set(key, value);
@@ -766,7 +749,7 @@
   //            0 if the key was not set
   // Note:      When key already holds a value, no operation is performed.
   localRedis.setnx = function (key, value) {
-    if(arguments.length !== 2) throw generateError(0);
+    if(arguments.length !== 2) throwError(WRONG_ARGUMENTS);
 
     if (exists(key)) return 0;
 
@@ -815,7 +798,7 @@
   // If the key does not exist, incr sets it to 1
   // Note:  incr does not affect expiry
   localRedis.incr = function (key) {
-    if (arguments.length !== 1) throw generateError(0);
+    if (arguments.length !== 1) throwError(WRONG_ARGUMENTS);
 
     this.incrby(key, 1);
   };
@@ -826,7 +809,7 @@
   //          amount must be a number or string containing a number
   // Usage:   incrby('foo', '4') or incrby('foo', 4)
   localRedis.incrby = function (key, amount) {
-    if (arguments.length !== 2) throw generateError(0);
+    if (arguments.length !== 2) throwError(WRONG_ARGUMENTS);
 
     var value                = retrieve(key),
         valType              = typeof value,
@@ -862,7 +845,7 @@
 
     if ((isValNotValid  && !isValNull) || existsNullVal || amountIsNaN || isAmountNotValid || anyOutOfRange) {
       // out of range or not an integer
-      throw generateError(2);
+      throwError(NOT_INT_VALUE_OR_RANGE);
 
     // The value and incr amount are valid
     } else if ((isValNumber || isValNumberStr) && (isAmountNumber || isAmountNumberStr)) {
@@ -896,7 +879,7 @@
       keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : arguments;
 
       // Need to make sure an even number of arguments is passed in
-      if ((keysAmounts.length & 0x1) !== 0) throw generateError(0);
+      if ((keysAmounts.length & 0x1) !== 0) throwError(WRONG_ARGUMENTS);
 
       for (i = 0, l = keysAmounts.length; i < l; i += 2) {
         this.incrby(keysAmounts[i], keysAmounts[i + 1]);
@@ -910,7 +893,7 @@
 
   // decr
   localRedis.decr = function (key) {
-    if (arguments.length !== 1) throw generateError(0);
+    if (arguments.length !== 1) throwError(WRONG_ARGUMENTS);
     this.incrby(key, -1);
   };
 
@@ -925,7 +908,7 @@
 
   // decrby
   localRedis.decrby = function (key, amount) {
-    if (arguments.length !== 2) throw generateError(0);
+    if (arguments.length !== 2) throwError(WRONG_ARGUMENTS);
     this.incrby(key, -amount);
   };
 
@@ -949,7 +932,7 @@
   //          If key does not exist, we initialize it to empty
   //          and perform the append
   localRedis.append = function (key, value) {
-    if (arguments.length !== 2) throw generateError(0);
+    if (arguments.length !== 2) throwError(WRONG_ARGUMENTS);
 
     var val         = retrieve(key) || "",
         valIsString = isString(val);
@@ -970,7 +953,7 @@
 
     if (! val) return 0;
 
-    if (! isString(val)) throw generateError(1);
+    if (! isString(val)) throwError(NON_STRING_VALUE);
 
     return val.length;
   };
@@ -979,7 +962,7 @@
   // expire after a given number of seconds.
   // Throws if the delay is not valid
   localRedis.setex = function (key, delay, value) {
-    if (arguments.length !== 3) throw generateError(0);
+    if (arguments.length !== 3) throwError(WRONG_ARGUMENTS);
 
     this.set(key, value);
     this.expire(key, delay);
@@ -989,12 +972,212 @@
   // expire after a given number of milliseconds.
   // Throws if the delay is not valid
   localRedis.psetex = function (key, delay, value) {
-    if (arguments.length !== 3) throw generateError(0);
+    if (arguments.length !== 3) throwError(WRONG_ARGUMENTS);
 
     this.set(key, value);
     this.pexpire(key, delay);
   };
 
-  window.localRedis = localRedis;
+  ///////////////////////////
+  // List Commands
+  ///////////////////////////
+
+  // Insert all the specified values at the head of the list stored at key.
+  // Note:    If key does not exist, it is created as empty list
+  //          before performing the push operations.
+  // Throws:  When key holds a value that is not a list, an error is returned.
+  // Returns: The length of the list after the push
+  // Usage:   lpush(key, val1) or lpush(key, val1, val2, ...)
+  localRedis.lpush = function (key, value) {
+    if (arguments.length < 2) throwError(WRONG_ARGUMENTS);
+
+    var val     = retrieve(key),
+        values  = [],
+        i, end;
+
+    if (exists(key) && ! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
+
+    // The caller supplied splats
+    if (arguments.length > 2) {
+      key = arguments[0];
+
+      // Args should be added in LIFO fashion
+      values = Array.prototype.slice.call(arguments, 1);
+      values.reverse();
+
+    // The caller supplied an array as the second param
+    } else if (value instanceof Array) {
+      values = value.reverse();
+    } else {
+      values = [value];
+    }
+
+    val = val || [];
+
+    // Add the supplied values to the front of the key's list value
+    val = values.concat(val);
+
+    store(key, val);
+
+    return val.length;
+  };
+
+  // Helper for pushx type commands (lpushx and rpushx)
+  var pushx = function (key, left, values) {
+    var val       = retrieve(key),
+        keyExists = exists(key),
+        isArray   = val instanceof Array;
+
+    if (keyExists && isArray) {
+      return left ? this.lpush(key, values) : this.rpush(key, values);
+    }
+
+    return 0;
+  };
+
+  // Inserts the value(s) at the head of the list stored at key,
+  // only if key already exists and holds a list.
+  // Returns:   the length of the post-insertion list
+  //            0 if the key does not contain a value
+  localRedis.lpushx = function (key, value) {
+    if (arguments.length < 2) throwError(WRONG_ARGUMENTS);
+
+    return pushx.call(this, key, true, Array.prototype.splice.call(arguments, 1));
+  };
+
+  // Inserts the value(s) at the tail of the list stored at key
+  // Returns: the length of the list post-insertion
+  // Note:    defaults the value of a non-existent key to the empty list
+  // Usage:   rpush(key, val) or rpush(key, val1, val2, ...) or rpush(key, [val1, val2, ...])
+  localRedis.rpush = function (key, value) {
+    if (arguments.length < 2) throwError(WRONG_ARGUMENTS);
+
+    var values,
+        i, l,
+        val = retrieve(key);
+
+    if (exists(key) && ! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
+
+    if (arguments.length > 2) {
+      values = Array.prototype.splice.call(arguments, 1);
+
+    // If value is already an array, pass it along
+    } else if (value instanceof Array) {
+      values = value;
+
+    // Convert single values to an array to use concat
+    } else {
+      values = [value];
+    }
+
+    val = val || [];
+    val = val.concat(values);
+    store(key, val);
+
+    return val.length;
+  };
+
+  // Inserts the value(s) at the tail of the list stored at key,
+  // only if key already exists and holds a list.
+  // Returns:   the length of the post-insertion list
+  //            0 if the key does not contain a value
+  localRedis.rpushx = function (key, value) {
+    if (arguments.length < 2) throwError(WRONG_ARGUMENTS);
+    return pushx.call(this, key, false, Array.prototype.splice.call(arguments, 1));
+  };
+
+  // Returns:   the length of the list value of key
+  //            0 if the key does not exist.
+  // Throws when the value at key is not a list.
+  localRedis.llen = function (key) {
+    if(arguments.length < 1) throwError(WRONG_ARGUMENTS);
+    var val = retrieve(key);
+
+    if (! exists(key)) return 0;
+
+    if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
+
+    return val.length;
+  };
+
+  // Returns the specified elements (indexed by start and stop)
+  // of the list at key.
+  // Note: the offsets can also be negative numbers
+  localRedis.lrange = function (key, start, stop) {
+    var results = [],
+        val     = retrieve(key),
+        // Add one to go from splice's count to the stop index
+        howMany = (stop + 1) - start;
+
+    if (start > stop || ! exists(key)) return results;
+
+    if (! val instanceof Array) throwError(VALUE_NOT_ARRAY);
+
+    results = val.splice(start, howMany);
+    return results;
+  };
+
+  // Removes the first count ocurrences of value in the list
+  // stored at key.
+  // Precond:   count > 0 removes from start to finish
+  //            count < 0 removes from finish to start
+  //            count = 0 removes all elements equal to value
+  // Returns:   the number of removed elements
+  //            0 when the key does not exist
+  // Throws when the value at key is not a list.
+  localRedis.lrem = function (key, count, value) {
+    if (arguments.length !== 3) throwError(WRONG_ARGUMENTS);
+
+    var val = retrieve(key),
+        numRemoved = 0,
+        removeAll  = count === 0,
+        i, end;
+
+    if (! exists(key)) return numRemoved;
+    if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
+
+    // Remove from the tail
+    if(count < 0) {
+      count = Math.abs(count);
+
+      for (i = val.length - 1; i >= 0; i--) {
+        if (val[i] !== value) continue;
+
+        // Stop if we've removed count instances
+        if(! count) break;
+
+        val.splice(i, 1);
+        numRemoved++;
+        count--;
+      }
+
+    // Remove from the head and check for remove all
+    } else {
+      for (i = 0, end = val.length; i < end; i++) {
+        if (val[i] !== value) continue;
+
+        // If we're to removeAll
+        if (removeAll) {
+          val.splice(i, 1);
+          numRemoved++;
+          // Since the element was removed,
+          // adjust for the elements shifting left
+          i--;
+
+        // Otherwise, count was originally greater than zero
+        } else {
+          val.splice(i, 1);
+          // Counter the in-place removal
+          i--;
+          numRemoved++;
+          count--;
+          if (! count) break;
+        }
+      }
+    }
+
+    store(key, val);
+    return numRemoved;
+  };
 
 })(window, document);
