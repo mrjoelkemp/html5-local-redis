@@ -112,6 +112,7 @@ describe('Lists API', function () {
     it('returns a list of elements up to an including start and stop', function () {
       storage.set('foo', [1, 2, 3]);
       expect(storage.lrange('foo', 0, 1)).toEqual([1, 2]);
+      expect(storage.lrange('foo', 0, -2)).toEqual([1, 2]);
     });
 
     it('returns a list of elements from negative start and stop indices', function () {
@@ -119,9 +120,19 @@ describe('Lists API', function () {
       expect(storage.lrange('foo', -3, -1)).toEqual([1, 2, 3]);
     });
 
-    it('returns an empty array if the start is greater than the stop', function () {
+    it('returns an empty array if the start is greater than the end of the list', function () {
       storage.set('foo', [1, 2, 3])
-      expect(storage.lrange('foo')).toEqual([]);
+      expect(storage.lrange('foo', 5, 3)).toEqual([]);
+    });
+
+    it('returns the entire list with a start of 0 and stop of -1', function () {
+      storage.set('foo', [1, 2, 3]);
+      expect(storage.lrange('foo', 0, -1)).toEqual([1, 2, 3]);
+    });
+
+    it('makes stop the end of the list if it exceeds the end', function () {
+      storage.set('foo', [1, 2, 3]);
+      expect(storage.lrange('foo', 0, 3)).toEqual([1, 2, 3]);
     });
   });
 
