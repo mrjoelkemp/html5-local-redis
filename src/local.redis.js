@@ -1100,20 +1100,31 @@
     return val.length;
   };
 
-  // Returns the specified elements (indexed by start and stop)
-  // of the list at key.
-  // Note: the offsets can also be negative numbers
+  // Returns: the specified elements (indexed by start and stop)
+  //          of the list at key.
+  //          An empty list if the start is larger than the end of the list
+  // Note:    the offsets can also be negative numbers
+  //          If stop is larger than the end of the list, stop will be the end of the list
   localRedis.lrange = function (key, start, stop) {
     var results = [],
         val     = retrieve(key),
-        // Add one to go from splice's count to the stop index
-        howMany = (stop + 1) - start;
+        // We need to include stop index in the slice
+        // This works even for a negative stop
+        indexModifier = 1,
+        stopIndex = stop + indexModifier;
 
-    if (start > stop || ! exists(key)) return results;
+    if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
+    
+    if (start > val.length || ! exists(key)) return results;
+        
+    // Clamp to the end of the list
+    if (stopIndex > val.length) stopIndex = val.length;
 
-    if (! val instanceof Array) throwError(VALUE_NOT_ARRAY);
+    // If stop is -1, then go to the end of the list
+    // including the last element
+    if (stop === -1) stopIndex = undefined;
 
-    results = val.splice(start, howMany);
+    results = val.slice(start, stopIndex);
     return results;
   };
 
@@ -1137,14 +1148,14 @@
     if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
 
     // Remove from the tail
-    if(count < 0) {
+    if (count < 0) {
       count = Math.abs(count);
 
       for (i = val.length - 1; i >= 0; i--) {
         if (val[i] !== value) continue;
 
         // Stop if we've removed count instances
-        if(! count) break;
+        if (! count) break;
 
         val.splice(i, 1);
         numRemoved++;
