@@ -1137,7 +1137,7 @@
     if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
 
     // Remove from the tail
-    if(count < 0) {
+    if (count < 0) {
       count = Math.abs(count);
 
       for (i = val.length - 1; i >= 0; i--) {
