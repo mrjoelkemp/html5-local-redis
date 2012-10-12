@@ -808,16 +808,15 @@
   //          keys set with null values cannot be incremented
   //          amount must be a number or string containing a number
   // Usage:   incrby('foo', '4') or incrby('foo', 4)
-  localRedis.incrby = function (key, amount) {
+  localRedis.incrbyfloat = function (key, amount) {
     if (arguments.length !== 2) throwError(WRONG_ARGUMENTS);
 
     var value                = retrieve(key),
         valType              = typeof value,
         amountType           = typeof amount,
-        parsedValue          = parseInt(value, 10),
-        parsedAmount         = parseInt(amount, 10),
+        parsedValue          = parseFloat(value, 10),
+        parsedAmount         = parseFloat(amount, 10),
         amountIsNaN          = isNaN(parsedAmount),
-        amountIsFloat        = Math.round(amount) !== amount,
         valueIsNaN           = isNaN(parsedValue),
 
         // Check the value
@@ -844,7 +843,7 @@
         amountOutOfRange     = !amountIsNaN && (amount >= Number.MAX_VALUE),
         anyOutOfRange        = valOutOfRange || amountOutOfRange;
 
-    if ((isValNotValid  && !isValNull) || existsNullVal || amountIsNaN || isAmountNotValid || anyOutOfRange || amountIsFloat) {
+    if ((isValNotValid  && !isValNull) || existsNullVal || amountIsNaN || isAmountNotValid || anyOutOfRange) {
       // out of range or not an integer
       throwError(NOT_INT_VALUE_OR_RANGE);
 
@@ -858,6 +857,11 @@
     }
 
     store(key, value);
+  };
+
+  localRedis.incrby = function (key, amount) {
+    if (Math.round(amount) !== amount) throwError(NOT_INT_VALUE_OR_RANGE);
+    this.incrbyfloat(key, amount);
   };
 
   // Increments multiple keys by 1
