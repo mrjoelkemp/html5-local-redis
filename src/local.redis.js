@@ -870,7 +870,6 @@
 
   // Usage:   mincrby('key1', 1, 'key2', 4) or
   //          mincrby(['key1', 1, 'key2', 2]) or
-  //          mincrby({'key1': 1, 'key2': 2})
   // Notes:   Custom, non-redis method
   localRedis.mincrby = function (keysAmounts) {
     var i, l, key;
@@ -918,7 +917,7 @@
       // Return the negation of odd-index elements on the list since we're using mincrby.
       // For mdecrby, we expect the input to be ['elem1', value1, 'elem2', value2, ...,]
       return (! (index & 0x1)) ? elem : -elem;
-    }
+    };
     // 'arguments' is not a canonical Array. The slice call makes it one.
     // We should probably do this for all functions that do this type of transformation.
     keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : Array.prototype.slice.call(arguments);
