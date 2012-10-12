@@ -817,6 +817,7 @@
         parsedValue          = parseInt(value, 10),
         parsedAmount         = parseInt(amount, 10),
         amountIsNaN          = isNaN(parsedAmount),
+        amountIsFloat        = Math.round(amount) !== amount,
         valueIsNaN           = isNaN(parsedValue),
 
         // Check the value
@@ -843,7 +844,7 @@
         amountOutOfRange     = !amountIsNaN && (amount >= Number.MAX_VALUE),
         anyOutOfRange        = valOutOfRange || amountOutOfRange;
 
-    if ((isValNotValid  && !isValNull) || existsNullVal || amountIsNaN || isAmountNotValid || anyOutOfRange) {
+    if ((isValNotValid  && !isValNull) || existsNullVal || amountIsNaN || isAmountNotValid || anyOutOfRange || amountIsFloat) {
       // out of range or not an integer
       throwError(NOT_INT_VALUE_OR_RANGE);
 
