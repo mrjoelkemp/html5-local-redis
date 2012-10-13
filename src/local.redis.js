@@ -1127,24 +1127,56 @@
   };
 
 
-  // lrem helper that removes count many occurrences of target
-  // Returns a copy of values with the occurrences removed
-  var removeFromTail = function (values, count, target) {
-    var results = values.slice(), // Copy values
-        i;
+  // lrem helpers
+  var 
+      // Returns a copy of values with count many occurrences 
+      // of target removed from the tail of values
+      removeFromTail = function (values, count, target) {
+        var results = values.slice(), // Copy values
+            i;
 
-    for (i = results.length - 1; i >= 0; i--) {
-      if (results[i] !== target) continue;
+        for (i = results.length - 1; i >= 0; i--) {
+          if (results[i] !== target) continue;
 
-      // Stop if we've removed count instances
-      if (! count) break;
+          // Stop if we've removed count instances
+          if (! count) break;
 
-      results.splice(i, 1);
-      count--;
-    }
+          results.splice(i, 1);
+          count--;
+        }
 
-    return results;
-  };
+        return results;
+      },
+
+      // Similar to removeFromTail except occurrences are removed
+      // from the head of the values
+      removeFromHead = function (values, count, target) {
+        var results = values.splice(),
+            i, l;
+        for (i = 0, l = val.length; i < l; i++) {
+          if (val[i] !== value) continue;
+
+          val.splice(i, 1);
+          // Counter the in-place removal
+          i--;
+          count--;
+          if (! count) break;
+          }
+        }
+      },
+
+      removeAll = function (values, target) {
+        var results = values.splice(),
+            i, l;
+
+        for (i = 0, l = results.length; i < l; i++) {
+          if (results[i] === target) {
+            results.splice(i, 1);
+          }
+        }
+
+        return results;
+      };
 
   // Removes the first count ocurrences of value in the list
   // stored at key.
@@ -1165,40 +1197,24 @@
     if (! exists(key)) return numRemoved;
     if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
 
+    // Since we're delegating the work, we still
+    // need to know how many elements were removed
+    numRemoved = val.length;
+
     // Remove from the tail
     if (count < 0) {
       count = Math.abs(count);
-      // Since we're delegating the work, we still
-      // need to know how many elements were removed
-      numRemoved = val.length;
-
       val = removeFromTail(val, count, value);
-      numRemoved -= val.length;
 
-    // Remove from the head and check for remove all
+    // Remove from the head
+    } else if (count > 0) {
+      val = removeFromHead(val, count, value);
     } else {
-      for (i = 0, end = val.length; i < end; i++) {
-        if (val[i] !== value) continue;
-
-        // If we're to removeAll
-        if (removeAll) {
-          val.splice(i, 1);
-          numRemoved++;
-          // Since the element was removed,
-          // adjust for the elements shifting left
-          i--;
-
-        // Otherwise, count was originally greater than zero
-        } else {
-          val.splice(i, 1);
-          // Counter the in-place removal
-          i--;
-          numRemoved++;
-          count--;
-          if (! count) break;
-        }
-      }
+      val = removeAll(val, value);
     }
+
+    // Compute the number of elements removed
+    numRemoved -= val.length;
 
     store(key, val);
     return numRemoved;
