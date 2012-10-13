@@ -144,8 +144,6 @@
         return fireEvent(document, eventName);
       };
 
-
-
   ///////////////////////////
   // Error Helper
   ///////////////////////////
@@ -292,8 +290,8 @@
   ///////////////////////////
 
   // Redis commands typically have side effects and so we should
-  // be cautious to include calls to those functions when requiring
-  // storage operations with no side effects.
+  // be cautious to include calls to those functions when 
+  // implementing commands.
   // These internal functions are safer to use for storage within commands
 
   var
@@ -1128,6 +1126,26 @@
     return results;
   };
 
+
+  // lrem helper that removes count many occurrences of target
+  // Returns a copy of values with the occurrences removed
+  var removeFromTail = function (values, count, target) {
+    var results = values.slice(), // Copy values
+        i;
+
+    for (i = results.length - 1; i >= 0; i--) {
+      if (results[i] !== target) continue;
+
+      // Stop if we've removed count instances
+      if (! count) break;
+
+      results.splice(i, 1);
+      count--;
+    }
+
+    return results;
+  };
+
   // Removes the first count ocurrences of value in the list
   // stored at key.
   // Precond:   count > 0 removes from start to finish
@@ -1150,17 +1168,12 @@
     // Remove from the tail
     if (count < 0) {
       count = Math.abs(count);
+      // Since we're delegating the work, we still
+      // need to know how many elements were removed
+      numRemoved = val.length;
 
-      for (i = val.length - 1; i >= 0; i--) {
-        if (val[i] !== value) continue;
-
-        // Stop if we've removed count instances
-        if (! count) break;
-
-        val.splice(i, 1);
-        numRemoved++;
-        count--;
-      }
+      val = removeFromTail(val, count, value);
+      numRemoved -= val.length;
 
     // Remove from the head and check for remove all
     } else {
