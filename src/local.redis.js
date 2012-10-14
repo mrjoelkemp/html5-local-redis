@@ -161,7 +161,7 @@
       VALUE_NOT_ARRAY           = 'value is not an array',
 
       throwError = function (message) {
-        throw new Error(message);;
+        throw new Error(message);
       };
 
   ///////////////////////////
@@ -290,7 +290,7 @@
   ///////////////////////////
 
   // Redis commands typically have side effects and so we should
-  // be cautious to include calls to those functions when 
+  // be cautious to include calls to those functions when
   // implementing commands.
   // These internal functions are safer to use for storage within commands
 
@@ -916,7 +916,7 @@
       // Return the negation of odd-index elements on the list since we're using mincrby.
       // For mdecrby, we expect the input to be ['elem1', value1, 'elem2', value2, ...,]
       return (! (index & 0x1)) ? elem : -elem;
-    }
+    };
     // 'arguments' is not a canonical Array. The slice call makes it one.
     // We should probably do this for all functions that do this type of transformation.
     keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : Array.prototype.slice.call(arguments);
@@ -1112,9 +1112,9 @@
         stopIndex = stop + indexModifier;
 
     if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
-    
+
     if (start > val.length || ! exists(key)) return results;
-        
+
     // Clamp to the end of the list
     if (stopIndex > val.length) stopIndex = val.length;
 
@@ -1127,56 +1127,31 @@
   };
 
 
-  // lrem helpers
-  var 
-      // Returns a copy of values with count many occurrences 
-      // of target removed from the tail of values
-      removeFromTail = function (values, count, target) {
-        var results = values.slice(), // Copy values
-            i;
+  // lrem helper
+  // Returns a copy of values with count many occurrences
+  // of target removed.
+  // If count is not supplied, then we remove all
+  var removeOccurrences = function (values, target /*, count */) {
+    var results   = [],
+        count     = arguments[2],
+        removeAll = ! count,
+        i, l, isMatch;
 
-        for (i = results.length - 1; i >= 0; i--) {
-          if (results[i] !== target) continue;
+    // Simply omit occurrences of target from the results set
+    for (i = 0, l = values.length; i < l; i++) {
+      isMatch = values[i] === target;
 
-          // Stop if we've removed count instances
-          if (! count) break;
+      if (removeAll && isMatch) {
+        continue;
+      } else if (count && isMatch) {
+        count--;
+        continue;
+      }
+      results.push(values[i]);
+    }
 
-          results.splice(i, 1);
-          count--;
-        }
-
-        return results;
-      },
-
-      // Similar to removeFromTail except occurrences are removed
-      // from the head of the values
-      removeFromHead = function (values, count, target) {
-        var results = values.splice(),
-            i, l;
-        for (i = 0, l = val.length; i < l; i++) {
-          if (val[i] !== value) continue;
-
-          val.splice(i, 1);
-          // Counter the in-place removal
-          i--;
-          count--;
-          if (! count) break;
-          }
-        }
-      },
-
-      removeAll = function (values, target) {
-        var results = values.splice(),
-            i, l;
-
-        for (i = 0, l = results.length; i < l; i++) {
-          if (results[i] === target) {
-            results.splice(i, 1);
-          }
-        }
-
-        return results;
-      };
+    return results;
+  };
 
   // Removes the first count ocurrences of value in the list
   // stored at key.
@@ -1190,9 +1165,7 @@
     if (arguments.length !== 3) throwError(WRONG_ARGUMENTS);
 
     var val = retrieve(key),
-        numRemoved = 0,
-        removeAll  = count === 0,
-        i, end;
+        numRemoved = 0;
 
     if (! exists(key)) return numRemoved;
     if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
@@ -1204,13 +1177,15 @@
     // Remove from the tail
     if (count < 0) {
       count = Math.abs(count);
-      val = removeFromTail(val, count, value);
+      val.reverse();
+      val = removeOccurrences(val, value, count);
+      val.reverse();
 
     // Remove from the head
     } else if (count > 0) {
-      val = removeFromHead(val, count, value);
+      val = removeOccurrences(val, value, count);
     } else {
-      val = removeAll(val, value);
+      val = removeOccurrences(val, value);
     }
 
     // Compute the number of elements removed
