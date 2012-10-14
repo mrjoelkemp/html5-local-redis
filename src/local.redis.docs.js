@@ -806,3 +806,16 @@ localRedis.get('foo');      // Returns [2, 3]
 // *Throws* when the value at `key` is not a list.
 
 
+
+// ## rpop ##
+// *Usage:* `lpop(key)`
+
+// Removes and returns the last element from the list stored at key.
+// Or `null` if the key does not exist.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.rpop('foo');     // Returns 3
+localRedis.get('foo');      // Returns [1, 2]
+
+// *Throws* when the value at `key` is not a list.
+
