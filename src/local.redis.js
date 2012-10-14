@@ -159,6 +159,7 @@
       NO_SUCH_KEY               = 'no such key',
       MISSING_CONTEXT           = 'missing storage context',
       VALUE_NOT_ARRAY           = 'value is not an array',
+      UNEXPECTED_REFERENCE      = "expected 'before' or 'after'",
 
       throwError = function (message) {
         throw new Error(message);
@@ -1229,6 +1230,32 @@
     result = val.pop();
     store(key, val);
     return result;
+  };
+
+  // Stores the value before or after (specified by the reference)
+  // the pivot in the list stored at key.
+  // Precond:   reference = "before" or "after" (case insensitive)
+  // Returns:   the length of the new list at key
+  //            -1 when the pivot was not found
+  localRedis.linsert = function (key, reference, pivot, value) {
+    if (arguments.length !== 4) throwError(WRONG_ARGUMENTS);
+
+    reference.toLowerCase();
+    if (reference !== 'before' && reference !== 'after') throwError(UNEXPECTED_REFERENCE);
+
+    var val = retrieve(key),
+        pivotIndex = val.indexOf(pivot);
+
+    if (pivotIndex < 0) return -1;
+
+    if (reference === 'before') {
+      // Insert value before pivot
+    } else {
+      // Insert value after pivot
+    }
+
+    store(key, val);
+    return val.length;
   };
 
 
