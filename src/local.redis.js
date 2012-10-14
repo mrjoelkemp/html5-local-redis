@@ -1195,4 +1195,22 @@
     return numRemoved;
   };
 
+  // Removes and returns the first element of the list stored at key
+  // Returns:   null if the key does not exist
+  // Throws:    if the value at key is not a list
+  localRedis.lpop = function (key) {
+    if (arguments.length !== 1) throwError(WRONG_ARGUMENTS);
+
+    if (! exists(key)) return null;
+
+    var val = retrieve(key),
+        result;
+
+    if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
+
+    result = val.shift();
+    store(key, val);
+    return result;
+  };
+
 })(window, document);

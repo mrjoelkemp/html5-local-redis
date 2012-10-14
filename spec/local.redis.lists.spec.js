@@ -171,4 +171,16 @@ describe('Lists API', function () {
       expect(storage.lrem('foo', 0, 1)).toBe(0);
     });
   });
+
+  describe('lpop', function () {
+    it('removes and returns the first element of the list stored at key', function () {
+      storage.set('foo', [1, 2, 3]);
+      expect(storage.lpop('foo')).toBe(1);
+      expect(storage.get('foo')).toEqual([2, 3]);
+    });
+
+    it('returns null when the key does not exist', function () {
+      expect(storage.lpop('foo')).toBe(null);
+    });
+  });
 });

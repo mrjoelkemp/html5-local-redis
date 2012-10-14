@@ -790,3 +790,19 @@ localRedis.lrem('foo', 0, 1);
 localRedis.get('foo');        // Returns [2]
 
 // *Throws* when the value at `key` is not a list.
+
+
+
+// ## lpop ##
+// *Usage:* `lpop(key)`
+
+// Removes and returns the first element from the list stored at key.
+// Or `null` if the key does not exist.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.lpop('foo');     // Returns 1
+localRedis.get('foo');      // Returns [2, 3]
+
+// *Throws* when the value at `key` is not a list.
+
+
