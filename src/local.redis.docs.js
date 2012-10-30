@@ -819,3 +819,19 @@ localRedis.get('foo');      // Returns [1, 2]
 
 // *Throws* when the value at `key` is not a list.
 
+
+// ## linsert ##
+// *Usage:* `linsert(key, reference, pivot, value)`
+
+// Stores the `value` 'before' or 'after' (`reference`) the `pivot` value in the list stored
+// at `key`.
+// *Returns* the length of the new list or -1 when the pivot value
+// was not found.
+
+localRedis.set('foo', [1, 2, 3]);
+localRedis.linsert('foo', 'before', 2, 15);
+localRedis.get('foo');  // Returns [1, 15, 2, 3]
+localRedis.linsert('foo', 'after', 15, 5);
+localRedis.get('foo');  // Returns [1, 15, 5, 2, 3]
+
+// *Throws* if the reference is not 'before' or 'after'.

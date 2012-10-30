@@ -1259,6 +1259,4 @@
     store(key, val);
     return val.length;
   };
-
-
 })(window, document);
