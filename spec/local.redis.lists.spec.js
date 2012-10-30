@@ -171,4 +171,66 @@ describe('Lists API', function () {
       expect(storage.lrem('foo', 0, 1)).toBe(0);
     });
   });
+
+  describe('lpop', function () {
+    it('removes and returns the first element of the list stored at key', function () {
+      storage.set('foo', [1, 2, 3]);
+      expect(storage.lpop('foo')).toBe(1);
+      expect(storage.get('foo')).toEqual([2, 3]);
+    });
+
+    it('returns null when the key does not exist', function () {
+      expect(storage.lpop('foo')).toBe(null);
+    });
+  });
+
+  describe('rpop', function () {
+    it('removes and returns the first last of the list stored at key', function () {
+      storage.set('foo', [1, 2, 3]);
+      expect(storage.rpop('foo')).toBe(3);
+      expect(storage.get('foo')).toEqual([1, 2]);
+    });
+
+    it('returns null when the key does not exist', function () {
+      expect(storage.rpop('foo')).toBe(null);
+    });
+  });
+
+  describe('linsert', function () {
+  	it('stores the value before the pivot with a reference of BEFORE', function () {
+      storage.set('foo', [1, 2, 3]);
+      storage.linsert('foo', 'BEFORE', 1, 5);
+      expect(storage.get('foo')).toEqual([5, 1, 2, 3]);
+
+      storage.linsert('foo', 'BEFORE', 2, 0);
+      expect(storage.get('foo')).toEqual([5, 1, 0, 2, 3]);
+  	});
+
+  	it('stores the value after the pivot with a reference of AFTER', function () {
+      storage.set('foo', [1, 2, 3]);
+      storage.linsert('foo', 'AFTER', 1, 5);
+      expect(storage.get('foo')).toEqual([1, 5, 2, 3]);
+
+      storage.linsert('foo', 'AFTER', 2, 0);
+      expect(storage.get('foo')).toEqual([1, 5, 2, 0, 3]);
+  	});
+
+  	it('returns -1 when the pivot was not found', function () {
+      storage.set('foo', [1, 2, 3]);
+      // 0 is not in the list
+      expect(storage.linsert('foo', 'BEFORE', 0, 5)).toBe(-1);
+  	});
+
+  	it('returns the length of the new list stored at key', function () {
+      storage.set('foo', [1, 2, 3]);
+      expect(storage.linsert('foo', 'BEFORE', 1, 5)).toBe(4);
+  	});
+
+  	it('is case insensitive to the reference BEFORE and AFTER', function () {
+      storage.set('foo', [1, 2, 3]);
+      expect(storage.linsert('foo', 'before', 1, 5)).toBe(4);
+      storage.set('foo', [1, 2, 3]);
+      expect(storage.linsert('foo', 'after', 1, 5)).toBe(4);
+  	});
+  });
 });

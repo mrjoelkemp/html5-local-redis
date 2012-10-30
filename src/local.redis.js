@@ -144,8 +144,6 @@
         return fireEvent(document, eventName);
       };
 
-
-
   ///////////////////////////
   // Error Helper
   ///////////////////////////
@@ -161,9 +159,10 @@
       NO_SUCH_KEY               = 'no such key',
       MISSING_CONTEXT           = 'missing storage context',
       VALUE_NOT_ARRAY           = 'value is not an array',
+      UNEXPECTED_REFERENCE      = "expected 'before' or 'after'",
 
       throwError = function (message) {
-        throw new Error(message);;
+        throw new Error(message);
       };
 
   ///////////////////////////
@@ -292,8 +291,8 @@
   ///////////////////////////
 
   // Redis commands typically have side effects and so we should
-  // be cautious to include calls to those functions when requiring
-  // storage operations with no side effects.
+  // be cautious to include calls to those functions when
+  // implementing commands.
   // These internal functions are safer to use for storage within commands
 
   var
@@ -918,7 +917,7 @@
       // Return the negation of odd-index elements on the list since we're using mincrby.
       // For mdecrby, we expect the input to be ['elem1', value1, 'elem2', value2, ...,]
       return (! (index & 0x1)) ? elem : -elem;
-    }
+    };
     // 'arguments' is not a canonical Array. The slice call makes it one.
     // We should probably do this for all functions that do this type of transformation.
     keysAmounts = (keysAmounts instanceof Array) ? keysAmounts : Array.prototype.slice.call(arguments);
@@ -1114,9 +1113,9 @@
         stopIndex = stop + indexModifier;
 
     if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
-    
+
     if (start > val.length || ! exists(key)) return results;
-        
+
     // Clamp to the end of the list
     if (stopIndex > val.length) stopIndex = val.length;
 
@@ -1125,6 +1124,33 @@
     if (stop === -1) stopIndex = undefined;
 
     results = val.slice(start, stopIndex);
+    return results;
+  };
+
+
+  // lrem helper
+  // Returns a copy of values with count many occurrences
+  // of target removed.
+  // If count is not supplied, then we remove all
+  var removeOccurrences = function (values, target /*, count */) {
+    var results   = [],
+        count     = arguments[2],
+        removeAll = ! count,
+        i, l, isMatch;
+
+    // Simply omit occurrences of target from the results set
+    for (i = 0, l = values.length; i < l; i++) {
+      isMatch = values[i] === target;
+
+      if (removeAll && isMatch) {
+        continue;
+      } else if (count && isMatch) {
+        count--;
+        continue;
+      }
+      results.push(values[i]);
+    }
+
     return results;
   };
 
@@ -1140,55 +1166,97 @@
     if (arguments.length !== 3) throwError(WRONG_ARGUMENTS);
 
     var val = retrieve(key),
-        numRemoved = 0,
-        removeAll  = count === 0,
-        i, end;
+        numRemoved = 0;
 
     if (! exists(key)) return numRemoved;
     if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
 
+    // Since we're delegating the work, we still
+    // need to know how many elements were removed
+    numRemoved = val.length;
+
     // Remove from the tail
     if (count < 0) {
       count = Math.abs(count);
+      val.reverse();
+      val = removeOccurrences(val, value, count);
+      val.reverse();
 
-      for (i = val.length - 1; i >= 0; i--) {
-        if (val[i] !== value) continue;
-
-        // Stop if we've removed count instances
-        if (! count) break;
-
-        val.splice(i, 1);
-        numRemoved++;
-        count--;
-      }
-
-    // Remove from the head and check for remove all
+    // Remove from the head
+    } else if (count > 0) {
+      val = removeOccurrences(val, value, count);
     } else {
-      for (i = 0, end = val.length; i < end; i++) {
-        if (val[i] !== value) continue;
-
-        // If we're to removeAll
-        if (removeAll) {
-          val.splice(i, 1);
-          numRemoved++;
-          // Since the element was removed,
-          // adjust for the elements shifting left
-          i--;
-
-        // Otherwise, count was originally greater than zero
-        } else {
-          val.splice(i, 1);
-          // Counter the in-place removal
-          i--;
-          numRemoved++;
-          count--;
-          if (! count) break;
-        }
-      }
+      val = removeOccurrences(val, value);
     }
+
+    // Compute the number of elements removed
+    numRemoved -= val.length;
 
     store(key, val);
     return numRemoved;
   };
 
+  // Removes and returns the first element of the list stored at key
+  // Returns:   null if the key does not exist
+  // Throws:    if the value at key is not a list
+  localRedis.lpop = function (key) {
+    if (arguments.length !== 1) throwError(WRONG_ARGUMENTS);
+
+    if (! exists(key)) return null;
+
+    var val = retrieve(key),
+        result;
+
+    if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
+
+    result = val.shift();
+    store(key, val);
+    return result;
+  };
+
+  // Removes and returns the last element of the list stored at key
+  // Returns:   null if the key does not exist
+  // Throws:    if the value at key is not a list
+  localRedis.rpop = function (key) {
+    if (arguments.length !== 1) throwError(WRONG_ARGUMENTS);
+
+    if (! exists(key)) return null;
+
+    var val = retrieve(key),
+        result;
+
+    if (! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
+
+    result = val.pop();
+    store(key, val);
+    return result;
+  };
+
+  // Stores the value before or after (specified by the reference)
+  // the pivot in the list stored at key.
+  // Precond:   reference = "before" or "after" (case insensitive)
+  // Returns:   the length of the new list at key
+  //            -1 when the pivot was not found
+  localRedis.linsert = function (key, reference, pivot, value) {
+    if (arguments.length !== 4) throwError(WRONG_ARGUMENTS);
+
+    reference = reference.toLowerCase();
+    if (reference !== 'before' && reference !== 'after') throwError(UNEXPECTED_REFERENCE);
+
+    var val = retrieve(key),
+        pivotIndex = val.indexOf(pivot);
+
+    if (pivotIndex < 0) return -1;
+
+    if (reference === 'before') {
+      // Insert value before pivot
+      val.splice(pivotIndex, 0, value);
+    } else {
+      // Insert value after pivot
+      val.splice(pivotIndex + 1, 0, value);
+    }
+
+    store(key, val);
+    return val.length;
+  };
 })(window, document);
