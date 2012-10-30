@@ -2,20 +2,21 @@
   width: 100%;
   height: auto;
   font-size: 12px;
-  text-align: center;
+  text-align: left;
   float: left;
 }
 
 #visuals div {
   width: 40%;
   height: 100%;
-  border: 1px solid red;
+  border: 1px solid green;
   float: left;
 }
 
 table {
 
 }
+
 tr {
   border: 1px solid green;
   width: 100%;
