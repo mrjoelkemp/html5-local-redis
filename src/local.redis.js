@@ -1240,7 +1240,7 @@
   localRedis.linsert = function (key, reference, pivot, value) {
     if (arguments.length !== 4) throwError(WRONG_ARGUMENTS);
 
-    reference.toLowerCase();
+    reference = reference.toLowerCase();
     if (reference !== 'before' && reference !== 'after') throwError(UNEXPECTED_REFERENCE);
 
     var val = retrieve(key),
@@ -1250,8 +1250,10 @@
 
     if (reference === 'before') {
       // Insert value before pivot
+      val.splice(pivotIndex, 0, value);
     } else {
       // Insert value after pivot
+      val.splice(pivotIndex + 1, 0, value);
     }
 
     store(key, val);
