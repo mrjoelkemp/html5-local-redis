@@ -1127,7 +1127,6 @@
     return results;
   };
 
-
   // lrem helper
   // Returns a copy of values with count many occurrences
   // of target removed.
