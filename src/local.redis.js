@@ -81,7 +81,6 @@
     throw new Error('No JSON support found');
   }
 
-
   var storage = window.localStorage,
       localRedis = {};
 
@@ -140,6 +139,7 @@
 
       // Fired when the storage changes
       // Attaches events to the document to avoid
+      // non-existent DOM elements
       fireStorageChangedEvent = function () {
         return fireEvent(document, eventName);
       };
@@ -466,7 +466,7 @@
   localRedis.getkey = function (val /*, all */) {
     if (arguments.length > 2) throwError(WRONG_ARGUMENTS);
 
-    var i, l, k, v, keys = [], all;
+    var keys = [], i, l, k, v, all;
 
     // Get whether or not the all flag was set
     all = !! arguments[1];
@@ -628,9 +628,9 @@
   // Usage:     keys('foo*') for all keys with foo
   localRedis.keys = function (pattern) {
     var regex = new RegExp(pattern),
-        i, l,
         results = [],
-        keys = Object.keys(storage);
+        keys = Object.keys(storage),
+        i, l;
 
     for (i = 0, l = keys.length; i < l; i++) {
       if (regex.test(keys[i])) {
@@ -764,9 +764,9 @@
   //            no set operations are performed
   localRedis.msetnx = function (keysVals) {
     var isArray = keysVals instanceof Array,
-        isObject = keysVals instanceof Object,
-        i, l,
-        keys = [];
+        isObject = keysVals instanceof Object,        
+        keys = [],
+        i, l;
 
     // Grab all of the keys
     if (isObject && ! isArray) {
@@ -1051,9 +1051,9 @@
   localRedis.rpush = function (key, value) {
     if (arguments.length < 2) throwError(WRONG_ARGUMENTS);
 
-    var values,
-        i, l,
-        val = retrieve(key);
+    var val = retrieve(key),
+        values,
+        i, l;
 
     if (exists(key) && ! (val instanceof Array)) throwError(VALUE_NOT_ARRAY);
 
