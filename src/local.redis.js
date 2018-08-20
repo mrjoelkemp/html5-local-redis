@@ -807,14 +807,14 @@
   //          keys set with null values cannot be incremented
   //          amount must be a number or string containing a number
   // Usage:   incrby('foo', '4') or incrby('foo', 4)
-  localRedis.incrby = function (key, amount) {
+  localRedis.incrbyfloat = function (key, amount) {
     if (arguments.length !== 2) throwError(WRONG_ARGUMENTS);
 
     var value                = retrieve(key),
         valType              = typeof value,
         amountType           = typeof amount,
-        parsedValue          = parseInt(value, 10),
-        parsedAmount         = parseInt(amount, 10),
+        parsedValue          = parseFloat(value, 10),
+        parsedAmount         = parseFloat(amount, 10),
         amountIsNaN          = isNaN(parsedAmount),
         valueIsNaN           = isNaN(parsedValue),
 
@@ -858,6 +858,11 @@
     store(key, value);
   };
 
+  localRedis.incrby = function (key, amount) {
+    if (Math.round(amount) !== amount) throwError(NOT_INT_VALUE_OR_RANGE);
+    this.incrbyfloat(key, amount);
+  };
+
   // Increments multiple keys by 1
   localRedis.mincr = function (keys) {
     var i, l;
@@ -869,7 +874,6 @@
 
   // Usage:   mincrby('key1', 1, 'key2', 4) or
   //          mincrby(['key1', 1, 'key2', 2]) or
-  //          mincrby({'key1': 1, 'key2': 2})
   // Notes:   Custom, non-redis method
   localRedis.mincrby = function (keysAmounts) {
     var i, l, key;
