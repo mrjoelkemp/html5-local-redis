@@ -29,7 +29,7 @@ The library serves as a wrapper for `window.localStorage` and polyfills a cookie
 
 * `sudo npm install -g grunt`
 
-[Jasmine](http://pivotal.github.com/jasmine/):
+[Jasmine](https://jasmine.github.io/):
 
 * Used for unit testing. Navigate to `index.html` to run the test suite.
 
